@@ -10,7 +10,7 @@ import rehypeKatex from 'rehype-katex';
 const config = {
   title: 'DWDM Academy',
   tagline: 'Từ Fresher đến Veteran — làm chủ mạng truyền dẫn quang DWDM',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/favicon.svg',
 
   future: {
     v4: true,
