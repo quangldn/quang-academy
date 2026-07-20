@@ -31,7 +31,7 @@ const config = {
     },
   },
 
-  // KaTeX CSS cho công thức toán
+  // KaTeX CSS + fonts hiện đại (Photonic theme)
   stylesheets: [
     {
       href: 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css',
@@ -39,6 +39,17 @@ const config = {
       integrity:
         'sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+',
       crossorigin: 'anonymous',
+    },
+  ],
+  headTags: [
+    {tagName: 'link', attributes: {rel: 'preconnect', href: 'https://fonts.googleapis.com'}},
+    {tagName: 'link', attributes: {rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: 'anonymous'}},
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'stylesheet',
+        href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap',
+      },
     },
   ],
 
@@ -73,7 +84,7 @@ const config = {
       image: 'img/social-card.jpg',
       colorMode: {
         defaultMode: 'dark',
-        respectPrefersColorScheme: true,
+        respectPrefersColorScheme: false,
       },
       navbar: {
         title: 'DWDM Academy',

@@ -1,40 +1,190 @@
 /**
- * DWDM Academy — global theme.
- * Palette: xanh quang học (optical blue/teal) gợi phổ ánh sáng.
+ * DWDM Academy — "Photonic Dark" theme.
+ * Nền tối sang, dải phổ ánh sáng làm điểm nhấn, glassmorphism, glow.
  */
 
 :root {
-  --ifm-color-primary: #0a72b5;
-  --ifm-color-primary-dark: #0967a4;
-  --ifm-color-primary-darker: #08619b;
-  --ifm-color-primary-darkest: #06507f;
-  --ifm-color-primary-light: #0b7dc6;
-  --ifm-color-primary-lighter: #0c83cf;
-  --ifm-color-primary-lightest: #cfe8f7;
-  --ifm-code-font-size: 95%;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
-  --ifm-font-family-base: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  /* Fonts hiện đại */
+  --ifm-font-family-base: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --ifm-heading-font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --ifm-font-family-monospace: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --ifm-code-font-size: 92%;
+  --ifm-heading-font-weight: 600;
+
+  /* Dải phổ ánh sáng — motif chủ đạo */
+  --spectrum: linear-gradient(90deg, #a855f7 0%, #6366f1 22%, #3b82f6 42%, #06b6d4 64%, #22d3ee 82%, #34d399 100%);
+  --glow-cyan: 0 0 24px rgba(34, 211, 238, 0.35);
+
+  /* Light mode (phụ) */
+  --ifm-color-primary: #0e7fb8;
+  --ifm-color-primary-dark: #0c72a5;
+  --ifm-color-primary-darker: #0b6b9c;
+  --ifm-color-primary-darkest: #095880;
+  --ifm-color-primary-light: #108ccb;
+  --ifm-color-primary-lighter: #1193d4;
+  --ifm-color-primary-lightest: #d3ecf8;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.08);
+  --ifm-background-color: #f7f9fc;
+  --ifm-background-surface-color: #ffffff;
+  --ifm-heading-color: #0d1b2a;
+  --ifm-navbar-background-color: rgba(247, 249, 252, 0.78);
+  --ifm-footer-background-color: #0d1b2a;
 }
 
+/* Light: nền có tint phổ rất nhẹ + surface hơi nâng */
+[data-theme='light'] body {
+  background-color: var(--ifm-background-color);
+  background-image:
+    radial-gradient(760px 420px at 8% -6%, rgba(99, 102, 241, 0.07), transparent 60%),
+    radial-gradient(760px 420px at 100% -2%, rgba(6, 182, 212, 0.07), transparent 58%);
+  background-attachment: fixed;
+}
+[data-theme='light'] .button.button--primary { color: #ffffff; }
+[data-theme='light'] .button.button--primary:hover { color: #ffffff; }
+[data-theme='light'] .menu__link--active:not(.menu__link--sublist) {
+  background: linear-gradient(90deg, rgba(14, 127, 184, 0.12), rgba(14, 127, 184, 0.02));
+}
+
+/* ===================== DARK (mặc định) ===================== */
 [data-theme='dark'] {
-  --ifm-color-primary: #4cb3e8;
-  --ifm-color-primary-dark: #2fa5e3;
-  --ifm-color-primary-darker: #1f9ee1;
-  --ifm-color-primary-darkest: #1580ba;
-  --ifm-color-primary-light: #69c1ed;
-  --ifm-color-primary-lighter: #79c8ef;
-  --ifm-color-primary-lightest: #16405a;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
-  --ifm-background-surface-color: #16202b;
+  --ifm-color-primary: #22d3ee;
+  --ifm-color-primary-dark: #17c2dd;
+  --ifm-color-primary-darker: #14b7d1;
+  --ifm-color-primary-darkest: #1197ac;
+  --ifm-color-primary-light: #45dbf1;
+  --ifm-color-primary-lighter: #5fe1f3;
+  --ifm-color-primary-lightest: #1a3742;
+
+  --ifm-background-color: #0a0e17;
+  --ifm-background-surface-color: #10151f;
+  --ifm-navbar-background-color: rgba(10, 14, 23, 0.72);
+  --ifm-footer-background-color: #080b12;
+  --ifm-color-content: #d5dbe6;
+  --ifm-color-content-secondary: #9aa6b8;
+  --ifm-heading-color: #f2f5fa;
+  --ifm-toc-border-color: rgba(255, 255, 255, 0.08);
+  --ifm-hr-border-color: rgba(255, 255, 255, 0.08);
+  --ifm-table-border-color: rgba(255, 255, 255, 0.09);
+  --ifm-table-stripe-background: rgba(255, 255, 255, 0.02);
+  --ifm-blockquote-color: #9aa6b8;
+  --ifm-link-color: #45dbf1;
+  --docusaurus-highlighted-code-line-bg: rgba(255, 255, 255, 0.06);
+
+  --ifm-color-emphasis-0: #0a0e17;
+  --ifm-color-emphasis-100: rgba(255, 255, 255, 0.04);
+  --ifm-color-emphasis-200: rgba(255, 255, 255, 0.07);
+  --ifm-color-emphasis-300: rgba(255, 255, 255, 0.11);
+  --ifm-color-emphasis-400: rgba(255, 255, 255, 0.18);
+  --ifm-color-emphasis-600: #8a97ab;
+  --ifm-color-emphasis-700: #aab4c5;
+  --ifm-color-emphasis-800: #c6cede;
 }
 
-/* KaTeX-free: hiển thị công thức bằng $...$ dạng text — không cần cài math plugin.
-   Nếu sau này bật remark-math + KaTeX, có thể bỏ phần dưới. */
-.katex-fallback { font-family: var(--ifm-font-family-monospace); }
+/* Nền có ánh sáng nhẹ (aurora) ở dark mode */
+[data-theme='dark'] body {
+  background-color: var(--ifm-background-color);
+  background-image:
+    radial-gradient(900px 500px at 12% -8%, rgba(99, 102, 241, 0.12), transparent 60%),
+    radial-gradient(800px 500px at 100% 0%, rgba(34, 211, 238, 0.10), transparent 55%);
+  background-attachment: fixed;
+}
 
-/* Bảng dễ đọc hơn cho nội dung kỹ thuật */
-table { display: table; width: 100%; }
-article table td, article table th { vertical-align: top; }
+/* ===================== Navbar (glass) ===================== */
+.navbar {
+  backdrop-filter: saturate(160%) blur(12px);
+  -webkit-backdrop-filter: saturate(160%) blur(12px);
+  border-bottom: 1px solid var(--ifm-toc-border-color);
+  box-shadow: none;
+}
+.navbar__title { font-family: var(--ifm-heading-font-family); font-weight: 700; letter-spacing: 0.2px; }
+/* Dải phổ mảnh dưới navbar */
+.navbar::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 2px;
+  background: var(--spectrum);
+  opacity: 0.9;
+}
+.navbar__link { font-weight: 500; }
 
-/* Tiêu đề bài học gọn */
-.markdown h1:first-child { font-size: 2rem; }
+/* ===================== Links & headings ===================== */
+.markdown a { text-decoration: none; border-bottom: 1px solid transparent; transition: border-color .15s ease, color .15s ease; }
+.markdown a:hover { border-bottom-color: currentColor; }
+.markdown h1, .markdown h2 { letter-spacing: -0.02em; }
+.markdown h2 { padding-bottom: 0.3rem; }
+.markdown h1:first-child { font-size: 2.15rem; }
+
+/* ===================== Buttons ===================== */
+.button.button--primary {
+  background: var(--ifm-color-primary);
+  border: none;
+  color: #041016;
+  font-weight: 600;
+  box-shadow: var(--glow-cyan);
+  transition: transform .14s ease, box-shadow .14s ease;
+}
+.button.button--primary:hover { transform: translateY(-2px); box-shadow: 0 0 34px rgba(34, 211, 238, 0.5); color: #041016; }
+[data-theme='dark'] .button.button--secondary {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  color: var(--ifm-heading-color);
+  backdrop-filter: blur(6px);
+}
+[data-theme='dark'] .button.button--secondary:hover { border-color: var(--ifm-color-primary); color: var(--ifm-color-primary); }
+
+/* ===================== Sidebar ===================== */
+.menu { padding: 1rem 0.6rem !important; font-size: 0.9rem; }
+.menu__link { border-radius: 8px; transition: background .12s ease, color .12s ease; }
+.menu__link--active:not(.menu__link--sublist) {
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.16), rgba(34, 211, 238, 0.02));
+  color: var(--ifm-color-primary);
+  font-weight: 600;
+  box-shadow: inset 2px 0 0 var(--ifm-color-primary);
+}
+.menu__list-item-collapsible:hover, .menu__link:hover { background: var(--ifm-color-emphasis-100); }
+
+/* Category label (cấp độ) nổi bật */
+.menu__link--sublist { font-family: var(--ifm-heading-font-family); font-weight: 600; letter-spacing: .2px; }
+
+/* ===================== Tables ===================== */
+.markdown table {
+  display: table;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--ifm-table-border-color);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.markdown table thead {
+  background: var(--ifm-color-emphasis-100);
+}
+.markdown table th { font-family: var(--ifm-heading-font-family); font-weight: 600; }
+.markdown table td, .markdown table th { border: none; border-bottom: 1px solid var(--ifm-table-border-color); vertical-align: top; }
+.markdown table tr:last-child td { border-bottom: none; }
+
+/* ===================== Code ===================== */
+:not(pre) > code {
+  background: var(--ifm-color-emphasis-100);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 6px;
+}
+.theme-code-block { border-radius: 12px !important; box-shadow: 0 8px 30px rgba(0,0,0,0.25) !important; }
+
+/* ===================== TOC ===================== */
+.table-of-contents__link--active { color: var(--ifm-color-primary); font-weight: 600; }
+
+/* ===================== Scrollbar ===================== */
+[data-theme='dark'] ::-webkit-scrollbar { width: 11px; height: 11px; }
+[data-theme='dark'] ::-webkit-scrollbar-track { background: transparent; }
+[data-theme='dark'] ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 8px; border: 3px solid transparent; background-clip: content-box; }
+[data-theme='dark'] ::-webkit-scrollbar-thumb:hover { background: rgba(34,211,238,0.4); background-clip: content-box; }
+
+/* ===================== Footer ===================== */
+.footer { border-top: 1px solid var(--ifm-toc-border-color); }
+.footer__title { font-family: var(--ifm-heading-font-family); }
+
+/* Pagination cards */
+.pagination-nav__link { border-radius: 12px; border-color: var(--ifm-color-emphasis-300); transition: border-color .14s ease, transform .14s ease; }
+.pagination-nav__link:hover { border-color: var(--ifm-color-primary); transform: translateY(-2px); }
