@@ -1,0 +1,93 @@
+---
+sidebar_position: 4
+title: 1.1.4 — dB, dBm và toán kỹ thuật quang
+description: Vì sao kỹ sư quang cộng/trừ dB thay vì nhân/chia mW, và cách quy đổi.
+---
+
+# 1.1.4 — dB, dBm và toán kỹ thuật quang
+
+<Callout type="goal">
+
+Nắm chắc ba đơn vị **dB, dBm, mW**, quy đổi được giữa chúng, và dùng thành thạo "luật 3 dB / 10 dB" để tính nhẩm. Đây là ngôn ngữ nền tảng — mọi link budget và OSNR ở các bài sau đều dựa vào nó.
+
+</Callout>
+
+## Vấn đề: nhân chia số mũ rất mệt
+
+Trên một tuyến quang, tín hiệu đi qua hàng chục thành phần, mỗi cái nhân công suất với một hệ số (nhỏ hơn 1 nếu suy hao, lớn hơn 1 nếu khuếch đại). Nếu làm bằng mW, bạn phải **nhân** một chuỗi dài số thập phân. Chuyển sang thang **logarit (dB)**, phép nhân biến thành phép **cộng** — nhẩm được trên giấy nháp.
+
+## Hai loại đơn vị: tương đối vs tuyệt đối
+
+**dB (decibel)** là **tỉ số** — mô tả một thành phần *thay đổi* công suất bao nhiêu:
+
+$$
+G_{dB} = 10\,\log_{10}\!\frac{P_{out}}{P_{in}}
+$$
+
+Suy hao 5 dB, khuếch đại +20 dB — đều là dB vì chúng nói về *thay đổi*, không phải giá trị tuyệt đối.
+
+**dBm** là **giá trị tuyệt đối** — công suất so với mốc **1 mW**:
+
+$$
+P_{dBm} = 10\,\log_{10}\!\frac{P_{mW}}{1\ \text{mW}} \qquad\Longleftrightarrow\qquad P_{mW} = 10^{\,P_{dBm}/10}
+$$
+
+Vậy **0 dBm = 1 mW**, **+10 dBm = 10 mW**, **−30 dBm = 1 µW**.
+
+<Callout type="tip" title="Quy tắc vàng">
+
+**dBm ± dB = dBm.** Bạn cộng/trừ các dB (suy hao, gain) vào một mức dBm để ra mức dBm mới. Nhưng **dBm + dBm thì vô nghĩa** (giống như cộng hai nhiệt độ tuyệt đối). Nhầm chỗ này là lỗi kinh điển của lính mới.
+
+</Callout>
+
+## Luật 3 dB và 10 dB — tính nhẩm
+
+| Thay đổi | Hệ số công suất |
+|---|---|
+| **+3 dB** | ×2 (gấp đôi) |
+| **−3 dB** | ÷2 (một nửa) |
+| **+10 dB** | ×10 |
+| **−10 dB** | ÷10 |
+
+Ghép lại tính nhẩm mọi thứ: +13 dB = +10 +3 = ×10 ×2 = **×20**. −6 dB = −3 −3 = ÷2 ÷2 = **÷4**. Một tuyến mất 23 dB nghĩa là công suất còn lại chỉ khoảng $1/200$ ban đầu.
+
+## Chơi thử
+
+Kéo thanh trượt: để ý +3 dBm cho ~2 mW, +10 dBm cho đúng 10 mW. Nhập trực tiếp mW để thấy dBm tương ứng.
+
+<DbConverter />
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- **Link budget** (bài 1.4.4) chỉ là một phép cộng dài các dB quanh một mức launch power tính bằng dBm.
+- Máy đo công suất quang (power meter) đọc trực tiếp **dBm**; suy hao mối hàn/đầu nối ghi bằng **dB**. Bạn phải trộn đúng hai loại.
+- Khi ai đó nói "chúng ta còn 3 dB margin", họ đang nói tín hiệu còn dư gấp đôi mức tối thiểu — trực giác này đến từ luật 3 dB.
+
+<Quiz
+  question="Một tín hiệu +2 dBm đi qua tuyến suy hao tổng 22 dB. Công suất tới máy thu là bao nhiêu?"
+  hint="dBm − dB = dBm. Chỉ việc trừ."
+  options={[
+    {text: '−20 dBm', correct: true, explain: '2 − 22 = −20 dBm (tức 0.01 mW = 10 µW).'},
+    {text: '−22 dBm', explain: 'Bạn quên cộng mức launch +2 dBm ban đầu.'},
+    {text: '20 dBm', explain: 'Suy hao làm giảm công suất, dấu phải âm đi.'},
+    {text: '−20 dB', explain: 'Kết quả là một mức tuyệt đối nên đơn vị phải là dBm, không phải dB.'},
+  ]}
+/>
+
+<Quiz
+  question="+16 dBm gấp bao nhiêu lần công suất so với +6 dBm?"
+  hint="Chênh lệch 10 dB."
+  options={[
+    {text: '10 lần', correct: true, explain: 'Chênh 10 dB = ×10. (Không phải cộng 10, mà nhân 10.)'},
+    {text: '2.67 lần', explain: 'Đây là tỉ số của con số dBm — nhưng dB là thang log, không chia trực tiếp như vậy.'},
+    {text: '100 lần', explain: '100 lần là +20 dB. Ở đây chỉ chênh 10 dB.'},
+  ]}
+/>
+
+<Callout type="note">
+
+Đây là bài bạn sẽ quay lại nhiều nhất. Nếu chỉ nhớ một dòng: **0 dBm = 1 mW, +3 dB = ×2, +10 dB = ×10, và dBm ± dB = dBm.**
+
+</Callout>
+
+➡️ Tiếp theo: Module 1.2 — [1.2.1: WDM & DWDM là gì](../level-1-fresher/1-2-1-wdm-la-gi)

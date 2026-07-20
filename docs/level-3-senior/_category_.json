@@ -1,0 +1,12 @@
+{
+  "label": "Cấp 3 — Senior",
+  "position": 4,
+  "collapsible": true,
+  "collapsed": true,
+  "link": {
+    "type": "generated-index",
+    "title": "Cấp 3 — Senior: Coherent & thiết kế hệ thống",
+    "description": "Coherent optics, DSP, FEC và spectral efficiency; hiệu ứng phi tuyến; GSNR engineering; thiết kế mạng mesh flexible-grid; băng tần C+L. Đây là nơi tách một kỹ sư giỏi khỏi người chỉ đọc datasheet.",
+    "slug": "/level-3-senior"
+  }
+}

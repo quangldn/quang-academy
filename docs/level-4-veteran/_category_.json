@@ -1,0 +1,12 @@
+{
+  "label": "Cấp 4 — Veteran",
+  "position": 5,
+  "collapsible": true,
+  "collapsed": true,
+  "link": {
+    "type": "generated-index",
+    "title": "Cấp 4 — Veteran: Kiến trúc, tối ưu & vận hành mạng",
+    "description": "IPoDWDM/ZR+, open line system, SDN & telemetry, OTN, bảo vệ/khôi phục, margin harvesting, và tư duy kinh tế mạng — RFP, BoM, TCO. Tầm nhìn của một veteran.",
+    "slug": "/level-4-veteran"
+  }
+}

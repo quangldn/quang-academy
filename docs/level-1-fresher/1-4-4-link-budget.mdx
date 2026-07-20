@@ -1,0 +1,92 @@
+---
+sidebar_position: 16
+title: 1.4.4 — Link budget & OSNR
+description: Cộng trừ dB từ Tx đến Rx, và vì sao OSNR quyết định tuyến chạy được hay không.
+---
+
+# 1.4.4 — Link budget & OSNR cơ bản
+
+<Callout type="goal">
+
+Tự tính được: (1) **link budget** — công suất tín hiệu còn lại sau khi qua tuyến; (2) **OSNR** — tỉ số tín hiệu trên nhiễu, đại lượng thực sự quyết định tuyến có chạy hay không; và (3) **margin** — khoảng an toàn giữa OSNR có được và OSNR yêu cầu.
+
+</Callout>
+
+## Link budget: một phép cộng dài
+
+Link budget trả lời câu hỏi: *"Phát ra ngần này công suất, sau khi qua tuyến còn lại bao nhiêu?"* Nhờ thang dB (bài 1.1.4), nó chỉ là cộng/trừ:
+
+$$
+P_{Rx}\,[\text{dBm}] = P_{Tx}\,[\text{dBm}] - \sum L\,[\text{dB}] + \sum G\,[\text{dB}]
+$$
+
+trong đó $\sum L$ gộp suy hao sợi (chiều dài × dB/km), đầu nối, mối hàn, filter; $\sum G$ là tổng gain của các bộ khuếch đại. Nếu $P_{Rx}$ rơi dưới **ngưỡng nhạy (receiver sensitivity)**, máy thu "điếc".
+
+Nhưng đủ công suất **chưa đủ**. Bạn có thể bơm thật mạnh để $P_{Rx}$ cao, mà tuyến vẫn hỏng — vì mỗi bộ khuếch đại thêm **nhiễu**. Đây là lúc OSNR vào cuộc.
+
+## OSNR: đại lượng thật sự quan trọng
+
+**OSNR (Optical Signal-to-Noise Ratio)** là tỉ số công suất tín hiệu trên công suất nhiễu nền (chủ yếu là **ASE** — nhiễu phát xạ tự phát do EDFA sinh ra), đo trong dải chuẩn **0.1 nm**.
+
+Mỗi bộ khuếch đại vừa khuếch đại tín hiệu vừa **cộng thêm ASE**. Tín hiệu qua khuếch đại rồi lại suy hao rồi lại khuếch đại — nhưng **nhiễu chỉ tích lũy**, không bao giờ mất đi. Vì thế OSNR **luôn giảm dần** dọc tuyến. Đó là ngân sách thật sự bạn phải quản.
+
+Với một chuỗi $N$ span giống nhau, mỗi span được một EDFA khôi phục đúng bằng suy hao, có công thức kỹ thuật kinh điển (tham chiếu 0.1 nm):
+
+$$
+\text{OSNR}\,[\text{dB}] \approx 58 + P_{launch} - L_{span} - NF - 10\log_{10}(N)
+$$
+
+- $P_{launch}$: công suất **mỗi kênh** đưa vào sợi (dBm)
+- $L_{span}$: suy hao một span (dB)
+- $NF$: noise figure của EDFA (dB)
+- Hằng số **58** đến từ $-10\log_{10}(h\nu\cdot\Delta\nu_{ref})$ với $\nu = 193.1$ THz và $\Delta\nu_{ref} = 12.5$ GHz (≈ 0.1 nm).
+
+Điểm mấu chốt nằm ở số hạng $10\log_{10}(N)$: **gấp đôi số span ≈ mất 3 dB OSNR**. Đường càng dài, OSNR càng cạn — và đó là lý do tồn tại của cả ngành khuếch đại + coherent.
+
+## Chơi thử: kéo và quan sát đánh đổi
+
+Kéo các thanh trượt. Ba thí nghiệm nên thử ngay:
+
+1. **Tăng số span N** → xem OSNR tụt theo $10\log_{10}(N)$.
+2. **Tăng launch power** → OSNR tăng (nhưng đời thực bị chặn bởi hiệu ứng phi tuyến — Cấp 3).
+3. **Đổi modulation** → xem margin đổi màu: 64QAM cần OSNR cao hơn nhiều so với QPSK.
+
+<LinkBudgetCalculator />
+
+## Margin: tại sao không bao giờ thiết kế sát ngưỡng
+
+**Margin = OSNR có được − OSNR yêu cầu.** Bạn không bao giờ thiết kế margin = 0, vì thực tế còn: lão hoá sợi/linh kiện, sửa chữa thêm mối hàn, thay đổi nhiệt độ, sai số đo. Nguyên tắc thực dụng: giữ **vài dB margin** (thường ≥ 2–3 dB tuỳ chính sách), và ghi rõ margin đó bao gồm những gì. "Đạt sát ngưỡng" trên giấy = rớt trong vận hành.
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- Đây chính là bài toán bạn làm khi thẩm định một tuyến trong RFP: đủ OSNR cho modulation khách yêu cầu ở khoảng cách đó không?
+- Khi tuyến "chạy chập chờn", nghi phạm số một là OSNR cạn (margin âm), không phải công suất.
+- Con số "required OSNR" phải lấy từ **datasheet transponder** — đừng bịa. Công cụ trên chỉ dùng giá trị tham khảo để luyện trực giác.
+
+<Quiz
+  question="Một tuyến đang chạy tốt. Bạn tăng gấp đôi số span (cùng loại). OSNR thay đổi thế nào (bỏ qua phi tuyến)?"
+  hint="Chú ý số hạng 10·log10(N)."
+  options={[
+    {text: 'Giảm khoảng 3 dB', correct: true, explain: 'Gấp đôi N → 10·log10(2) ≈ 3 dB → OSNR giảm ~3 dB.'},
+    {text: 'Giảm khoảng 6 dB', explain: '6 dB ứng với gấp 4 lần số span, không phải gấp đôi.'},
+    {text: 'Không đổi vì mỗi span đều có EDFA khôi phục', explain: 'EDFA khôi phục công suất nhưng cộng thêm ASE — OSNR vẫn tụt.'},
+    {text: 'Tăng vì có thêm gain', explain: 'Thêm gain cũng thêm nhiễu; OSNR giảm chứ không tăng.'},
+  ]}
+/>
+
+<Quiz
+  question="Vì sao chỉ tăng công suất phát (launch power) không phải là cách vô hạn để cứu OSNR?"
+  options={[
+    {text: 'Công suất quá cao kích hoạt hiệu ứng phi tuyến, gây phạt ngược lại', correct: true, explain: 'Đúng — có một "điểm ngọt" launch power; vượt qua thì phi tuyến làm hỏng tín hiệu (Cấp 3).'},
+    {text: 'Vì OSNR không phụ thuộc launch power', explain: 'OSNR có phụ thuộc: tăng launch giúp OSNR — nhưng chỉ đến ngưỡng phi tuyến.'},
+    {text: 'Vì dBm không thể vượt 0', explain: 'dBm hoàn toàn có thể dương (>1 mW); giới hạn thật là phi tuyến, không phải đơn vị.'},
+  ]}
+/>
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+Công thức OSNR chuỗi span và hằng số ~58 dB (tham chiếu 0.1 nm) là kiến thức kỹ thuật chuẩn ngành truyền dẫn quang. Các giá trị required-OSNR theo modulation trong công cụ là **số tham khảo bậc độ lớn** — thiết kế thật lấy từ datasheet của transponder cụ thể.
+
+</Callout>
+
+🏁 Đây là bài cuối Module 1.4. Tiếp theo: **[Capstone Cấp 1](../level-1-fresher/capstone-cap-1)** — thiết kế một tuyến điểm–điểm hoàn chỉnh.

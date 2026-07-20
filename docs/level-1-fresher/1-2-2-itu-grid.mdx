@@ -1,0 +1,88 @@
+---
+sidebar_position: 6
+title: 1.2.2 — ITU-T G.694.1 DWDM Grid
+description: Anchor 193.1 THz, fixed grid, flexible grid, và cách tính tần số ↔ bước sóng.
+---
+
+# 1.2.2 — Lưới tần số DWDM (ITU-T G.694.1)
+
+<Callout type="goal">
+
+Hiểu vì sao DWDM cần một "lưới" tần số chuẩn hoá; tính được tần số và bước sóng của bất kỳ kênh nào; phân biệt **fixed grid** và **flexible grid**, và biết khi nào cần cái nào.
+
+</Callout>
+
+## Tại sao cần một lưới chuẩn
+
+DWDM ghép hàng chục "màu" ánh sáng vào một sợi. Để thiết bị của mọi hãng nói chuyện được với nhau, và để mux/filter/WSS biết chính xác đặt kênh ở đâu, ITU-T định nghĩa một **lưới tần số cố định** trong khuyến nghị **G.694.1**. Không có nó, mỗi hãng đặt kênh một kiểu và không thể liên thông.
+
+## Fixed grid: neo tại 193.1 THz
+
+Toàn bộ lưới quy chiếu về **tần số neo 193.1 THz**. Mọi kênh là một bội số của khoảng cách kênh $\Delta f$ quanh neo này:
+
+$$
+f_n = 193.1 + n \times \Delta f \quad \text{(THz)}
+$$
+
+với $n$ là số nguyên (âm hoặc dương) và $\Delta f \in \{100, 50, 25, 12.5\}$ GHz (lưu ý GHz = 0.001 THz). Đổi sang bước sóng bằng $\lambda = c/f$.
+
+Ví dụ với $\Delta f = 50$ GHz $= 0.05$ THz:
+- $n=0$: $f = 193.1$ THz → $\lambda \approx 1552.52$ nm
+- $n=+1$: $f = 193.15$ THz → $\lambda \approx 1552.12$ nm
+- $n=-1$: $f = 193.05$ THz → $\lambda \approx 1552.93$ nm
+
+Số kênh trong C-band = độ rộng C-band chia cho $\Delta f$. Với 50 GHz, C-band (~191.6–196.1 THz, ~4.4 THz) chứa khoảng **88–96 kênh** — con số bạn thấy khắp các datasheet.
+
+## Chơi với lưới
+
+Chọn khoảng cách kênh, kéo chỉ số $n$, và xem tần số ↔ bước sóng cập nhật theo đúng công thức trên. Để ý dấu **nghịch đảo**: $n$ tăng → tần số tăng → bước sóng **giảm**.
+
+<ItuGridExplorer />
+
+## Flexible grid: khi kênh không còn "vừa ô"
+
+Tín hiệu coherent tốc độ cao (400G, 800G, 1.2T) có **baud rate** lớn nên chiếm phổ rộng hơn một ô 50 GHz. Nhồi chúng vào lưới cứng thì lãng phí hoặc không vừa. G.694.1 vì thế bổ sung **flexible grid (flexgrid)**:
+
+- **Tâm kênh (nominal central frequency)** đặt theo bước **6.25 GHz**: $f = 193.1 + n \times 0.00625$ THz.
+- **Độ rộng khe (slot width)** là bội của **12.5 GHz**: $\text{slot} = m \times 12.5$ GHz.
+
+Nhờ đó bạn có thể cấp một "khe" 75 GHz, 87.5 GHz, 100 GHz... vừa khít với tín hiệu thực, thay vì ép vào ô 50/100 GHz cứng nhắc. Đây là nền tảng cho thiết kế phổ ở Cấp 3.
+
+<Callout type="tip" title="Trực giác">
+
+Fixed grid như bãi đỗ xe kẻ ô đều nhau — tiện nhưng xe tải không vừa. Flexible grid cho phép kẻ lại vạch theo kích thước từng xe. Tín hiệu càng nhanh, "xe" càng to, càng cần flexgrid.
+
+</Callout>
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- Khi lập kế hoạch phổ (spectrum planning), bạn cấp phát **tần số + độ rộng khe**, không phải "kênh số 21" chung chung.
+- Một hệ 400G 60+ GBd cần khe ~75–100 GHz; đặt nó trên lưới 50 GHz cứng là sai ngay từ khâu thiết kế.
+- Số "96 kênh 50 GHz" hay "Cband 4.8 THz" trong RFP đều suy ra trực tiếp từ công thức lưới này — bạn kiểm tra được, không cần tin lời.
+
+<Quiz
+  question="Với Δf = 100 GHz, kênh n = +2 có tần số bao nhiêu?"
+  hint="f = 193.1 + n × Δf, với 100 GHz = 0.1 THz."
+  options={[
+    {text: '193.3 THz', correct: true, explain: '193.1 + 2×0.1 = 193.3 THz (≈ 1550.9 nm).'},
+    {text: '193.12 THz', explain: 'Đó là nếu Δf = 6.25 GHz. Ở đây Δf = 100 GHz.'},
+    {text: '195.1 THz', explain: 'Bạn nhân nhầm: 2×0.1 = 0.2 THz, không phải 2 THz.'},
+  ]}
+/>
+
+<Quiz
+  question="Vì sao tín hiệu coherent 400G thường cần flexible grid thay vì lưới 50 GHz cố định?"
+  options={[
+    {text: 'Baud rate cao khiến tín hiệu chiếm phổ rộng hơn một ô 50 GHz', correct: true, explain: 'Đúng — cần khe rộng hơn (vd 75–100 GHz), flexgrid cho phép đặt slot m×12.5 GHz.'},
+    {text: 'Vì coherent dùng bước sóng ngoài C-band', explain: 'Coherent vẫn chạy trong C (và L); vấn đề là độ rộng phổ, không phải vùng band.'},
+    {text: 'Vì flexible grid có suy hao thấp hơn', explain: 'Grid là quy ước tần số, không ảnh hưởng suy hao sợi.'},
+  ]}
+/>
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+Toàn bộ số liệu theo **ITU-T G.694.1 — Spectral grids for WDM applications: DWDM frequency grid**. Anchor 193.1 THz, các khoảng 100/50/25/12.5 GHz, flexgrid 6.25 GHz (tâm) và 12.5 GHz (slot) đều là định nghĩa trực tiếp của khuyến nghị này. C-band range là giá trị kỹ thuật điển hình.
+
+</Callout>
+
+➡️ Tiếp theo: [1.2.3 — Kiến trúc tuyến DWDM điểm–điểm](./1-2-3-kien-truc-diem-diem)

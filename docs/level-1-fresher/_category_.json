@@ -1,0 +1,12 @@
+{
+  "label": "Cấp 1 — Fresher",
+  "position": 2,
+  "collapsible": true,
+  "collapsed": false,
+  "link": {
+    "type": "generated-index",
+    "title": "Cấp 1 — Fresher: Nền tảng quang & WDM",
+    "description": "Bắt đầu từ số 0: ánh sáng, sợi quang, WDM/DWDM, các khối chức năng, đơn vị kỹ thuật, OSNR và link budget cơ bản. Kết thúc cấp này bạn đọc được sơ đồ một tuyến DWDM điểm–điểm và hiểu vì sao nó hoạt động.",
+    "slug": "/level-1-fresher"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "label": "Cấp 2 — Junior",
+  "position": 3,
+  "collapsible": true,
+  "collapsed": true,
+  "link": {
+    "type": "generated-index",
+    "title": "Cấp 2 — Junior: Vận hành & thiết kế tuyến",
+    "description": "Tự tính link budget & OSNR budget, nắm tán sắc và khuếch đại ở mức chi tiết, ROADM cơ bản, và các bước turn-up / troubleshoot một tuyến thực tế.",
+    "slug": "/level-2-junior"
+  }
+}

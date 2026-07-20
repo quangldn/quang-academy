@@ -1,0 +1,55 @@
+---
+sidebar_position: 2
+title: Chỉ mục chuẩn & tài liệu hãng
+description: Nguồn chuẩn ITU-T/OIF và tài liệu public của các hãng truyền dẫn lớn.
+---
+
+# Chỉ mục chuẩn & tài liệu public
+
+> Nguyên tắc của academy: mỗi con số truy được về nguồn. Đây là nơi tập hợp các nguồn **chuẩn ngành** và **tài liệu công khai của hãng** dùng làm ví dụ. Trung lập hãng — liệt kê để học, không quảng cáo.
+
+## Chuẩn ITU-T (nền tảng lý thuyết)
+
+| Khuyến nghị | Nội dung | Dùng ở đâu trong khoá |
+|---|---|---|
+| **G.694.1** | Lưới tần số DWDM (fixed & flexible grid) | Cấp 1 — Module 1.2 |
+| **G.694.2** | Lưới CWDM | Cấp 1 — Module 1.2 |
+| **G.652 / G.654 / G.655** | Đặc tính sợi đơn mode | Cấp 1 — Module 1.1 |
+| **G.709** | Kiến trúc OTN (OTU/ODU/OPU) | Cấp 4 — Module 4.3 |
+| **G.798 / G.872** | Thiết bị & kiến trúc lớp quang | Cấp 4 |
+| **G.696.1 / G.698.2** | Ứng dụng DWDM & alien wavelength | Cấp 2 — Module 2.5 |
+
+Tra cứu chính thức: [ITU-T Recommendations (rec.itu.int)](https://www.itu.int/rec/T-REC-G/en).
+
+## OIF (chuẩn coherent pluggable)
+
+| Chuẩn | Nội dung |
+|---|---|
+| **400ZR** | Coherent 400G cho DCI cự ly ngắn (Implementation Agreement OIF) |
+| **OpenZR+ / 800ZR** | Mở rộng cự ly / tốc độ; nền tảng IPoDWDM |
+
+Trang OIF: [oiforum.com](https://www.oiforum.com/).
+
+## Tài liệu public của các hãng (ví dụ minh hoạ, có ghi nguồn)
+
+Dùng để đối chiếu công nghệ thực tế. Luôn kiểm tra ngày phát hành vì thông số cập nhật liên tục.
+
+| Hãng | Chủ đề công khai | Ghi chú |
+|---|---|---|
+| **Nokia** | PSE-6s coherent DSP; ICE7 1.2 Tb/s; dòng 1830 (optical transport) | Số liệu per-λ và tính năng theo trang sản phẩm public. |
+| **Ciena** | WaveLogic 6 (tới 1.6 Tb/s); dòng 6500 / WaveServer | Nguồn: thông cáo & datasheet public. |
+| **Infinera** (nay thuộc Nokia) | ICE6 800G; nền tảng GX | Tài liệu kỹ thuật & white paper. |
+| **Huawei** | OptiX OSN; giải pháp C+L super-band | Tài liệu public khu vực. |
+| **Cisco** | QSFP-DD/OSFP 800G ZR/ZR+; NCS 1000 | Datasheet coherent pluggable public. |
+
+<Callout type="caution" title="Về tính cập nhật">
+
+Thị trường coherent thay đổi rất nhanh (per-λ đã đi 400G → 800G → 1.2T → 1.6T chỉ trong vài năm). Mỗi lần dùng một con số cụ thể trong bài, ghi rõ nguồn + năm. Khi review định kỳ, đối chiếu lại datasheet mới nhất.
+
+</Callout>
+
+## Cách academy tự kiểm tra nội dung
+
+1. Mọi công thức/hằng số → gắn với chuẩn ITU-T hoặc dẫn xuất vật lý rõ ràng.
+2. Mọi con số sản phẩm → gắn nguồn hãng + năm; đánh dấu nếu là "tham khảo bậc độ lớn".
+3. Review định kỳ: rà lại các trang có số liệu thị trường (per-λ, form factor) theo chu kỳ.

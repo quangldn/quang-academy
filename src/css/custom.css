@@ -1,0 +1,40 @@
+/**
+ * DWDM Academy — global theme.
+ * Palette: xanh quang học (optical blue/teal) gợi phổ ánh sáng.
+ */
+
+:root {
+  --ifm-color-primary: #0a72b5;
+  --ifm-color-primary-dark: #0967a4;
+  --ifm-color-primary-darker: #08619b;
+  --ifm-color-primary-darkest: #06507f;
+  --ifm-color-primary-light: #0b7dc6;
+  --ifm-color-primary-lighter: #0c83cf;
+  --ifm-color-primary-lightest: #cfe8f7;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  --ifm-font-family-base: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #4cb3e8;
+  --ifm-color-primary-dark: #2fa5e3;
+  --ifm-color-primary-darker: #1f9ee1;
+  --ifm-color-primary-darkest: #1580ba;
+  --ifm-color-primary-light: #69c1ed;
+  --ifm-color-primary-lighter: #79c8ef;
+  --ifm-color-primary-lightest: #16405a;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  --ifm-background-surface-color: #16202b;
+}
+
+/* KaTeX-free: hiển thị công thức bằng $...$ dạng text — không cần cài math plugin.
+   Nếu sau này bật remark-math + KaTeX, có thể bỏ phần dưới. */
+.katex-fallback { font-family: var(--ifm-font-family-monospace); }
+
+/* Bảng dễ đọc hơn cho nội dung kỹ thuật */
+table { display: table; width: 100%; }
+article table td, article table th { vertical-align: top; }
+
+/* Tiêu đề bài học gọn */
+.markdown h1:first-child { font-size: 2rem; }

@@ -1,0 +1,88 @@
+---
+sidebar_position: 1
+title: 3.1 — Coherent optics & điều chế
+description: Vì sao coherent thay thế IMDD, điều chế đa mức, phân cực kép, và đánh đổi dung lượng ↔ khoảng cách.
+---
+
+# 3.1 — Coherent optics & điều chế
+
+<Callout type="goal">
+
+Hiểu vì sao **coherent** trở thành mặc định cho mọi tuyến 100G+; đọc được **constellation** của các định dạng điều chế; tính bit-rate mỗi kênh; và nắm được đánh đổi trung tâm của thiết kế coherent: **dung lượng ↔ khoảng cách**.
+
+</Callout>
+
+## Trước coherent: IMDD và giới hạn của nó
+
+Hệ cũ dùng **IMDD** (Intensity Modulation / Direct Detection): bật/tắt cường độ ánh sáng (1/0), máy thu chỉ đo *độ sáng*. Đơn giản, nhưng vứt bỏ hai chiều thông tin mà sóng ánh sáng mang: **pha** và **phân cực**. Ở 100G+, IMDD hết đường: tán sắc và PMD làm méo tín hiệu, và không có cách nào nhồi thêm bit trên mỗi ký hiệu.
+
+## Coherent: dùng cả biên độ, pha và phân cực
+
+Máy thu coherent trộn tín hiệu tới với một **laser dao động nội (local oscillator)** và thu lại **cả biên độ lẫn pha**, trên **cả hai phân cực** vuông góc (X và Y). Điều này mở khoá ba thứ cùng lúc:
+
+1. **Điều chế đa mức**: mã hoá nhiều bit trên mỗi ký hiệu bằng cách đặt điểm ở các vị trí (biên độ, pha) khác nhau.
+2. **Phân cực kép (DP — Dual Polarization)**: gửi hai luồng độc lập trên hai phân cực → **gấp đôi** dung lượng.
+3. **Bù méo bằng số (DSP)**: tán sắc (CD) và PMD được bù **trong miền số** ở máy thu — xoá bỏ hoàn toàn dàn DCF cồng kềnh của thời IMDD.
+
+## Constellation: bản đồ của các ký hiệu
+
+Ta biểu diễn mỗi ký hiệu như một điểm trên mặt phẳng **I–Q** (In-phase / Quadrature). Số điểm quyết định số bit mỗi ký hiệu:
+
+| Format | Điểm | bits/symbol |
+|---|---|---|
+| BPSK | 2 | 1 |
+| QPSK | 4 | 2 |
+| 8QAM | 8 | 3 |
+| 16QAM | 16 | 4 |
+| 32QAM | 32 | 5 |
+| 64QAM | 64 | 6 |
+
+Bit-rate mỗi kênh (đã tính phân cực kép):
+
+$$
+R = \text{baud} \times \frac{\text{bits}}{\text{symbol}} \times 2\ (\text{DP})
+$$
+
+Ví dụ 96 GBd × 4 (16QAM) × 2 = **768 Gb/s** line rate — một bước sóng lớp **~800G** (còn ~600G payload sau khi trừ overhead FEC). Muốn một bước sóng **400G** thì dùng ~60 GBd DP-16QAM (≈ 480 Gb/s line → 400G net). Đẩy baud lên ~130 GBd và dùng 16QAM/PCS là cách các hệ hiện đại đạt **800G–1.2T mỗi bước sóng** (theo tài liệu public: Nokia PSE-6s đạt tới 1.2 Tb/s trên nền ICE7, Ciena WaveLogic 6 tới 1.6 Tb/s).
+
+## Chơi thử: đánh đổi dung lượng ↔ nhiễu
+
+Chọn định dạng điều chế và kéo **baud rate** để xem bit-rate/kênh. Rồi kéo **"nhiễu mô phỏng"**: để ý 64QAM có các điểm sát nhau nên "vỡ" (chồng lấn) sớm hơn nhiều so với QPSK. Đó chính là lý do format càng dày càng cần **OSNR cao** và chỉ đi được **khoảng cách ngắn** hơn.
+
+<ConstellationExplorer />
+
+## Đánh đổi trung tâm: dung lượng ↔ khoảng cách
+
+Đây là trực giác quan trọng nhất của Cấp 3:
+
+- **Nhiều bit/symbol (64QAM)** → dung lượng cao, nhưng điểm sát nhau → cần **OSNR cao** → **cự ly ngắn** (metro, DCI).
+- **Ít bit/symbol (QPSK)** → dung lượng thấp hơn, điểm xa nhau → chịu nhiễu tốt → **đường dài / xuyên biển**.
+
+Kỹ sư coherent không hỏi "format nào tốt nhất", mà hỏi **"với OSNR/GSNR có được ở khoảng cách này, format nào cho dung lượng cao nhất mà vẫn đủ margin?"** Đó là bài toán tối ưu bạn sẽ làm ở Capstone Cấp 3. Các kỹ thuật hiện đại như **probabilistic constellation shaping (PCS)** còn cho phép điều chỉnh liên tục giữa các nấc này thay vì nhảy bậc (bài 3.2).
+
+<Quiz
+  question="Một kênh 130 GBd, DP-16QAM. Bit-rate thô (line rate) xấp xỉ bao nhiêu?"
+  hint="R = baud × bits/symbol × 2 (DP). 16QAM = 4 bits/symbol."
+  options={[
+    {text: '≈ 1.04 Tb/s', correct: true, explain: '130 × 4 × 2 = 1040 Gb/s ≈ 1.04 Tb/s (trước khi trừ overhead FEC).'},
+    {text: '≈ 520 Gb/s', explain: 'Bạn quên nhân 2 cho phân cực kép (DP).'},
+    {text: '≈ 260 Gb/s', explain: 'Đó là chỉ 1 phân cực với 2 bits/symbol — sai cả hai yếu tố.'},
+  ]}
+/>
+
+<Quiz
+  question="Vì sao QPSK được ưa dùng cho tuyến xuyên biển (đường siêu dài) hơn 64QAM?"
+  options={[
+    {text: 'Điểm constellation xa nhau nên chịu OSNR thấp — hợp với tuyến dài OSNR cạn', correct: true, explain: 'Đúng — đường dài OSNR tụt mạnh; QPSK cần OSNR thấp nên vẫn chạy được.'},
+    {text: 'Vì QPSK cho dung lượng cao hơn 64QAM', explain: 'Ngược lại — QPSK ít bit/symbol hơn; ta đổi dung lượng lấy cự ly.'},
+    {text: 'Vì QPSK không cần DSP', explain: 'Mọi format coherent đều dựa vào DSP; đó không phải lý do.'},
+  ]}
+/>
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+Nguyên lý coherent, điều chế đa mức và phân cực kép là kiến thức chuẩn ngành. Con số dung lượng per-λ (1.2T, 1.6T) trích từ **tài liệu public của Nokia (PSE-6s / ICE7)** và **Ciena (WaveLogic 6)** — xem mục [Chỉ mục tài liệu hãng](../reference/vendor-index). Giá trị required-OSNR trong công cụ là tham khảo bậc độ lớn.
+
+</Callout>
+
+➡️ Tiếp theo: [3.2 — FEC & spectral efficiency](./3-2-fec-spectral-efficiency)

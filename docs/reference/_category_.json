@@ -1,0 +1,12 @@
+{
+  "label": "Tham khảo",
+  "position": 6,
+  "collapsible": true,
+  "collapsed": true,
+  "link": {
+    "type": "generated-index",
+    "title": "Khu vực tham khảo",
+    "description": "Từ điển thuật ngữ song ngữ, chỉ mục chuẩn ITU-T / OIF và tài liệu public của các hãng, và thư viện công cụ tương tác.",
+    "slug": "/reference"
+  }
+}
