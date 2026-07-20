@@ -281,3 +281,60 @@
   cursor: pointer;
   font-size: 0.8rem;
 }
+
+/* ===== Chart (line/bar SVG) ===== */
+.chartWrap { margin: 0.6rem 0; }
+.chart {
+  width: 100%;
+  background: var(--ifm-color-emphasis-100);
+  border-radius: 10px;
+}
+.chartAxis { stroke: var(--ifm-color-emphasis-400); stroke-width: 1; }
+.chartGrid { stroke: var(--ifm-color-emphasis-200); stroke-width: 1; }
+.chartTick { fill: var(--ifm-color-emphasis-600); font-size: 9px; }
+.chartAxisLabel { fill: var(--ifm-color-emphasis-600); font-size: 10px; }
+.chartLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--ifm-color-emphasis-700);
+}
+.chartLegend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.chartLegend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+
+/* ===== OTN nested container ===== */
+.otnStack { margin: 1rem 0; }
+.otnOtu, .otnOdu, .otnOpu {
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem 0.7rem;
+  position: relative;
+}
+.otnOtu { border: 1.5px solid #a855f7; background: rgba(168,87,247,0.08); }
+.otnOdu { border: 1.5px solid #3b82f6; background: rgba(59,130,246,0.08); margin-top: 1.4rem; }
+.otnOpu { border: 1.5px solid #22d3ee; background: rgba(34,211,238,0.08); margin-top: 1.4rem; }
+.otnTag {
+  position: absolute;
+  top: -0.72rem;
+  left: 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.05rem 0.5rem;
+  border-radius: 5px;
+  background: var(--ifm-background-surface-color);
+  color: var(--ifm-color-emphasis-800);
+  border: 1px solid var(--ifm-color-emphasis-300);
+}
+.otnClient {
+  margin-top: 0.9rem;
+  text-align: center;
+  font-family: var(--ifm-heading-font-family, inherit);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--ifm-heading-color);
+  padding: 0.5rem;
+  border-radius: 8px;
+  background: rgba(34,211,238,0.14);
+}
