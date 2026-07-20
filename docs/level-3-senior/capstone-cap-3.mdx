@@ -1,10 +1,107 @@
 ---
 sidebar_position: 7
 title: "★ Capstone Cấp 3 — Mạng long-haul coherent"
+description: Thiết kế tuyến long-haul đa span coherent — tối ưu launch power, tìm GSNR đỉnh, chọn modulation theo margin và quyết định QPSK hay Raman.
+concepts: [coherent, gsnr, qam, margin]
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # ★ Capstone Cấp 3 — Mạng long-haul coherent
 
-<LessonStub objective={"Thiết kế mạng đa span: chọn modulation/baud, tính GSNR & margin, tối ưu launch power."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ ghép được toàn bộ Cấp 3 vào **một bài toán thật**: dùng đường cong launch power để tìm **GSNR đỉnh** của tuyến đa span, đối chiếu với **bảng required GSNR** để chọn **modulation cao nhất còn đủ margin**, và ra quyết định kỹ thuật có cơ sở khi tuyến thiếu margin — **hạ format (QPSK)** hay **bật khuếch đại Raman**. Cuối cùng bạn kết luận được **dung lượng và khoảng cách** khả thi của tuyến.
+
+</Callout>
+
+Đây là bài tổng hợp. Bạn sẽ cần mọi thứ đã học: coherent/DSP (3.1), FEC và spectral efficiency (3.2), phi tuyến và launch power tối ưu (3.3), GSNR và margin (3.4), thiết kế mesh/phổ (3.5) và băng tần mở rộng (3.6). Không có công cụ mới — chỉ có kỷ luật ghép chúng lại đúng thứ tự.
+
+## Đề bài: tuyến long-haul cho sẵn
+
+Một tuyến điểm–điểm cần thiết kế lớp đường (line system):
+
+- **Số span:** 15 span nối tiếp.
+- **Chiều dài span:** 80 km mỗi span → tổng **1200 km**.
+- **Suy hao span:** sợi G.652 điển hình $0.23\ \text{dB/km}$ → $\approx 18.4\ \text{dB}$ suy hao mỗi span (đã gộp mối hàn/connector).
+- **Khuếch đại:** EDFA lump-amplified sau mỗi span, **NF $= 5.5\ \text{dB}$**, chạy chế độ bù đủ suy hao span (gain $\approx 18.4\ \text{dB}$).
+- **Transponder:** coherent DP, **64 GBd**, lưới **75 GHz**, đầy C-band **64 kênh**, có SD-FEC (~15% overhead).
+
+Câu hỏi kỹ thuật: **format nào cắm được, cho dung lượng bao nhiêu, và cần Raman không?**
+
+Bảng required GSNR — mức GSNR back-to-back tối thiểu để một format đạt post-FEC BER sạch (giá trị **điển hình theo bậc độ lớn** cho DP-QAM + SD-FEC hiện đại, không phải thông số một hãng):
+
+| Format (DP) | Net rate @64 GBd | Required GSNR (điển hình) |
+|---|---|---|
+| DP-QPSK | ~200G | ~9.5 dB |
+| DP-8QAM | ~300G | ~13.0 dB |
+| DP-16QAM | ~400G | ~16.5 dB |
+| DP-64QAM | ~600G | ~23.0 dB |
+
+Nguyên tắc nghiệm thu: **margin $=$ GSNR thực $-$ required GSNR**, và ta yêu cầu margin còn lại **ít nhất ~2 dB** để nuốt aging, ripple, penalty filtering tích luỹ và biến động thực tế.
+
+## Thực hành: tìm launch tối ưu và GSNR đỉnh
+
+Nhớ lại đường cong "nón" từ 3.3: GSNR là hàm của launch power mỗi kênh. Công suất thấp thì **ASE** chi phối (GSNR tăng theo công suất); công suất cao thì **NLI bậc ba** ($P_\text{NLI} \propto P^3$) lấn át (GSNR giảm). Giữa hai vùng là **đỉnh** — launch tối ưu, nơi GSNR cực đại và cũng là trần chất lượng của tuyến.
+
+Dùng công cụ dưới đây với thông số đề bài (15 span, ~18.4 dB/span, NF 5.5 dB). Kéo launch power và đọc đỉnh:
+
+<NonlinearOptimizer />
+
+Với cấu hình này, đỉnh rơi vào **launch $\approx -1.5\ \text{dBm/kênh}$** và **GSNR đỉnh $\approx 15.8\ \text{dB}$**. Hai quan sát cần khắc cốt:
+
+- Đẩy launch cao hơn đỉnh **không** cứu được tuyến: mỗi 1 dB công suất thêm làm NLI tăng ~3 dB, GSNR đi xuống. Đây là sai lầm kinh điển "cứ tăng power cho chắc".
+- Con số 15.8 dB này là **trần cứng** ở lớp quang. Mọi lựa chọn format phải sống dưới nó.
+
+## Chọn modulation cao nhất còn đủ margin
+
+Đối chiếu GSNR đỉnh $15.8\ \text{dB}$ với bảng required:
+
+| Format | Required | Margin $=15.8-$Req | Kết luận |
+|---|---|---|---|
+| DP-64QAM | 23.0 | $-7.2$ dB | Loại — thiếu xa |
+| DP-16QAM | 16.5 | $-0.7$ dB | **Không đạt** (âm, chưa nói tới 2 dB dự phòng) |
+| DP-8QAM | 13.0 | $+2.8$ dB | Đạt, margin vừa đủ |
+| DP-QPSK | 9.5 | $+6.3$ dB | Đạt, rất dư |
+
+DP-16QAM (mục tiêu 400G/kênh) **hụt margin**: $15.8 - 16.5 = -0.7\ \text{dB}$, thậm chí còn âm. Nếu chỉ nhìn bảng, format cao nhất **còn đủ margin** là **DP-8QAM (~300G/kênh)** với $+2.8\ \text{dB}$ dự phòng — chấp nhận được.
+
+Nhưng trước khi chốt 8QAM, phải trả lời câu hỏi thật sự: có cách nào **giữ 16QAM** không? Vì bước từ 400G xuống 300G mỗi kênh, nhân với 64 kênh, là mất **~6.4 Tb/s** dung lượng.
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+Đây chính là chỗ thiết kế tách khỏi lý thuyết: khi 16QAM hụt ~1 dB, kỹ sư có hai đòn bẩy, và chọn sai làm hỏng cả bài toán CapEx/OpEx.
+
+**Phương án A — hạ xuống DP-QPSK (hoặc 8QAM).** Đơn giản nhất, chỉ là cấu hình phần mềm trên transponder. QPSK cho margin $+6.3\ \text{dB}$ — tuyến cực kỳ bền, chịu được aging và cả khi sau này nối dài thêm span. Giá phải trả: dung lượng mỗi kênh tụt còn 200G. Chọn hướng này khi mục tiêu là **reach tối đa / độ tin cậy / vận hành đơn giản**, hoặc khi lưu lượng chưa cần tới 400G/kênh.
+
+**Phương án B — bật khuếch đại Raman.** Raman phân tán (distributed) bơm ngược làm sợi tự khuếch đại dọc theo span, kéo **NF hiệu dụng của tuyến xuống**, thường cải thiện GSNR thêm **~3–4 dB**. Áp vào đây: $15.8 + 3.5 \approx 19.3\ \text{dB}$ → margin cho 16QAM thành $19.3 - 16.5 = +2.8\ \text{dB}$ — **đủ chuẩn**, giữ nguyên 400G/kênh. Giá phải trả: bơm Raman công suất cao (rủi ro an toàn quang, cần APR/interlock), thêm CapEx, thêm điểm hỏng và độ phức tạp vận hành.
+
+**Quyết định kỹ thuật.** Nếu tuyến bị **ràng buộc dung lượng** (cần 400G/kênh để đạt mục tiêu Tb/s), Raman là đầu tư hợp lý: nó cứu đúng 1 dB đang thiếu và bảo toàn gấp đôi bit so với tụt xuống QPSK. Nếu tuyến **thừa dung lượng nhưng cần độ bền/đơn giản**, hạ format rẻ hơn và an toàn hơn. Một lối thứ ba tinh tế hơn từ 3.2: dùng **PCS** đặt SE ở nấc giữa 8QAM và 16QAM để bám sát đúng 15.8 dB thay vì nhảy bậc rời rạc — vắt kiệt bit mà không cần Raman.
+
+<Quiz question="Tuyến 15 span có GSNR đỉnh 15.8 dB tại launch −1.5 dBm/kênh. Kỹ sư muốn thêm margin nên nâng launch lên +2 dBm/kênh. GSNR sẽ ra sao?" hint="Đỉnh nằm ở −1.5 dBm; +2 dBm là đã qua bên phải đỉnh." options={[{text:'Giảm xuống dưới 15.8 dB, vì đã vượt đỉnh nên NLI bậc ba chi phối và ăn mòn GSNR', correct:true, explain:'Đúng. Qua đỉnh, mỗi 1 dB công suất thêm làm NLI tăng ~3 dB; GSNR đi xuống chứ không lên. Muốn thêm margin phải hạ NF (Raman) hoặc hạ format, không phải tăng power.'},{text:'Tăng thêm ~3.5 dB vì tín hiệu mạnh hơn luôn cho SNR tốt hơn', explain:'Chỉ đúng ở vùng linear-limited bên trái đỉnh. Tuyến này đang ở đỉnh; tăng nữa là vào vùng phi tuyến.'},{text:'Không đổi vì GSNR chỉ phụ thuộc NF của EDFA', explain:'NF quyết định phần ASE, nhưng NLI phụ thuộc launch power. Tăng power làm NLI tăng và GSNR giảm.'}]} />
+
+## Kết luận: dung lượng và khoảng cách
+
+Tổng hợp cho tuyến **1200 km / 15 span**:
+
+- **Không Raman:** format cao nhất đủ margin là **DP-8QAM ~300G/kênh** → $64 \times 300\text{G} \approx 19.2\ \text{Tb/s}$. Đơn giản, không bơm Raman.
+- **Có Raman:** GSNR lên ~19.3 dB, giữ **DP-16QAM ~400G/kênh** → $64 \times 400\text{G} \approx 25.6\ \text{Tb/s}$. Thêm ~6.4 Tb/s, đổi bằng CapEx/độ phức tạp Raman.
+- **Ưu tiên độ bền:** **DP-QPSK ~200G/kênh** ($64 \times 200\text{G} \approx 12.8\ \text{Tb/s}$), margin $+6.3\ \text{dB}$ — dự phòng cho nối dài tuyến về sau.
+
+Không có đáp án "đúng" duy nhất; đáp án phụ thuộc **mục tiêu dung lượng và triết lý vận hành** — đó chính là tư duy Cấp 3.
+
+**Thử thách — kéo dài tuyến.** Tăng lên **20 span (1600 km)**, giữ nguyên NF và baud. Chạy lại công cụ: launch tối ưu tụt nhẹ, GSNR đỉnh rơi xuống **~14.3 dB** (ASE cộng dồn thêm, tỉ lệ ~ $10\log_{10}(20/15) \approx 1.25\ \text{dB}$, cộng NLI). Bây giờ:
+
+- 16QAM (req 16.5) hụt $-2.2\ \text{dB}$ — **Raman gần như bắt buộc** nếu muốn 400G ($14.3 + 3.5 = 17.8$ → margin $+1.3\ \text{dB}$, vẫn hơi sát).
+- 8QAM (req 13.0) chỉ còn margin $+1.3\ \text{dB}$ — dưới ngưỡng 2 dB, rủi ro.
+- Lối an toàn: **QPSK** (margin $+4.8\ \text{dB}$) hoặc **PCS** đặt SE ~2.5 bit/sym để lấy đúng margin mong muốn.
+
+Rút ra quy luật: **mỗi lần nhân đôi khoảng cách, bạn mất ~3 dB GSNR** — và vì SE cần SNR tăng theo mũ (3.2), reach dài thêm buộc format phải tụt bậc, hoặc phải "mua lại" dB bằng Raman/băng tần mở rộng (3.6).
+
+<Quiz question="Kéo tuyến từ 15 lên 20 span làm GSNR đỉnh tụt còn ~14.3 dB. Đâu là kết luận thiết kế đúng nhất?" hint="Đối chiếu 14.3 dB với bảng required và ngưỡng margin ~2 dB." options={[{text:'16QAM cần Raman để đủ margin; nếu không muốn Raman thì hạ về QPSK (hoặc dùng PCS đặt SE trung gian)', correct:true, explain:'Đúng. 14.3 dB không đủ 2 dB dự phòng cho 16QAM (req 16.5) hay kể cả 8QAM (req 13, chỉ còn 1.3 dB). Raman kéo GSNR lên cho 16QAM, hoặc hạ format/PCS để bám đúng GSNR thực có.'},{text:'Cứ giữ 16QAM và tăng launch power thêm 3 dB để bù lại 3 dB GSNR đã mất', explain:'Sai — tuyến đã ở đỉnh; tăng power làm NLI tăng và GSNR còn tụt thêm. Không bù được bằng power.'},{text:'GSNR không đổi vì baud và NF giữ nguyên, nên vẫn chạy 16QAM thoải mái', explain:'Sai — thêm span là thêm chặng ASE cộng dồn, GSNR chắc chắn giảm dù NF mỗi EDFA không đổi.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+Mô hình GN/EGN cho NLI và đường cong launch power tối ưu dựa trên tài liệu học thuật public (Poggiolini et al., *The GN-Model of Fiber Non-Linear Propagation*). Sợi tham chiếu theo **ITU-T G.652**; khung FEC/OTN theo **ITU-T G.709 / G.975.1**. Khái niệm GSNR và margin design theo thực hành thiết kế coherent phổ biến và tài liệu **OIF** về giao diện coherent. Các con số required GSNR, cải thiện Raman (~3–4 dB) và net coding gain là **giá trị điển hình theo bậc độ lớn**, trung lập hãng — luôn kiểm chứng bằng datasheet transponder và mô phỏng tuyến thực tế trước khi cam kết thiết kế.
+
+</Callout>
+
+➡️ Tiếp theo: **Cấp 4 — Kiến trúc & tự động hoá** — từ tuyến điểm–điểm bước lên mạng: OTN framing, IPoDWDM và ZR/ZR+, bảo vệ/khôi phục và điều khiển SDN cho lớp quang.

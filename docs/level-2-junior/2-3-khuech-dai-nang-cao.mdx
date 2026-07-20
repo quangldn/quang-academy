@@ -1,10 +1,129 @@
 ---
 sidebar_position: 3
 title: "2.3 — Khuếch đại nâng cao"
+description: "EDFA gain tilt/ripple, gain transient và AGC, dual-stage; Raman distributed, hybrid, khuếch đại C+L và điều khiển APC/AGC."
+concepts: [edfa, raman, osnr, ase]
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 2.3 — Khuếch đại nâng cao
 
-<LessonStub objective={"EDFA gain tilt/transient, Raman/hybrid, khuếch đại C+L, điều khiển AGC/APC."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ:
+
+- Hiểu gain tilt/ripple của EDFA và cách bù bằng GFF, cùng vấn đề gain transient khi thêm/rớt kênh và vai trò AGC.
+- Nắm kiến trúc dual-stage EDFA (chèn DCM/VOA giữa hai tầng) và khi nào dùng Raman (distributed gain, co/counter-pump, hybrid).
+- Phân biệt điều khiển APC và AGC, và biết logic chọn EDFA thuần hay Raman theo suy hao span.
+
+</Callout>
+
+## EDFA nâng cao: gain tilt, ripple và GFF
+
+EDFA không khuếch đại phẳng theo bước sóng. Phổ gain nội tại của erbium có hình dạng đặc trưng (đỉnh quanh 1531 nm, vùng phẳng hơn 1540–1560 nm), nên nếu không xử lý thì các kênh khác nhau ra khỏi ampli với gain khác nhau — gọi là **gain ripple** (gợn theo bước sóng) và **gain tilt** (độ dốc tổng thể của phổ gain).
+
+Hai hiện tượng cần tách bạch:
+
+- **Ripple**: sai lệch cục bộ giữa kênh này với kênh kia, cố định theo thiết kế phổ.
+- **Tilt**: độ nghiêng phổ gain, phụ thuộc **mức inversion** của erbium — mà mức inversion lại phụ thuộc gain đang chạy. Khi gain thực tế lệch khỏi gain thiết kế (do span dài hơn/ngắn hơn danh định), phổ nghiêng đi: gain cao thì phổ nghiêng về phía bước sóng ngắn, gain thấp thì nghiêng ngược lại.
+
+Để làm phẳng ripple, nhà sản xuất chèn **GFF (Gain Flattening Filter)** — một filter thụ động có đặc tuyến suy hao ngược với phổ gain, đặt ở điểm làm việc danh định. GFF chỉ phẳng đúng tại một mức inversion; nếu ampli chạy lệch điểm, tilt dư xuất hiện. Vì vậy line amplifier thường có thêm **VOA điều chỉnh được** và đôi khi **tilt control** để nắn lại độ dốc theo từng span.
+
+Vì sao kỹ sư quan tâm: gain tilt tích lũy qua chuỗi nhiều ampli (cascade). Mỗi ampli nghiêng vài phần mười dB, sau 8–10 span thì kênh mép có thể chênh vài dB so với kênh giữa băng, kéo theo chênh lệch OSNR giữa các kênh. Đây là lý do phải cân bằng công suất per-channel tại ROADM và giữ ampli chạy đúng điểm gain thiết kế.
+
+## Gain transient và điều khiển AGC
+
+Khi một hệ thống đang chạy N kênh và đột ngột **rớt một số kênh** (đứt sợi nhánh, tắt kênh, sự cố ROADM), tổng công suất vào EDFA giảm đột ngột. Vì erbium bơm bằng laser giữ năng lượng dự trữ, ampli cố duy trì tổng công suất ra như cũ — nên **gain dồn hết vào các kênh còn sống**, làm công suất per-channel của chúng vọt lên (**gain transient dương**). Ngược lại, **thêm kênh** đột ngột làm gain per-channel các kênh cũ tụt xuống (transient âm).
+
+Hệ quả thực tế:
+
+- Transient dương có thể đẩy công suất kênh vào vùng phi tuyến (SPM, XPM tăng) hoặc vượt ngưỡng an toàn receiver.
+- Transient xảy ra rất nhanh (micro-giây tới mili-giây), lan truyền và **cộng dồn** qua chuỗi ampli — cuối tuyến biên độ dao động lớn hơn đầu tuyến.
+
+Giải pháp là **AGC (Automatic Gain Control)** nhanh: ampli đo công suất vào/ra và điều chỉnh dòng bơm để **giữ gain (dB) không đổi bất kể số kênh**, thay vì giữ công suất ra không đổi. AGC tốt phản hồi trong vài chục micro-giây nhờ vòng điều khiển điện tử nhanh kết hợp mạch feed-forward. Khi gain được giữ cố định, kênh còn lại không bị vọt công suất khi kênh khác rớt.
+
+<Quiz question="Hệ thống đang chạy 40 kênh, đột ngột rớt 32 kênh do đứt một nhánh. Nếu EDFA điều khiển theo kiểu giữ tổng công suất ra không đổi, điều gì xảy ra với 8 kênh còn lại?" hint="Tổng công suất ra bị ép giữ nguyên nhưng chia cho ít kênh hơn." options={[{text:'Công suất per-channel của 8 kênh còn lại vọt lên mạnh (gain transient dương), có thể vào vùng phi tuyến hoặc quá tải receiver', correct:true, explain:'Đúng: năng lượng gain dồn vào ít kênh hơn. Đây chính là lý do dùng AGC giữ gain thay vì giữ tổng công suất.'},{text:'8 kênh còn lại giảm công suất và tụt OSNR', explain:'Ngược lại: giữ tổng công suất ra không đổi nghĩa là ít kênh hơn sẽ nhận nhiều công suất hơn mỗi kênh.'},{text:'Không đổi vì EDFA vốn khuếch đại độc lập từng kênh', explain:'EDFA là môi trường gain chung; các kênh cạnh tranh nhau kho năng lượng erbium, không độc lập.'}]} />
+
+## Dual-stage EDFA: chèn DCM/VOA giữa hai tầng
+
+Line amplifier hiện đại thường là **dual-stage**: tầng 1 (pre-amp) tối ưu cho **noise figure thấp**, tầng 2 (booster) tối ưu cho **công suất ra cao**. Điểm hay là **mid-stage access** — khoảng hở giữa hai tầng có suy hao thấp ảnh hưởng ít tới OSNR tổng, dùng để chèn:
+
+- **DCM (Dispersion Compensation Module)**: bù tán sắc bằng DCF hoặc grating. DCM suy hao vài dB; đặt giữa hai tầng để tầng 1 đã nâng tín hiệu (giữ OSNR) trước khi qua DCM, rồi tầng 2 bù lại suy hao. Lưu ý: hệ coherent hiện đại bù CD bằng DSP nên nhiều thiết kế mới **bỏ DCM**, để mid-stage trống hoặc chỉ đặt VOA.
+- **VOA (Variable Optical Attenuator)**: nắn công suất và tilt, cho phép hai tầng chạy đúng điểm gain thiết kế (giữ phổ phẳng) trong khi vẫn đạt gain tổng mong muốn.
+
+Nguyên tắc OSNR then chốt: **tầng đầu tiên quyết định noise figure của cả chuỗi** (công thức Friis). Vì vậy tuyệt đối tránh đặt suy hao lớn (DCM, VOA nhiều) **trước** tầng 1; luôn đưa vào mid-stage sau khi tín hiệu đã được pre-amp nâng lên.
+
+```
+  Vào ──► [Tầng 1: pre-amp, NF thấp] ──► mid-stage ──► [Tầng 2: booster, Pout cao] ──► Ra
+                                          │
+                                     DCM / VOA
+                                  (bù CD, nắn tilt)
+```
+
+## Raman: distributed gain và hybrid
+
+EDFA là **lumped amplifier** — gain tập trung tại một điểm. **Raman amplifier** thì khác: bơm laser công suất cao (thường 1450–1480 nm cho băng C) vào chính **sợi truyền dẫn**, khuếch đại tín hiệu phân tán dọc theo sợi qua hiệu ứng Stimulated Raman Scattering. Gain phân bố (**distributed gain**) mang lợi ích lớn: tín hiệu được "đỡ" ngay trong span, trước khi suy hao xuống sát mức nhiễu, nên **OSNR hiệu dụng của span tốt hơn** so với chỉ dùng EDFA — tương đương giảm noise figure hệ thống vài dB.
+
+Hai kiểu bơm:
+
+- **Counter-pump (bơm ngược chiều tín hiệu)**: phổ biến nhất. Bơm đặt ở đầu thu của span, khuếch đại mạnh ở đoạn cuối span (nơi tín hiệu yếu nhất) — cải thiện OSNR tốt, ít nhạy nhiễu bơm (RIN) vì trung bình hóa theo chiều ngược.
+- **Co-pump (bơm cùng chiều)**: khuếch đại ngay đầu span; cho gain sớm hơn nhưng dễ truyền nhiễu RIN của laser bơm sang tín hiệu, yêu cầu laser bơm chất lượng cao. Thường dùng bổ sung cho span rất dài.
+
+Trong thực tế hay dùng **hybrid Raman + EDFA**: Raman counter-pump lo phần OSNR ở cuối span, EDFA lo gain tổng và công suất ra. Đây là cấu hình chuẩn cho **span dài / suy hao lớn** (ví dụ vượt 30–35 dB span loss) hoặc tuyến submarine/long-haul mà EDFA thuần không đủ OSNR budget.
+
+<Callout type="note" title="Lưu ý an toàn Raman">
+
+Công suất bơm Raman rất cao (thường trên 500 mW, có thể vài W). Đây là mức nguy hiểm mắt và có nguy cơ **fiber fuse** nếu connector bẩn. Luôn tuân thủ APR (Automatic Power Reduction) và quy trình an toàn laser class khi thao tác.
+
+</Callout>
+
+## Khuếch đại băng C+L
+
+Khi cần gấp đôi dung lượng phổ, hệ thống mở rộng từ băng C (khoảng 1530–1565 nm) sang thêm **băng L (khoảng 1565–1625 nm)**. Erbium không khuếch đại tốt đều trên cả hai băng bằng một ampli, nên kiến trúc C+L **tách hai nhánh song song**:
+
+- Một **band splitter/coupler** tách tín hiệu thành nhánh C và nhánh L.
+- Mỗi nhánh có **EDFA riêng** (EDFA băng L dùng sợi erbium dài hơn, điểm làm việc khác).
+- **Band combiner** ghép lại vào sợi.
+
+Điểm cần lưu ý: hai băng dùng chung một sợi nên có **tương tác SRS (Stimulated Raman Scattering) nội hệ** — công suất băng C có xu hướng "bơm" năng lượng sang băng L (bước sóng dài hơn), tạo tilt giữa hai băng. Thiết kế phải bù tilt liên băng này bằng cân bằng công suất và pre-tilt. Với Raman, việc bơm cũng phức tạp hơn (cần bước sóng bơm cho cả hai băng).
+
+## Điều khiển công suất: APC và AGC
+
+Hai chế độ điều khiển ampli cần phân biệt rõ:
+
+| Chế độ | Giữ cố định | Dùng ở đâu | Mục đích |
+| --- | --- | --- | --- |
+| **AGC** (Automatic Gain Control) | **Gain (dB)** không đổi bất kể số kênh | Line amplifier trong tuyến | Chống gain transient, giữ phổ phẳng khi kênh thay đổi |
+| **APC** (Automatic Power Control) | **Công suất ra** (tổng hoặc per-channel) tại mục tiêu | Booster/pre-amp tại node, đầu vào ROADM/mux | Đặt đúng launch power, ổn định mức vào receiver |
+
+Trực giác vận hành: **giữa tuyến dùng AGC** để khi kênh rớt các kênh còn lại không vọt công suất; **tại node đầu/cuối dùng APC** để nạp đúng công suất mỗi kênh vào span kế hoặc vào receiver. Nhiều hệ hiện đại còn có lớp điều khiển toàn tuyến (per-channel power control tại ROADM/WSS) phối hợp với AGC/APC của từng ampli để cân bằng OSNR đầu-cuối.
+
+<Quiz question="Vì sao line amplifier giữa tuyến thường chạy AGC (giữ gain dB) thay vì APC (giữ công suất ra)?" options={[{text:'Vì giữ gain cố định thì khi số kênh thay đổi, công suất per-channel của các kênh còn lại không bị dồn/hụt, tránh gain transient', correct:true, explain:'Đúng: AGC làm ampli trong suốt với biến động số kênh, mỗi kênh giữ nguyên mức của nó.'},{text:'Vì AGC cho công suất ra cao hơn APC', explain:'AGC không nhắm tăng công suất ra; nó nhắm ổn định gain khi tải kênh thay đổi.'},{text:'Vì APC không dùng được với EDFA', explain:'APC dùng tốt với EDFA — thường ở booster/pre-amp tại node. Vấn đề chỉ là chọn chế độ phù hợp vị trí.'}]} />
+
+## Khi nào dùng Raman
+
+Không phải span nào cũng cần Raman. Logic chọn điển hình:
+
+- **Span loss thấp/trung bình (dưới ~25–28 dB)**: EDFA thuần đủ OSNR budget. Đơn giản, rẻ, an toàn hơn.
+- **Span loss cao (trên ~30–35 dB) hoặc span rất dài**: EDFA thuần làm OSNR tụt dưới ngưỡng. Thêm **Raman counter-pump** (hybrid) để cải thiện OSNR hiệu dụng vài dB — thường đủ để cứu một span khó mà không phải chẻ span/xây thêm site.
+- **Ultra-long-haul / submarine**: Raman gần như bắt buộc, có khi cả co + counter pump.
+
+Đánh đổi khi thêm Raman: chi phí và độ phức tạp cao hơn, yêu cầu **connector cực sạch** (fiber fuse), quản lý an toàn laser, và độ nhạy với loại sợi (hiệu suất Raman phụ thuộc Aeff của sợi). Nguyên tắc kỹ sư: chỉ đưa Raman vào **những span thực sự thiếu OSNR** sau khi tính link budget, không rải đại trà.
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- **Gain tilt tích lũy** quyết định chênh lệch OSNR giữa các kênh cuối tuyến. Ampli chạy lệch điểm gain thiết kế (do span không đúng danh định) sinh tilt dư — phải bù bằng VOA/tilt control và cân bằng per-channel tại ROADM, nếu không kênh mép băng sẽ rớt trước.
+- **Gain transient** là rủi ro vận hành thật: một sự cố rớt kênh có thể đẩy kênh còn lại vào phi tuyến hoặc quá tải receiver ở cuối chuỗi ampli. AGC nhanh và thiết kế điều khiển đúng là bắt buộc, không phải tùy chọn.
+- **Đặt suy hao đúng chỗ**: DCM/VOA phải nằm mid-stage, không đặt trước tầng 1, nếu không noise figure cả chuỗi hỏng (Friis). Đây là lỗi thiết kế kinh điển làm OSNR budget thâm hụt.
+- **Raman là công cụ cứu span khó**, nhưng đi kèm rủi ro an toàn (công suất bơm cao, fiber fuse). Quyết định dùng phải dựa trên link budget cụ thể, kèm quy trình connector sạch và APR.
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+- ITU-T G.661, G.662, G.663, G.665 — định nghĩa và tham số ampli quang (EDFA, Raman): gain, NF, transient.
+- ITU-T G.692, G.694.1 — hệ WDM đa kênh và lưới tần số (bối cảnh băng C/L).
+- ITU-T G.680 — hiệu ứng cascade của các phần tử con quang (tilt/ripple tích lũy).
+- IEC 60825 — an toàn laser; APR/ALS cho hệ công suất cao (Raman).
+- Nguyên lý noise figure chuỗi: công thức Friis (lý thuyết hệ thống chung).
+
+</Callout>
+
+➡️ Tiếp theo: 2.4 — ROADM và định tuyến bước sóng: WSS, add/drop, colorless/directionless/contentionless và ràng buộc khi thiết kế mạng mesh quang.

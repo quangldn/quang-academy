@@ -1,10 +1,104 @@
 ---
 sidebar_position: 2
 title: "4.2 — Điều khiển & tự động hoá"
+description: SDN cho lớp quang — tách control/data plane, NETCONF/YANG & OpenConfig, GMPLS/ASON/PCE, streaming telemetry và intent-based/AI-assisted operations.
+concepts: [sdn, roadm]
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 4.2 — Điều khiển & tự động hoá
 
-<LessonStub objective={"SDN quang; NETCONF/YANG, OpenConfig; GMPLS/PCE; streaming telemetry; AI-assisted ops."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ:
+
+- Hiểu mô hình **SDN cho optical**: tách **control plane** khỏi **data plane**, vai trò của **SDN controller** và vì sao mô hình dữ liệu chuẩn hoá (**NETCONF/YANG, OpenConfig**) là điều kiện để vận hành đa hãng.
+- Phân biệt **control plane phân tán truyền thống** (GMPLS/ASON, PCE) với mô hình điều khiển tập trung của SDN, và khi nào dùng cái nào.
+- Nắm được **streaming telemetry** thay cho SNMP polling, và mức độ hợp lý của **intent-based & AI-assisted operations** — cái gì thật, cái gì mới là kỳ vọng.
+
+</Callout>
+
+## Tách control plane khỏi data plane
+
+Trong một ROADM/transponder truyền thống, phần mềm điều khiển (định tuyến bước sóng, tính công suất, khoá bảo vệ) nằm **ngay trên thiết bị**. Mỗi node tự quyết định cục bộ, và người vận hành cấu hình từng node qua CLI hoặc EMS/NMS của hãng.
+
+SDN đảo ngược cách bố trí đó. Ý tưởng cốt lõi:
+
+- **Data plane** (mặt phẳng truyền tải): phần cứng thực sự đẩy ánh sáng đi — WSS trong ROADM, EDFA, transponder coherent. Nó chỉ chuyển tiếp, không tự "suy nghĩ".
+- **Control plane** (mặt phẳng điều khiển): logic quyết định — định tuyến, gán bước sóng/khe phổ, tính công suất, kích hoạt bảo vệ — được **kéo ra ngoài**, tập trung tại một **SDN controller**.
+
+SDN controller giữ một **cái nhìn toàn cục** về topology, phổ đang dùng, margin từng tuyến. Nhờ đó nó có thể tính đường tối ưu trên toàn mạng thay vì để mỗi node quyết định cục bộ. Controller nói chuyện với thiết bị qua **southbound interface** (thường là NETCONF/gRPC), và cung cấp **northbound API** (REST/gRPC) cho lớp orchestration/OSS bên trên.
+
+Điểm khác biệt so với SDN trong mạng gói: lớp quang có **ràng buộc vật lý** không thể bỏ qua — OSNR/GSNR, phi tuyến, wavelength continuity, dải tần WSS. Vì thế SDN controller quang phải nhúng một **optical engine** (mô hình lan truyền, tính khả thi tuyến) chứ không chỉ là bộ định tuyến logic. Đây là lý do "SDN cho optical" khó hơn nhiều so với SDN cho switch Ethernet.
+
+## Mô hình dữ liệu: NETCONF/YANG và OpenConfig
+
+Muốn một controller điều khiển thiết bị **nhiều hãng**, cả hai bên phải nói chung một "ngôn ngữ cấu hình". Đó là vai trò của mô hình dữ liệu.
+
+- **NETCONF** — giao thức (RFC 6241) để cài đặt, thay đổi, xoá cấu hình thiết bị qua RPC trên SSH, có khái niệm `candidate/running/startup datastore` và commit/rollback nguyên tử. Bản kế thừa dựa trên HTTP là **RESTCONF**; xu hướng mới dùng **gNMI** (trên gRPC) cho cả cấu hình lẫn telemetry.
+- **YANG** — ngôn ngữ mô hình hoá (RFC 7950) mô tả cấu trúc dữ liệu cấu hình/trạng thái dưới dạng cây có kiểu. NETCONF/RESTCONF/gNMI đều truyền dữ liệu theo schema YANG.
+- **OpenConfig** — tập mô hình YANG **trung lập hãng** do nhóm nhà mạng khởi xướng, gồm các module cho optical như `openconfig-terminal-device` (transponder/coherent), `openconfig-optical-amplifier`, `openconfig-wavelength-router` (ROADM/WSS). Mục tiêu: một câu lệnh cấu hình chạy được trên thiết bị của nhiều hãng.
+
+Vì sao quan trọng: nếu mỗi hãng chỉ phơi ra **native YANG model** riêng, controller phải viết driver riêng cho từng dòng thiết bị — chi phí tích hợp khổng lồ và khoá cứng nhà cung cấp. OpenConfig cố gắng đưa về một **schema chung**. Thực tế những năm 2020s vẫn là trạng thái lai: nhiều thiết bị hỗ trợ OpenConfig cho các thuộc tính phổ biến, nhưng thông số đặc thù (ví dụ mode coherent riêng của transponder) vẫn phải qua native model. Kỹ sư tích hợp cần biết cả hai.
+
+## Control plane phân tán: GMPLS/ASON và PCE
+
+Trước làn sóng SDN, ngành đã có một hướng điều khiển **phân tán, tự động** cho lớp quang:
+
+- **ASON** (Automatically Switched Optical Network, ITU-T G.8080) — kiến trúc để mạng quang tự thiết lập, duy trì và giải phóng kết nối, thay cho cấu hình tay từng chặng.
+- **GMPLS** (Generalized MPLS, IETF) — bộ giao thức hiện thực ASON: mở rộng MPLS để báo hiệu và định tuyến cho các "nhãn" là bước sóng/khe thời gian/cổng, gồm signaling (RSVP-TE), routing (OSPF-TE/IS-IS-TE) và link management (LMP).
+- **PCE** (Path Computation Element, RFC 4655) — thực thể chuyên tính đường dựa trên TED (Traffic Engineering Database). PCE giải bài toán **RWA/RSA** (Routing and Wavelength/Spectrum Assignment) — chọn tuyến cộng gán bước sóng hoặc khe phổ thoả wavelength continuity và ràng buộc khả thi quang.
+
+So sánh nhanh hai mô hình điều khiển:
+
+| Tiêu chí | GMPLS/ASON (phân tán) | SDN controller (tập trung) |
+|---|---|---|
+| Nơi ra quyết định | Từng node, qua báo hiệu | Controller trung tâm |
+| Cái nhìn topology | Cục bộ cộng flooding | Toàn cục, một chỗ |
+| Tính đường | PCE (có thể phân tán/tập trung) | Optical engine trong controller |
+| Đổi chính sách mạng | Khó, phải nâng cấp nhiều node | Đổi ở controller |
+| Điểm yếu | Hội tụ phức tạp, khó gỡ | Controller là điểm phụ thuộc; cần HA |
+
+Trên thực tế hai mô hình **không loại trừ nhau**. Kiến trúc phổ biến là SDN controller dùng một **PCE tập trung** làm khối tính đường, còn thiết bị vẫn có thể giữ cơ chế báo hiệu/khôi phục phân tán làm lớp dự phòng. Mô hình **stateful PCE cộng PCEP** (RFC 8231) cho phép controller vừa tính vừa nắm giữ trạng thái các LSP đã thiết lập — cầu nối giữa thế giới GMPLS và SDN.
+
+<Quiz question="Vì sao SDN controller cho lớp quang phải nhúng một 'optical engine', khác với SDN cho switch Ethernet?" options={[{text:'Vì đường quang phải thoả ràng buộc vật lý (OSNR/GSNR, phi tuyến, wavelength continuity) nên tính đường không chỉ là bài toán logic', correct:true, explain:'Đúng — khả thi của một lightpath phụ thuộc vật lý lan truyền, controller phải ước lượng được GSNR/margin trước khi bật.'},{text:'Vì thiết bị quang không hỗ trợ NETCONF', explain:'Không đúng — nhiều thiết bị quang hỗ trợ NETCONF/gNMI; vấn đề là ràng buộc vật lý của lightpath.'},{text:'Vì lớp quang không có khái niệm topology', explain:'Ngược lại, topology quang rất quan trọng; điểm mấu chốt là ràng buộc khả thi vật lý.'}]} />
+
+## Streaming telemetry: thay SNMP polling
+
+Giám sát truyền thống dùng **SNMP polling**: NMS hỏi từng thiết bị vài chục giây một lần "giá trị counter là bao nhiêu". Với mạng lớn, cách này tạo tải, độ trễ cao và **độ phân giải thời gian thô** — nếu một sự cố kéo dài ngắn hơn chu kỳ poll, bạn không thấy.
+
+**Streaming telemetry** đảo mô hình: thiết bị **chủ động đẩy** (push) dữ liệu theo luồng liên tục, thường qua **gNMI Subscribe** trên gRPC, mã hoá theo cùng schema YANG/OpenConfig dùng để cấu hình. Đặc điểm:
+
+- **Tần suất cao** — dưới một giây tới vài giây, thay vì phút.
+- **Dạng đăng ký** — collector đăng ký đúng các leaf cần (ví dụ `pre-fec-ber`, `q-value`, `input-power`, `osnr`), thiết bị chỉ gửi khi đổi hoặc theo chu kỳ đặt trước.
+- **Cùng model với cấu hình** — không còn khoảng cách giữa "cái ta cấu hình" và "cái ta đo".
+
+Với lớp quang, giá trị lớn nhất là đọc **margin thời gian thực** từ transponder coherent: pre-FEC BER, Q-factor, SNR ước lượng. Khi có luồng liên tục các chỉ số này, ta chuyển từ giám sát **phản ứng** (báo động khi đã lỗi) sang **dự đoán**: một tuyến có pre-FEC BER trôi dần lên trong nhiều ngày báo hiệu suy giảm (bẩn connector, EDFA lão hoá, sợi bị uốn) trước khi chạm ngưỡng FEC. Đây cũng là nền tảng cho **margin harvesting** (bài 3.4): đo margin thật để mở thêm dung lượng hoặc kéo dài reach một cách an toàn.
+
+## Intent-based & AI-assisted operations
+
+Hai khái niệm hay bị thổi phồng, cần đặt đúng chỗ:
+
+- **Intent-based networking** — người vận hành khai báo **kết quả mong muốn** ("kết nối A–B, 400G, độ khả dụng 99.99%, latency thấp nhất") thay vì cấu hình từng node. Controller/orchestrator tự dịch intent thành cấu hình cụ thể (chọn tuyến, gán phổ, đặt công suất), rồi **liên tục kiểm chứng** rằng mạng vẫn đáp ứng intent, tự sửa khi lệch. Đây là hướng vận hành thực tế, đã có sản phẩm — nhưng chất lượng phụ thuộc hoàn toàn vào độ chính xác của mô hình quang bên dưới.
+- **AI-assisted operations** — dùng dữ liệu telemetry để **phát hiện bất thường**, **dự đoán lỗi** (ví dụ ước lượng xu hướng BER để cảnh báo sớm), gợi ý tối ưu công suất, hoặc phân loại nguyên nhân alarm. Ở lớp quang, các ứng dụng vững chắc hiện nay là **hồi quy/dự báo trên chuỗi thời gian** (margin, BER) và **phát hiện anomaly** — không phải "mạng tự lái hoàn toàn".
+
+Nói thẳng để không ảo tưởng: phần lớn giá trị thực đến từ **dữ liệu tốt (telemetry) cộng mô hình vật lý đúng (GSNR engine)**, còn AI là lớp phân tích trên dữ liệu đó. Không có telemetry độ phân giải cao và mô hình quang chuẩn, "AI ops" chỉ là bảng điều khiển đẹp. Thứ tự đầu tư đúng là: mô hình dữ liệu chuẩn hoá, rồi streaming telemetry, rồi tự động hoá theo intent, cuối cùng mới là phân tích AI.
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- **Chi phí tích hợp là chi phí thật.** Nếu mạng bạn có thiết bị nhiều hãng mà mỗi hãng chỉ phơi native YANG riêng, controller/OSS phải nuôi hàng loạt driver — mỗi lần nâng cấp firmware có thể vỡ tích hợp. Yêu cầu **OpenConfig** trong hồ sơ mời thầu là đòn bẩy chống khoá cứng nhà cung cấp; nhưng phải kiểm chứng thực tế (test lab) vì mức phủ "hỗ trợ OpenConfig" mỗi hãng mỗi khác.
+- **HA của control plane là bắt buộc.** Khi kéo logic ra controller tập trung, controller trở thành thành phần trọng yếu. Data plane vẫn phải **giữ đường đang chạy khi controller mất** (fail-static) — đường quang không được rớt chỉ vì controller reboot. Kiểm tra kỹ hành vi này khi nghiệm thu.
+- **Telemetry đúng cách tiết kiệm sự cố lớn.** Chuyển từ SNMP poll theo phút sang gNMI streaming dưới giây cho phép bắt xu hướng suy giảm nhiều ngày trước khi FEC uncorrectable. Nhưng nhớ tính **tải collector và băng thông mạng quản lý** — đăng ký cả nghìn leaf ở tần suất cao có thể làm nghẽn kênh quản lý.
+- **Đừng mua "AI" trước khi có dữ liệu.** Ưu tiên chuẩn hoá mô hình dữ liệu và dựng streaming telemetry sạch trước. Không có nền đó, các tính năng "AI-assisted" không đủ tin cậy để đưa vào quy trình vận hành.
+
+<Quiz question="Ưu điểm cốt lõi của streaming telemetry (gNMI) so với SNMP polling khi giám sát margin của tuyến coherent là gì?" hint="Nghĩ về độ phân giải thời gian và mô hình dữ liệu." options={[{text:'Thiết bị chủ động đẩy dữ liệu tần suất cao (dưới giây) theo cùng schema YANG với cấu hình, đủ để bắt xu hướng BER/margin theo thời gian thực', correct:true, explain:'Đúng — push cộng tần suất cao cộng cùng model cho phép chuyển từ giám sát phản ứng sang dự đoán.'},{text:'SNMP không đo được công suất quang', explain:'Không đúng — SNMP đo được nhiều chỉ số; hạn chế là kiểu polling và độ phân giải thời gian thô.'},{text:'Streaming telemetry mã hoá dữ liệu nên bảo mật hơn SNMP', explain:'Bảo mật không phải điểm khác biệt cốt lõi ở đây; đó là mô hình push và độ phân giải thời gian.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+- ITU-T G.8080 (ASON — kiến trúc mạng quang chuyển mạch tự động).
+- IETF: RFC 6241 (NETCONF), RFC 7950 (YANG), RFC 8040 (RESTCONF), RFC 4655 (PCE), RFC 8231 (Stateful PCE/PCEP), các RFC GMPLS (RSVP-TE, OSPF-TE, LMP).
+- OpenConfig (openconfig.net): các module `terminal-device`, `optical-amplifier`, `wavelength-router`; gNMI/gNOI specifications.
+- Tài liệu nguyên tắc SDN transport và telemetry công khai của các diễn đàn ONF/TIP. Thông số cụ thể tuỳ nền tảng — luôn kiểm chứng trong lab, không suy ra từ tài liệu tiếp thị.
+
+</Callout>
+
+➡️ Tiếp theo: 4.3 — OTN: khung, ánh xạ client và phân cấp ODU.

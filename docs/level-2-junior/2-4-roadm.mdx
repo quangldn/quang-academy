@@ -1,10 +1,176 @@
 ---
 sidebar_position: 4
-title: "2.4 — ROADM"
+title: "2.4 — ROADM: WSS, degree & CDC"
+description: "ROADM trong mạng mesh: WSS, degree, broadcast-and-select vs route-and-select, add/drop CDC và filtering penalty khi cascade."
+concepts: [roadm, oadm, flexgrid, osc]
 ---
 
-import LessonStub from '@site/src/components/LessonStub';
+# 2.4 — ROADM: WSS, degree & CDC
 
-# 2.4 — ROADM
+<Callout type="goal">
 
-<LessonStub objective={"WSS, degree, add/drop; kiến trúc CDC (Colorless/Directionless/Contentionless); express."} />
+Sau bài này bạn sẽ:
+
+- Hiểu ROADM là gì, WSS hoạt động ra sao và "degree" nghĩa là gì.
+- Phân biệt kiến trúc broadcast-and-select với route-and-select, và ý nghĩa của CDC (Colorless/Directionless/Contentionless).
+- Ước lượng được filtering penalty khi một kênh đi qua nhiều ROADM nối tiếp.
+
+</Callout>
+
+## ROADM là gì và vai trò trong mạng mesh
+
+ROADM (Reconfigurable Optical Add/Drop Multiplexer) là node quang cho phép **thêm (add)**, **rẽ (drop)** và **cho đi thẳng (express)** các bước sóng một cách có thể cấu hình lại từ xa, không cần đấu nối tay tại trạm.
+
+Trước ROADM, một OADM cố định (fixed OADM) chỉ drop/add đúng những bước sóng đã được lọc cứng bằng phần cứng. Muốn đổi bước sóng phải ra hiện trường thay filter. ROADM thay lớp lọc cứng đó bằng phần tử chuyển mạch quang có thể lập trình, nên toàn bộ ma trận add/drop/express trở thành phần mềm hoá.
+
+Trong topo **mesh** (mỗi node nối tới nhiều node khác), ROADM là thứ biến sợi điểm-điểm thành một mạng quang thực sự: một node có thể nối tới 4, 8, thậm chí 20 hướng, và bất kỳ bước sóng nào cũng có thể được định tuyến quang (không cần chuyển O-E-O) từ hướng vào tới hướng ra mong muốn. Đây là nền tảng của "optical layer" mà lớp IP/OTN chạy bên trên.
+
+Một điểm quan trọng: ROADM chuyển mạch **theo bước sóng, ở miền quang**. Kênh đi express không bị tái tạo tín hiệu — nó chỉ được lọc và định tuyến, nên mọi suy hao, nhiễu ASE và méo dạng lọc sẽ tích luỹ dọc đường. Đó là lý do phần "filtering penalty" ở cuối bài rất đáng quan tâm.
+
+## WSS — trái tim của ROADM
+
+Phần tử làm nên ROADM hiện đại là **WSS (Wavelength Selective Switch)**. WSS là một thiết bị $1 \times N$ (hoặc $N \times 1$) có khả năng: nhận một sợi chứa nhiều bước sóng ở cổng chung, rồi định tuyến **từng bước sóng độc lập** ra bất kỳ cổng nào trong $N$ cổng còn lại, đồng thời điều chỉnh được suy hao (attenuation) cho từng kênh.
+
+Nguyên lý phổ biến nhất là **LCoS (Liquid Crystal on Silicon)**:
+
+- Ánh sáng từ cổng chung được tán sắc theo bước sóng (grating) thành một "dải phổ" trải trên bề mặt LCoS.
+- Mỗi vùng bước sóng chiếu vào một nhóm pixel; pixel tạo pattern nhiễu xạ để bẻ tia đó tới đúng cổng ra.
+- Vì mỗi bước sóng được điều khiển bởi một nhóm pixel riêng, WSS LCoS làm được **flexgrid**: biên kênh không bị khoá vào lưới 50 GHz cố định mà đặt theo nominal central frequency với granularity 6.25 GHz và slot width là bội số của 12.5 GHz (ITU-T G.694.1). Đây là điều kiện tiên quyết để chở các kênh 400G/800G rộng phổ.
+
+WSS cũng đảm nhiệm **power equalization**: đặt attenuation per-channel để cân bằng công suất giữa các bước sóng trước khi vào EDFA, tránh gain tilt và giữ OSNR đồng đều. Nói cách khác WSS vừa là switch, vừa là mux/demux, vừa là VOA per-channel.
+
+## Degree — số hướng của một node
+
+**Degree** của ROADM là số hướng sợi (line direction) mà node kết nối tới. Một ROADM 2-degree nối 2 hướng (điển hình node trên tuyến thẳng, kiểu in-line). ROADM 4-degree nối 4 hướng — thường là node giao của hai tuyến. Degree càng cao, node càng nằm ở vị trí mesh phức tạp.
+
+Với mỗi degree, node cần một khối line gồm: một WSS hướng ra (chọn kênh nào đi ra hướng đó) và một tầng thu/chia hướng vào. Số degree quyết định trực tiếp số WSS và độ phức tạp:
+
+- Node $D$-degree cần định tuyến express giữa **mọi cặp hướng**, tức là mỗi hướng ra phải gom được kênh express từ $D-1$ hướng còn lại, cộng thêm nhánh add nội bộ.
+- Đó là lý do WSS trong ROADM degree cao thường là loại nhiều cổng (ví dụ $1 \times 20$), để một WSS đủ chỗ cho tất cả hướng còn lại và các block add/drop.
+
+Số degree cũng ảnh hưởng tới **OSC**: mỗi span sợi (mỗi hướng) mang một kênh OSC (Optical Supervisory Channel, thường quanh 1510 nm hoặc ngoài băng C) để truyền quản lý, telemetry và điều khiển giữa các node. OSC được add/drop **trước** EDFA và không đi express quang — nó bị chặn tại mỗi node và tái tạo, vì nó chở thông tin của riêng span đó.
+
+## Kiến trúc: Broadcast-and-Select vs Route-and-Select
+
+Có hai cách bố trí WSS trong một node đa degree.
+
+**Broadcast-and-Select (B&S)** — hướng vào dùng một **splitter** (chia công suất thụ động) để "phát" toàn bộ phổ tới mọi hướng ra và tới tầng drop; chỉ ở phía ra mới có một WSS chọn (select) kênh nào được giữ.
+
+- Ưu: đơn giản, ít WSS hơn (một WSS mỗi hướng ra).
+- Nhược: splitter gây suy hao lớn (chia cho $D$ hướng thì mất nhiều dB), và không có tầng lọc ở đầu vào nên nhiễu/ASE broadcast đi khắp nơi. Kém về isolation.
+
+**Route-and-Select (R&S)** — có **WSS ở cả hai phía**: một WSS chọn hướng ở đầu vào (route) và một WSS chọn kênh ở đầu ra (select). Đây là kiến trúc chủ đạo của ROADM degree cao hiện nay.
+
+- Ưu: isolation tốt hơn hẳn (kênh bị chặn hai lần), quản lý công suất và OSNR tốt hơn, ít crosstalk.
+- Nhược: nhiều WSS hơn, tốn hơn.
+
+Điểm cần nhớ về mặt truyền dẫn: **mỗi lần đi qua một WSS là đi qua một passband filter**. R&S đặt hai WSS trên đường express của mỗi node, nên isolation tốt nhưng cái giá là **hai tầng lọc mỗi node** — filtering penalty tích luỹ nhanh hơn khi cascade (xem phần thực hành).
+
+## Cấu trúc Add/Drop và CDC
+
+Phần line (express) chỉ là một nửa ROADM. Nửa còn lại là **add/drop structure** — nơi transponder nội bộ bơm kênh mới vào (add) và lấy kênh xuống (drop). Đây chính là chỗ khái niệm **CDC** xuất hiện, và là nút thắt của tự động hoá.
+
+Ba tính chất, mỗi cái gỡ một ràng buộc:
+
+- **Colorless (C):** một cổng add/drop nhận **bất kỳ bước sóng nào**, không bị khoá cứng vào một tần số. Không colorless thì cổng số 3 chỉ nhận được đúng $\lambda_3$ — muốn đổi bước sóng phải đổi cổng vật lý (ra hiện trường). Có colorless, phần mềm chỉ việc tune transponder tới bước sóng cần.
+- **Directionless (D):** một transponder đã add có thể được định tuyến ra **bất kỳ degree nào**, không bị buộc cứng vào một hướng. Không directionless thì mỗi transponder phải cắm vào block gắn với một hướng cố định — muốn đổi hướng (ví dụ khi restoration) phải đấu lại.
+- **Contentionless (C):** trong một khối add/drop, **hai kênh cùng bước sóng** có thể cùng tồn tại miễn là đi ra hai degree khác nhau — không có tranh chấp (contention) bước sóng nội bộ. Đây là ràng buộc khó nhất: nhiều kiến trúc CD (colorless + directionless) vẫn bị "wavelength contention" nếu hai đường cùng dùng $\lambda_x$ chung một MCS (multicast switch) block.
+
+Vì sao cần **CDC đầy đủ** cho tự động hoá và SDN restoration? Vì controller muốn tự do đặt: bất kỳ transponder nào tới bất kỳ bước sóng nào ra bất kỳ hướng nào, mà không bao giờ vấp "cổng này không nhận được λ đó" hay "λ này đã bị khối add/drop chiếm". Chỉ CDC mới cho phép **restoration quang tự động**: khi một tuyến đứt, controller tune lại bước sóng và bẻ transponder sang hướng còn sống mà không cần người ra hiện trường. Thiếu bất kỳ chữ nào trong CDC là mạng còn ràng buộc vật lý mà phần mềm không gỡ được.
+
+Cấu trúc CDC thường dựng bằng cặp **MCS (Multicast Switch)** hoặc WSS-based add/drop cho phép đấu bất kỳ cổng transponder tới bất kỳ degree; contentionless đạt được bằng cách mỗi degree có đường riêng vào khối, tránh dồn chung một điểm.
+
+## Express vs Local
+
+Gộp lại, mọi bước sóng đi qua ROADM rơi vào một trong hai nhóm:
+
+- **Express (pass-through):** vào từ một degree, ra một degree khác, **hoàn toàn ở miền quang**. Không tốn transponder, không O-E-O. Đây là giá trị lớn nhất của ROADM: kênh transit không cần thiết bị điện tại node trung gian, giảm chi phí và độ trễ.
+- **Local (add/drop):** kênh kết thúc/khởi phát tại node này, đi qua add/drop structure tới một transponder local.
+
+Một kênh express tiết kiệm được cả một cặp transponder tại mỗi node đi qua — nhưng đổi lại nó gánh toàn bộ suy hao, ASE và filtering penalty tích luỹ. Bài toán thiết kế mạng optical là quyết định kênh nào cho express (rẻ, nhưng phải nằm trong ngân sách OSNR) và kênh nào phải regenerate (O-E-O) để "làm mới" OSNR khi đường quá dài hoặc qua quá nhiều node.
+
+## Sơ đồ: ROADM 2-degree có add/drop
+
+Sơ đồ dưới đây là một node 2-degree kiểu route-and-select rút gọn: hai hướng line (West/East), đường express giữa hai hướng, và khối add/drop local.
+
+<svg viewBox="0 0 720 380" width="100%" role="img" aria-label="So do ROADM 2-degree route-and-select voi add drop">
+  <rect x="0" y="0" width="720" height="380" fill="#0f172a" />
+  <text x="360" y="26" fill="#e2e8f0" fontSize="16" textAnchor="middle" fontFamily="sans-serif">ROADM 2-degree (Route-and-Select)</text>
+
+  <text x="60" y="60" fill="#94a3b8" fontSize="13" textAnchor="middle" fontFamily="sans-serif">West line</text>
+  <text x="660" y="60" fill="#94a3b8" fontSize="13" textAnchor="middle" fontFamily="sans-serif">East line</text>
+
+  <line x1="20" y1="120" x2="120" y2="120" stroke="#38bdf8" strokeWidth="2" />
+  <text x="70" y="112" fill="#7dd3fc" fontSize="11" textAnchor="middle" fontFamily="sans-serif">In (RX)</text>
+  <line x1="20" y1="260" x2="120" y2="260" stroke="#f472b6" strokeWidth="2" />
+  <text x="70" y="278" fill="#f9a8d4" fontSize="11" textAnchor="middle" fontFamily="sans-serif">Out (TX)</text>
+
+  <line x1="700" y1="120" x2="600" y2="120" stroke="#38bdf8" strokeWidth="2" />
+  <text x="650" y="112" fill="#7dd3fc" fontSize="11" textAnchor="middle" fontFamily="sans-serif">In (RX)</text>
+  <line x1="700" y1="260" x2="600" y2="260" stroke="#f472b6" strokeWidth="2" />
+  <text x="650" y="278" fill="#f9a8d4" fontSize="11" textAnchor="middle" fontFamily="sans-serif">Out (TX)</text>
+
+  <rect x="120" y="100" width="60" height="40" rx="4" fill="#1e293b" stroke="#38bdf8" />
+  <text x="150" y="124" fill="#e2e8f0" fontSize="11" textAnchor="middle" fontFamily="sans-serif">WSS</text>
+  <rect x="120" y="240" width="60" height="40" rx="4" fill="#1e293b" stroke="#f472b6" />
+  <text x="150" y="264" fill="#e2e8f0" fontSize="11" textAnchor="middle" fontFamily="sans-serif">WSS</text>
+
+  <rect x="540" y="100" width="60" height="40" rx="4" fill="#1e293b" stroke="#38bdf8" />
+  <text x="570" y="124" fill="#e2e8f0" fontSize="11" textAnchor="middle" fontFamily="sans-serif">WSS</text>
+  <rect x="540" y="240" width="60" height="40" rx="4" fill="#1e293b" stroke="#f472b6" />
+  <text x="570" y="264" fill="#e2e8f0" fontSize="11" textAnchor="middle" fontFamily="sans-serif">WSS</text>
+
+  <line x1="180" y1="120" x2="540" y2="120" stroke="#38bdf8" strokeWidth="2" />
+  <line x1="180" y1="260" x2="540" y2="260" stroke="#f472b6" strokeWidth="2" />
+  <text x="360" y="112" fill="#cbd5e1" fontSize="12" textAnchor="middle" fontFamily="sans-serif">Express W to E</text>
+  <text x="360" y="252" fill="#cbd5e1" fontSize="12" textAnchor="middle" fontFamily="sans-serif">Express E to W</text>
+
+  <rect x="300" y="300" width="120" height="50" rx="6" fill="#1e293b" stroke="#facc15" />
+  <text x="360" y="322" fill="#e2e8f0" fontSize="11" textAnchor="middle" fontFamily="sans-serif">Add/Drop</text>
+  <text x="360" y="338" fill="#94a3b8" fontSize="10" textAnchor="middle" fontFamily="sans-serif">CDC structure</text>
+
+  <line x1="330" y1="300" x2="150" y2="140" stroke="#facc15" strokeWidth="1.5" strokeDasharray="4 3" />
+  <line x1="330" y1="300" x2="150" y2="240" stroke="#facc15" strokeWidth="1.5" strokeDasharray="4 3" />
+  <line x1="390" y1="300" x2="570" y2="140" stroke="#facc15" strokeWidth="1.5" strokeDasharray="4 3" />
+  <line x1="390" y1="300" x2="570" y2="240" stroke="#facc15" strokeWidth="1.5" strokeDasharray="4 3" />
+  <text x="360" y="372" fill="#fde68a" fontSize="10" textAnchor="middle" fontFamily="sans-serif">toi transponder local (drop) / tu transponder (add)</text>
+</svg>
+
+Đường liền nối hai WSS là express (miền quang, không O-E-O). Đường nét đứt vàng là add/drop nội bộ: khối CDC cho phép mỗi transponder tới bất kỳ hướng nào và nhận bất kỳ bước sóng nào.
+
+## Thực hành: filtering penalty khi cascade nhiều ROADM
+
+Mỗi WSS là một bộ lọc có passband hình gần chữ nhật nhưng vẫn có sườn dốc hữu hạn. Khi kênh đi qua nhiều ROADM nối tiếp, các passband **chồng nhau (concatenate)**: passband hiệu dụng hẹp dần và mép phổ tín hiệu bị xén. Hậu quả là méo dạng (ISI) và OSNR penalty tăng — đặc biệt nghiêm trọng khi baud rate lớn (kênh rộng) so với độ rộng passband, hoặc khi có lệch tần (misalignment) giữa các node.
+
+Hai yếu tố khuếch đại penalty:
+
+- **Số node cascade $N$:** mỗi node R&S đóng góp tới hai tầng lọc; penalty cộng dồn phi tuyến khi passband hiệu dụng thu hẹp.
+- **Tỉ lệ baud/grid:** kênh 400G (baud khoảng 60–96 Gbaud) trên lưới 75/100 GHz còn dư biên; nhưng ép vào 50 GHz thì mép phổ chạm sườn filter ngay từ vài node đầu.
+
+Dùng công cụ dưới để thấy penalty tăng theo số ROADM và độ rộng passband:
+
+<CascadedFilterPenalty />
+
+Quy tắc ngón tay cái khi thiết kế: đặt ngân sách filtering penalty vào link budget (thường vài phần mười dB tới vài dB tuỳ số node), chọn grid rộng hơn baud một biên đủ an toàn, và giữ **frequency alignment** giữa các WSS. Khi penalty ăn hết margin, giải pháp là chèn regenerator (O-E-O) để reset cả OSNR lẫn dạng phổ.
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- **Chọn kiến trúc là chọn giới hạn vận hành.** B&S rẻ nhưng suy hao và crosstalk cao; R&S đắt hơn nhưng cho OSNR/isolation tốt và mở rộng degree dễ. Quyết định này khoá vào phần cứng nhiều năm — sai là phải thay line card.
+- **CDC quyết định bạn có tự động hoá được không.** Một mạng thiếu contentionless sẽ vấp wavelength contention đúng lúc cần restoration nhất. Nếu roadmap có SDN, ASON/GMPLS hay optical restoration thì CDC không phải tuỳ chọn — nó là điều kiện cần.
+- **Filtering penalty là ngân sách ẩn.** Kỹ sư mới hay quên nó khi tính link budget và bị "penalty bất ngờ" trên các tuyến express dài qua 6–10 node. Luôn cộng nó vào margin từ đầu.
+- **OSC và alignment là việc vận hành hằng ngày.** OSC đứt là mất quản lý cả span; WSS lệch tần làm penalty phình. Cả hai đều nằm trong checklist commissioning và troubleshooting thực tế.
+
+<Quiz question="Vì sao 'Contentionless' là tính chất khó đạt nhất trong CDC và cần cho tự động hoá?" hint="Nghĩ về hai kênh cùng bước sóng trong một khối add/drop." options={[{text:'Vì nó cho phép hai kênh cùng bước sóng cùng tồn tại trong một khối add/drop miễn là đi ra hai degree khác nhau, tránh tranh chấp khi controller định tuyến tự do', correct:true, explain:'Đúng. Không có contentionless, hai đường cùng dùng một λ sẽ đụng nhau trong khối add/drop, chặn restoration tự động.'},{text:'Vì nó cho phép một cổng add/drop nhận bất kỳ bước sóng nào', explain:'Đó là Colorless, không phải Contentionless.'},{text:'Vì nó cho phép transponder đi ra bất kỳ degree nào', explain:'Đó là Directionless.'}]} />
+
+<Quiz question="Kênh đi 'express' qua một ROADM nghĩa là gì và cái giá phải trả là gì?" options={[{text:'Được lọc và định tuyến hoàn toàn ở miền quang (không O-E-O), tiết kiệm transponder nhưng tích luỹ suy hao, ASE và filtering penalty', correct:true, explain:'Đúng. Express không tái tạo tín hiệu nên mọi suy giảm cộng dồn dọc đường, buộc phải theo dõi OSNR/penalty.'},{text:'Được chuyển sang miền điện, tái tạo (regenerate) rồi phát lại, nên OSNR luôn được làm mới', explain:'Đó là regeneration/O-E-O, không phải express. Express giữ nguyên miền quang.'},{text:'Được drop xuống transponder local rồi add lại cùng bước sóng', explain:'Đó là add/drop local, ngược với express.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+- ITU-T G.694.1 — DWDM frequency grid và flexible grid (nominal central frequency granularity 6.25 GHz, slot width bội số 12.5 GHz).
+- ITU-T G.798 / G.872 — kiến trúc lớp mạng quang (OTN, optical transport).
+- OIF — các tài liệu công khai về flexgrid và coherent interop.
+- Nguyên lý WSS/LCoS và kiến trúc CDC theo tài liệu kỹ thuật công khai; số liệu penalty mang tính điển hình, cần xác nhận theo thiết bị thực tế.
+
+</Callout>
+
+➡️ Tiếp theo: 2.5 — Transceiver coherent và các thông số của transponder DWDM.

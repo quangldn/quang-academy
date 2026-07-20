@@ -1,10 +1,131 @@
 ---
 sidebar_position: 3
 title: "3.3 — Hiệu ứng phi tuyến"
+description: Hiệu ứng Kerr (SPM, XPM, FWM), tán xạ SBS/SRS, mô hình GN/EGN và launch power tối ưu trong hệ coherent.
+concepts: [nonlinear, spm, gsnr, coherent]
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 3.3 — Hiệu ứng phi tuyến
 
-<LessonStub objective={"SPM, XPM, FWM, SBS, SRS; mô hình GN/EGN; ngưỡng công suất tối ưu."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ hiểu **hiệu ứng Kerr** sinh ra **SPM/XPM/FWM** như thế nào và vì sao chúng phụ thuộc công suất; phân biệt được tán xạ **SBS** với **SRS** và tác động của chúng lên hệ nhiều kênh; và đọc được mô hình **GN/EGN** để tìm **launch power tối ưu** — điểm cân bằng giữa OSNR và nhiễu phi tuyến.
+
+</Callout>
+
+## Chiết suất phụ thuộc cường độ: hiệu ứng Kerr
+
+Trong sợi quang, chiết suất không hoàn toàn là hằng số. Ở công suất đủ lớn, nó tăng nhẹ theo cường độ ánh sáng $I$:
+
+$$
+n(I) = n_0 + n_2 \cdot I
+$$
+
+trong đó $n_2$ là **hệ số Kerr** (với silica, $n_2 \approx 2.6 \times 10^{-20}\ \text{m}^2/\text{W}$ — rất nhỏ, nhưng cộng dồn trên hàng trăm km và công suất tập trung trong lõi vài chục $\mu\text{m}^2$ thì hoàn toàn không bỏ qua được).
+
+Cường độ $I = P / A_\text{eff}$, với $A_\text{eff}$ là **diện tích hiệu dụng** của mode. Từ đây rút ra hai hệ quả then chốt:
+
+- Phi tuyến tỉ lệ với **mật độ công suất**, không phải công suất tuyệt đối. Sợi có $A_\text{eff}$ lớn (ví dụ sợi large-effective-area) làm loãng cường độ và giảm phi tuyến.
+- Vì pha tích luỹ $\phi = \gamma P L_\text{eff}$ phụ thuộc chính công suất tín hiệu, mọi dao động biên độ đều **tự chuyển thành dao động pha** — gốc rễ của SPM.
+
+Hệ số phi tuyến gộp lại thường viết là:
+
+$$
+\gamma = \frac{2\pi n_2}{\lambda \, A_\text{eff}}
+$$
+
+Với coherent, thông tin nằm ở **pha và biên độ** (QAM), nên nhiễu pha do Kerr gây ra tác động trực tiếp lên constellation — đây là lý do phi tuyến trở thành trần dung lượng thực sự của lớp coherent hiện đại.
+
+## SPM, XPM, FWM: ba mặt của Kerr
+
+Cùng một hiệu ứng Kerr biểu hiện thành ba cơ chế khác nhau tuỳ vào việc pha bị điều chế bởi chính kênh đó hay kênh lân cận.
+
+**SPM (Self-Phase Modulation) — tự điều pha.** Xung tín hiệu tự điều chế pha của chính nó: sườn trước và sườn sau của xung có cường độ khác nhau nên dịch pha khác nhau, sinh **chirp tần số**. Kết hợp với tán sắc (CD), SPM có thể làm xung giãn thêm hoặc — trong một chế độ nhất định — bù một phần, nhưng trên tuyến coherent dài nó chủ yếu là nguồn nhiễu.
+
+**XPM (Cross-Phase Modulation) — điều pha chéo.** Công suất của **kênh lân cận** điều chế pha của kênh đang xét (hệ số mạnh gấp đôi so với SPM cho cùng công suất). Trong hệ WDM dày kênh, XPM là đóng góp phi tuyến lớn: mỗi kênh "cảm" thấy sự nhấp nhô công suất của tất cả hàng xóm.
+
+**FWM (Four-Wave Mixing) — trộn bốn sóng.** Ba tần số $f_i, f_j, f_k$ trộn phi tuyến sinh ra tần số ký sinh mới:
+
+$$
+f_{ijk} = f_i + f_j - f_k
+$$
+
+Nếu tần số ký sinh này rơi đúng vào một kênh đang dùng, nó trở thành **nhiễu coherent** phá kênh đó. FWM đòi hỏi **phase matching** — nó mạnh nhất khi:
+
+- **tán sắc thấp** (các kênh chạy gần cùng vận tốc nhóm nên giữ pha khớp lâu), và
+- **lưới kênh đều nhau** (các sản phẩm trộn chồng đúng lên kênh hiện có).
+
+Đây là nghịch lý lịch sử: sợi dispersion-shifted (tán sắc gần 0 quanh 1550 nm) từng được kỳ vọng là lý tưởng, nhưng chính tán sắc gần 0 lại kích FWM bùng lên trong hệ WDM. Sợi hiện đại cố tình giữ **tán sắc dương vừa phải** để phá phase matching và dập FWM/XPM.
+
+## Tán xạ kích thích: SBS và SRS
+
+Khác với Kerr (đàn hồi, không mất năng lượng vào môi trường), hai hiệu ứng tán xạ dưới đây chuyển một phần năng lượng photon sang phonon (dao động mạng/âm).
+
+**SBS (Stimulated Brillouin Scattering).** Ngưỡng **rất thấp** (điển hình cỡ vài mW đến khoảng 10 dBm cho tín hiệu phổ hẹp), tán xạ **ngược** về phía phát và có **băng thông cực hẹp** (chỉ vài chục MHz). SBS chỉ nguy hiểm với sóng mang phổ hẹp (ví dụ tín hiệu chưa điều chế hoặc dither kém). Trong hệ coherent điều chế tốc độ cao, phổ tín hiệu đã trải rộng nên năng lượng trên mỗi khoảng SBS thấp — SBS ít khi là giới hạn. Kỹ thuật dither pha/tần số của laser cũng cố tình nới phổ để nâng ngưỡng SBS.
+
+**SRS (Stimulated Raman Scattering).** Băng thông **rất rộng** (đỉnh gain lệch khoảng 13 THz, tức khoảng 100 nm về phía bước sóng dài). Hệ quả thực tế trên hệ băng rộng: các kênh **bước sóng ngắn (C-band)** bơm năng lượng sang các kênh **bước sóng dài (L-band)**, tạo **nghiêng công suất (tilt) C→L**. Trên hệ C+L hiện đại đây là hiệu ứng phải bù chủ động: hệ thống nghiêng gain khuếch đại hoặc điều chỉnh launch power theo bước sóng để cân bằng lại. (Cùng cơ chế đó được khai thác có chủ đích trong **khuếch đại Raman**.)
+
+## Mô hình GN/EGN: coi phi tuyến như nhiễu Gaussian
+
+Với hệ coherent không bù tán sắc trong tuyến (dispersion-uncompensated), một xấp xỉ mạnh và rất tiện dụng ra đời: **mô hình Gaussian Noise (GN)**. Ý tưởng: khi tán sắc lớn, tín hiệu WDM ở giữa tuyến trông gần như nhiễu Gaussian, nên nhiễu phi tuyến (NLI — nonlinear interference) mà nó tự sinh cũng xấp xỉ **nhiễu Gaussian cộng**, độc lập tương đối với tín hiệu. Ta có thể gộp nó vào mẫu số OSNR như một nguồn nhiễu nữa.
+
+Điểm cốt lõi cần nhớ: công suất nhiễu phi tuyến tỉ lệ **bậc ba** theo công suất kênh:
+
+$$
+P_\text{NLI} \approx \eta \cdot P_\text{ch}^3
+$$
+
+trong đó $\eta$ là hệ số hiệu suất phi tuyến, phụ thuộc vào tán sắc, $A_\text{eff}$, số kênh, băng thông và số span. **EGN (Enhanced GN)** là bản tinh chỉnh: sửa lại phần GN "quá bi quan" bằng cách tính đến thống kê điều chế thật (đặc biệt với các định dạng bậc thấp), thường cho ước lượng NLI nhỏ hơn GN một chút và sát đo đạc hơn.
+
+Vì sao số mũ 3 quan trọng đến vậy? Ghép với **ASE** từ EDFA, ta có tổng thể:
+
+$$
+\text{GSNR} = \frac{P_\text{ch}}{P_\text{ASE} + P_\text{NLI}}
+$$
+
+**GSNR (Generalized SNR)** gộp cả nhiễu tuyến tính (ASE) lẫn nhiễu phi tuyến (NLI) thành một con số duy nhất mà máy thu coherent thực sự "cảm" thấy. Nó là thước đo trung tâm để dự báo BER của tuyến coherent — được đào sâu ở bài 3.4.
+
+## Launch power tối ưu: đỉnh của đường cong hình chuông
+
+Đây là kết luận thực dụng nhất của cả bài. Xét GSNR theo công suất kênh $P_\text{ch}$:
+
+- **ASE** cố định (do NF của EDFA và số span): tăng $P_\text{ch}$ làm tử số tăng tuyến tính, nên GSNR **cải thiện** khi ta còn ở vùng công suất thấp. Đây là vùng **linear-limited (giới hạn OSNR)**.
+- **NLI** tăng như $P_\text{ch}^3$: khi công suất đủ lớn, mẫu số bùng theo bậc ba và **nuốt** hết lợi ích. Đây là vùng **nonlinear-limited**.
+
+Kết quả là GSNR vẽ ra một đường cong hình chuông với **đỉnh** tại **launch power tối ưu (Nonlinear Threshold, NLT)**. Vượt đỉnh, tăng thêm công suất *làm tuyến tệ đi*. Có thể suy ra vị trí đỉnh bằng đạo hàm: tối ưu xảy ra khi $P_\text{NLI} = \tfrac{1}{2} P_\text{ASE}$, cho đường cong lồi rõ rệt quanh cực đại.
+
+Vài quy tắc kỹ sư rút ra từ mô hình này:
+
+- Mỗi khi tăng $P_\text{ch}$ thêm 1 dB ở gần đỉnh, phần ASE trong mẫu số giảm nhưng NLI tăng khoảng 3 dB, nên phần thưởng cận biên co lại rất nhanh.
+- **Tán sắc cao** và **$A_\text{eff}$ lớn** đều làm giảm $\eta$, đẩy đỉnh **lên cao hơn** (cho phép launch power lớn hơn) và cho GSNR đỉnh tốt hơn. Đây là lý do sợi truyền dẫn hiện đại chọn tán sắc dương và effective area lớn.
+- Với tuyến nhiều span, launch power tối ưu **trên mỗi span** thường độc lập tương đối với số span, nhưng GSNR đỉnh giảm theo số span vì cả ASE lẫn NLI cộng dồn.
+
+## Thực hành: tìm đỉnh GSNR
+
+Dùng công cụ dưới đây để cảm nhận sự đánh đổi. Kéo launch power và quan sát ASE (đường giảm), NLI (đường tăng bậc ba) và GSNR tổng (đường hình chuông). Thử đổi tán sắc và $A_\text{eff}$ để thấy đỉnh dịch chuyển.
+
+<NonlinearOptimizer />
+
+Quan sát cần rút ra: đỉnh khá "phẳng" quanh cực đại (thường phạt dưới khoảng 0.5 dB trong dải ±1 dB quanh đỉnh), nên trong vận hành ta thường đặt launch power **thấp hơn đỉnh vài phần dB** để có margin an toàn mà gần như không mất GSNR — chạy đúng đỉnh khiến tuyến nhạy với sai số san bằng công suất.
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- **"Đổ thêm công suất" không phải luôn tốt.** Kỹ sư mới hay tăng launch power để "cứu" một tuyến OSNR thấp. Nếu tuyến đã ở gần hoặc quá NLT, việc này làm GSNR *tệ hơn* và pre-FEC BER xấu đi — sai lầm phổ biến và khó chẩn đoán vì trực giác nói ngược lại.
+- **Chọn sợi định hình trần dung lượng.** Tán sắc và $A_\text{eff}$ của sợi quyết định $\eta$, tức quyết định GSNR đỉnh đạt được — không lượng khuếch đại nào sửa được phi tuyến đã sinh ra. Đây là yếu tố cần cân nhắc khi thẩm định tuyến cũ (ví dụ sợi dispersion-shifted đời cũ) cho dịch vụ coherent tốc độ cao.
+- **Cân bằng công suất phổ là bắt buộc trên C+L.** SRS gây tilt C→L thay đổi theo tải kênh (số kênh đang bật). Hệ thống phải bù tilt động; nếu không, các kênh L-band nhận thừa công suất còn C-band thiếu, kéo lệch GSNR toàn tuyến.
+- **Kế hoạch công suất là bài toán tối ưu, không phải hằng số.** Các planning tool (dùng chính GN/EGN) tính launch power tối ưu cho từng span theo loại sợi, khoảng span, NF khuếch đại và tải kênh — đây là lý do launch power "mỗi kênh" không phải một con số cố định dán chung cho mọi tuyến.
+
+<Quiz question="Trên một tuyến coherent đã chạy gần launch power tối ưu, bạn tăng công suất mỗi kênh thêm 2 dB. Điều gì xảy ra với GSNR?" hint="Nhớ P_NLI tỉ lệ P^3, còn ASE cố định." options={[{text:'GSNR giảm, vì nhiễu phi tuyến tăng khoảng 6 dB, lấn át mức cải thiện OSNR', correct:true, explain:'Đúng. Qua đỉnh NLT, NLI (tăng khoảng 3 dB mỗi 1 dB công suất) chi phối, nên tăng công suất làm GSNR tệ đi.'},{text:'GSNR tăng khoảng 2 dB, vì tín hiệu mạnh hơn thì tỉ số tín/nhiễu luôn tốt hơn', explain:'Chỉ đúng ở vùng linear-limited (dưới đỉnh). Gần hoặc qua đỉnh thì NLI bậc ba lấn át.'},{text:'GSNR không đổi vì ASE và NLI triệt tiêu nhau', explain:'Không có cơ chế triệt tiêu; ASE cố định còn NLI tăng bậc ba theo công suất.'}]} />
+
+<Quiz question="Vì sao FWM đặc biệt mạnh trên sợi dispersion-shifted (tán sắc gần 0 quanh 1550 nm) trong hệ WDM lưới đều?" hint="FWM cần điều kiện phase matching." options={[{text:'Tán sắc gần 0 giữ các kênh khớp pha lâu, và lưới đều làm sản phẩm trộn rơi đúng vào kênh hiện có', correct:true, explain:'Đúng. Phase matching cộng với tần số ký sinh trùng kênh là hai điều kiện làm FWM bùng phát; tán sắc dương phá điều kiện thứ nhất.'},{text:'Vì tán sắc thấp làm ASE của EDFA tăng lên', explain:'ASE do NF của khuếch đại quyết định, không liên quan trực tiếp tới tán sắc sợi.'},{text:'Vì SBS chuyển năng lượng ngược tạo tần số mới', explain:'Nhầm cơ chế: FWM là hiệu ứng Kerr (đàn hồi), còn SBS là tán xạ Brillouin phổ hẹp tán xạ ngược.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+- **ITU-T G.652 / G.655 / G.654** — đặc tính tán sắc và effective area của các loại sợi truyền dẫn.
+- **Mô hình GN/EGN** — Poggiolini et al., "The GN-Model of Fiber Non-Linear Propagation and its Applications" (JLT); Carena et al. về EGN. Tài liệu public, không gắn hãng.
+- **Agrawal, *Nonlinear Fiber Optics*** — cơ sở vật lý Kerr, SPM/XPM/FWM, SBS/SRS.
+- Số liệu ($n_2$, độ lệch đỉnh Raman khoảng 13 THz, ngưỡng SBS) là giá trị **điển hình** cho silica, dùng để minh hoạ bậc độ lớn.
+
+</Callout>
+
+➡️ Tiếp theo: **3.4 — OSNR & GSNR** — gộp ASE và NLI thành một thước đo, nối GSNR sang Q-factor, pre-FEC BER và margin của tuyến coherent.

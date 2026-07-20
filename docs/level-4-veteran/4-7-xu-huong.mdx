@@ -1,10 +1,49 @@
 ---
 sidebar_position: 7
 title: "4.7 — Xu hướng & tương lai"
+description: "Nhìn tỉnh táo về hollow-core fiber, per-λ 1.6T+, CPO, mạng điều khiển AI/ML và an ninh quang."
+concepts: [coherent, baud, pcs]
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 4.7 — Xu hướng & tương lai
 
-<LessonStub objective={"Hollow-core fiber, 1.6T+/λ, photonic integration & co-packaged optics, AI-driven networks, quantum-safe."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ:
+
+- Nắm được các hướng công nghệ đang định hình DWDM giai đoạn tới, mỗi hướng giải quyết vấn đề gì.
+- Phân biệt được cái đã thương mại hoá với cái còn ở phòng lab, tránh bị cuốn theo marketing.
+
+</Callout>
+
+Phần này cố ý viết ngắn và tỉnh táo. Với mỗi xu hướng: nó giải quyết bài toán gì, và còn vướng gì. Không có "công nghệ tương lai" nào miễn phí — mọi thứ đều đánh đổi.
+
+## Vật lý sợi & tốc độ symbol
+
+**Hollow-core fiber (HCF).** Ánh sáng truyền chủ yếu trong lõi rỗng (không khí/chân không) thay vì thuỷ tinh. Hai lợi ích thật: trễ nhóm giảm khoảng $30\%$ (ánh sáng đi gần tốc độ trong chân không, hữu ích cho low-latency trading, fronthaul, HPC), và phi tuyến Kerr gần như biến mất vì hệ số phi tuyến của không khí rất nhỏ — về lý thuyết nới trần công suất phóng. Hạn chế: suy hao từng là điểm yếu lớn, các thiết kế nested antiresonant (NANF) gần đây đã kéo xuống mức tiệm cận sợi SMF chuẩn ở một số cửa sổ, nhưng nối/hàn (splice) với sợi đặc, sản xuất chiều dài lớn ổn định, và hệ sinh thái đấu nối vẫn chưa chín. Hiện HCF hợp lý cho các tuyến ngắn nhạy trễ hơn là thay thế đường trục hàng nghìn km.
+
+**Per-λ 1.6T+ và baud rất cao.** Xu hướng tăng dung lượng mỗi bước sóng đi theo hai đòn bẩy: nâng baud (đã vượt $100$ GBd, hướng tới $\sim150+$ GBd) và giữ điều chế bậc cao. Baud cao cho nhiều bit/giây trên mỗi kênh và giảm số transponder phải quản lý. Hạn chế cứng: baud cao đòi DAC/ADC và driver băng thông rất rộng (tiêu thụ điện tăng), đồng thời mỗi kênh chiếm phổ rộng hơn — một kênh $150$ GBd cần khe cỡ $200$ GHz, nên "1.6T mỗi λ" không có nghĩa dung lượng sợi tăng tương ứng nếu phổ đã là nút thắt. OSNR yêu cầu cũng tăng theo baud và theo bậc QAM, thường phải dựa vào PCS để bám sát giới hạn Shannon thay vì nhảy bậc QAM cứng.
+
+## Tích hợp, điều khiển & an ninh
+
+**Photonic integration & co-packaged optics (CPO).** Gom nhiều hàm quang (laser, modulator, coherent receiver) lên một die silicon photonics, và đặt engine quang ngay cạnh ASIC switch/DSP thay vì ở mặt trước qua pluggable. Mục tiêu chính là điện năng và mật độ: rút ngắn đường điện tốc độ cao giúp giảm đáng kể pJ/bit khi baud và radix switch tăng. Hạn chế: CPO làm quang gắn chặt vào thiết bị, mất tính "cắm-rút" và khả năng thay nóng của pluggable, khó bảo trì và nâng cấp từng phần; nguồn laser (đặt ngoài hay tích hợp), tản nhiệt cho laser cạnh ASIC nóng, và chuỗi cung ứng/tiêu chuẩn hoá vẫn đang định hình. Đây là bài toán kiến trúc hệ thống, không chỉ là linh kiện.
+
+**Mạng điều khiển bằng AI/ML.** Dùng dữ liệu telemetry dày (per-channel power, OSNR, pre-FEC BER, môi trường) để dự báo suy giảm/hỏng hóc sớm, tối ưu margin và tự động hoá turn-up. Giá trị thực tế nhất hiện nay là ở tầng vận hành: phát hiện bất thường, gom cảnh báo, gợi ý phân bổ margin thay vì để dư quá tay. Hạn chế: mô hình chỉ tốt bằng chất lượng và độ phủ của telemetry; "tối ưu margin" đụng trực tiếp vào an toàn dịch vụ nên phần lớn triển khai vẫn giữ con người trong vòng lặp (closed-loop hoàn toàn còn dè dặt). Đây là công cụ hỗ trợ kỹ sư, không phải phép màu tự vận hành.
+
+**An ninh quang (QKD / quantum-safe).** Hai hướng khác nhau, đừng lẫn. QKD (phân phối khoá lượng tử) phân phối khoá qua tính chất lượng tử của photon, phát hiện được việc nghe lén; nhưng bị giới hạn khoảng cách/tốc độ, cần phần cứng chuyên dụng và thường phải có trusted node để đi xa, nên phạm vi ứng dụng còn hẹp. Song song, quantum-safe (post-quantum cryptography, PQC) là thuật toán mã hoá chạy trên phần cứng thông thường, chống được máy tính lượng tử tương lai, và thực tế đang được chuẩn hoá/ triển khai nhanh hơn nhiều. Với đa số mạng truyền dẫn, lộ trình thực dụng là nâng lớp mã hoá (kể cả Layer-1 encryption trên transponder) lên PQC, còn QKD vẫn là niche cho các trường hợp yêu cầu rất đặc thù.
+
+<Quiz question="Vì sao 'per-λ 1.6T với baud ~150 GBd' không tự động làm tăng dung lượng của cả sợi?" options={[{text:'Vì baud cao làm mỗi kênh chiếm khe phổ rộng hơn (cỡ 200 GHz), nên số kênh trên sợi giảm — nếu phổ là nút thắt thì tổng dung lượng không tăng tương ứng', correct:true, explain:'Đúng: dung lượng sợi là tích của dung lượng/kênh và số kênh trong phổ khả dụng; baud cao nâng vế đầu nhưng bóp vế sau.'},{text:'Vì baud cao luôn làm suy hao sợi tăng', explain:'Suy hao sợi phụ thuộc bước sóng và loại sợi, không phải baud của tín hiệu.'},{text:'Vì 1.6T chỉ chạy được trên hollow-core fiber', explain:'1.6T/λ là vấn đề DSP/quang điện tử, không phụ thuộc loại sợi cụ thể.'}]} />
+
+<Quiz question="Với đa số mạng truyền dẫn thương mại hiện nay, hướng an ninh chống lượng tử thực dụng nhất là gì?" hint="Phần cứng thông thường hay chuyên dụng?" options={[{text:'Nâng lớp mã hoá (gồm cả L1 encryption) lên post-quantum cryptography, chạy trên phần cứng hiện có', correct:true, explain:'Đúng: PQC đang được chuẩn hoá và triển khai rộng, không cần hạ tầng quang chuyên dụng.'},{text:'Thay toàn bộ tuyến bằng QKD với trusted node', explain:'QKD giới hạn khoảng cách/tốc độ và cần phần cứng chuyên dụng, chỉ hợp các niche đặc thù.'}]} />
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+Kỹ sư truyền dẫn thường phải trả lời câu hỏi mua sắm 5–7 năm: chọn nền tảng nào, đặt cược vào công nghệ nào. Nhìn tỉnh táo giúp tách "đã sẵn sàng sản xuất" (baud cao hơn, PCS, L1 encryption/PQC, telemetry + phân tích) khỏi "còn phải chờ" (HCF đường trục, CPO thay hẳn pluggable, closed-loop AI toàn phần). Rủi ro lớn nhất không phải chọn sai công nghệ mới, mà là khoá cứng vào một kiến trúc mất tính module (ví dụ CPO) khi vòng đời nâng cấp còn dài. Nguyên tắc an toàn: ưu tiên thứ giữ được khả năng thay thế từng phần, và đòi số liệu điện năng/pJ-per-bit thực đo thay vì con số trên slide.
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+Định hướng công nghệ theo tài liệu public của OIF (các implementation agreement về coherent và CPO framework), ITU-T G-series cho tham số hệ thống DWDM, và NIST PQC (bộ tiêu chuẩn mã hoá hậu lượng tử đã công bố). Các con số baud/GBd và dung lượng/λ mang tính điển hình theo lộ trình ngành, không gắn với part number hay hãng cụ thể.
+
+</Callout>
+
+➡️ Tiếp theo: Capstone 4 — tổng hợp toàn bộ Level 4 vào một bài toán thiết kế và vận hành mạng thật.

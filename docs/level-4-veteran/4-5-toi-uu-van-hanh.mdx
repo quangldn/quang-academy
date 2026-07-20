@@ -1,10 +1,140 @@
 ---
 sidebar_position: 5
 title: "4.5 — Tối ưu & vận hành nâng cao"
+description: Margin harvesting từ SNR/margin real-time của coherent, ước lượng GSNR trực tuyến, fiber characterization (OTDR/OFDR, CD/PMD), spectral monitoring và digital twin cho elastic optical network.
+concepts: [margin, gsnr, osnr, sdn]
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 4.5 — Tối ưu & vận hành nâng cao
 
-<LessonStub objective={"Margin harvesting & real-time SNR, nâng dung lượng liền mạch, fiber characterization, digital twin."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ hiểu **margin harvesting**: dùng chính transponder coherent như một cảm biến báo **SNR/margin** real-time để khai thác phần margin dư mà nâng modulation/dung lượng **không gián đoạn**; nắm cách **ước lượng GSNR trực tuyến** và làm **fiber characterization** (OTDR/OFDR, đo CD/PMD) để nuôi mô hình; và thấy **spectral monitoring + digital twin** biến mạng tĩnh thành **elastic optical network** vận hành theo dữ liệu ra sao.
+
+</Callout>
+
+## Từ margin "chôn" đến margin "khai thác được"
+
+Ở Level 3 ta thiết kế tuyến với một khoản **margin** cộng dồn: SNR margin để chịu aging của EDFA, connector bẩn dần, fiber repair thêm mối hàn, cộng thêm design margin vì mô hình không hoàn hảo. Kết quả điển hình: khi bật dịch vụ ngày đầu, transponder chạy dư **3–6 dB** so với ngưỡng FEC. Khoản dư đó là *bảo hiểm* — nhưng phần lớn thời gian nó nằm im, không sinh ra dung lượng.
+
+Coherent DSP thay đổi cuộc chơi ở chỗ: transponder không còn là hộp đen "sáng/tắt". Nó báo ra **pre-FEC BER**, **Q-factor** và một con số **SNR/margin ước lượng** cập nhật liên tục. Nghĩa là bạn **đo được** margin thật đang còn bao nhiêu, thay vì chỉ tin vào con số thiết kế.
+
+**Margin harvesting** (khai thác margin) là quy trình dùng số đo real-time đó để thu hồi phần margin không thực sự cần, chuyển nó thành **dung lượng** hoặc **cự ly**:
+
+- Còn dư nhiều margin trên một bước sóng đang chạy 16QAM? Nâng lên **32QAM/64QAM** (nhiều bit/symbol hơn) hoặc tăng baud, tăng dung lượng trên đúng sợi đó.
+- Không muốn đổi modulation cứng? Dùng **PCS (probabilistic constellation shaping)** để chỉnh dung lượng theo **bước tinh** (fractional bits/symbol), bám sát margin thực tế thay vì nhảy bậc thô.
+- Margin dư đồng đều cả tuyến? Có thể bỏ bớt một trạm regen, hoặc kéo dài span trong lần mở rộng sau.
+
+Điểm cốt lõi vận hành: các bước này làm được **không gián đoạn** (hitless) khi thiết bị hỗ trợ điều chỉnh mode/PCS mềm, hoặc chỉ gián đoạn một bước sóng đơn khi phải reconfigure — không đụng tới các bước sóng lân cận đang mang traffic.
+
+<svg viewBox="0 0 720 260" role="img" aria-label="Ngân sách margin theo thời gian và phần margin có thể khai thác" style={{maxWidth: '100%', height: 'auto', background: '#0d1117', borderRadius: '8px'}}>
+  <text x="360" y="26" fill="#e6edf3" fontSize="15" fontWeight="bold" textAnchor="middle">Margin theo vòng đời tuyến</text>
+  <line x1="80" y1="210" x2="680" y2="210" stroke="#8b949e" strokeWidth="1.5"/>
+  <line x1="80" y1="60" x2="80" y2="210" stroke="#8b949e" strokeWidth="1.5"/>
+  <text x="360" y="240" fill="#8b949e" fontSize="12" textAnchor="middle">thời gian (năm 0 đến hết đời tuyến)</text>
+  <text x="40" y="135" fill="#8b949e" fontSize="12" textAnchor="middle" transform="rotate(-90 40 135)">SNR margin (dB)</text>
+  <line x1="80" y1="185" x2="680" y2="185" stroke="#f85149" strokeWidth="1.5" strokeDasharray="6 4"/>
+  <text x="586" y="200" fill="#f85149" fontSize="11">ngưỡng FEC (margin = 0)</text>
+  <line x1="80" y1="90" x2="680" y2="150" stroke="#3fb950" strokeWidth="2"/>
+  <text x="150" y="82" fill="#3fb950" fontSize="11">margin thực đo (giảm dần vì aging)</text>
+  <line x1="80" y1="162" x2="680" y2="162" stroke="#58a6ff" strokeWidth="2" strokeDasharray="4 3"/>
+  <text x="150" y="178" fill="#58a6ff" fontSize="11">margin cần giữ (EOL guard)</text>
+  <rect x="90" y="92" width="120" height="66" fill="#3fb950" opacity="0.18"/>
+  <text x="248" y="120" fill="#e6edf3" fontSize="11">phần harvest được</text>
+</svg>
+
+Lưu ý sắc thái: không harvest tới **0 dB** margin. Bạn giữ lại một **EOL guard** đủ cho aging còn lại của tuyến cộng biến động nhanh (dao động PMD, thời tiết ảnh hưởng OSNR qua Raman/EDFA). Harvesting là kéo margin xuống *sát* mức cần, không phải xoá sạch.
+
+## Ngôn ngữ chung để so sánh: GSNR real-time
+
+Vấn đề khi có nhiều mode modulation, nhiều nhà cung cấp transponder: mỗi hãng báo SNR/margin theo cách riêng, ngưỡng FEC khác nhau. Cần một đại lượng **trung lập, cộng được** để quy hoạch và so sánh — đó là **GSNR (Generalized SNR)**.
+
+GSNR gộp hai nguồn suy giảm chính của một tuyến coherent vào một con số:
+
+$$
+\frac{1}{\text{GSNR}} = \frac{1}{\text{OSNR}_{\text{lin}}} + \frac{1}{\text{SNR}_{\text{NL,lin}}}
+$$
+
+trong đó $\text{OSNR}$ là phần **ASE** tuyến tính từ chuỗi EDFA, còn $\text{SNR}_{\text{NL}}$ là phần **nhiễu phi tuyến** (mô hình GN/EGN). GSNR chính là "OSNR hiệu dụng" mà DSP nhìn thấy — và một mode modulation cần GSNR lớn hơn ngưỡng của nó (cộng margin) thì chạy được.
+
+**Ước lượng GSNR trực tuyến** (real-time GSNR estimation) là chạy mô hình này *liên tục* bằng dữ liệu sống của mạng, thay vì chỉ một lần lúc thiết kế:
+
+- Lấy **per-channel power** và **ripple/tilt phổ** từ OCM (Optical Channel Monitor) trong ROADM/amplifier.
+- Lấy gain, NF, tổng công suất từ telemetry của EDFA.
+- Chạy mô hình GN để ra thành phần phi tuyến theo tải phổ **hiện tại** (bao nhiêu bước sóng đang bật, phổ đầy hay thưa).
+- Đối chiếu GSNR ước lượng với **SNR transponder báo về**: lệch nhỏ thì mô hình đáng tin, lệch lớn là dấu hiệu có bất thường (mối hàn xấu, amplifier lệch gain, filter narrowing).
+
+Kết quả: một ước lượng margin **định lượng, cập nhật** cho từng bước sóng, đủ tin để controller ra quyết định harvest — chứ không phải kỹ sư "đoán" từ một phép đo cũ.
+
+## Nuôi mô hình bằng số đo thật: fiber characterization
+
+Mô hình GSNR chỉ tốt bằng tham số sợi bạn đưa vào. Fiber characterization là đo **thật** các tham số đó thay vì lấy giá trị datasheet lý tưởng:
+
+| Đại lượng | Công cụ / cách đo | Vào mô hình để làm gì |
+|---|---|---|
+| Suy hao span, vị trí mối hàn/connector | **OTDR** (backscatter theo cự ly) | Loss thật mỗi span → công suất → OSNR |
+| Suy hao/phản xạ độ phân giải cao, span ngắn | **OFDR** (frequency-domain reflectometry) | Soi connector, sự cố gần, patch panel |
+| **CD** (chromatic dispersion) | Đo trễ nhóm theo bước sóng | Kiểm tra hệ số phi tuyến, xác nhận loại sợi |
+| **PMD** / DGD | Đo phân bố DGD theo thời gian | Cận trên tốc độ/mode, cảnh báo sợi cũ xấu |
+| Loại sợi (Aeff, hệ số phi tuyến) | Suy ra từ CD + đặc tính đo | Thành phần $\text{SNR}_{\text{NL}}$ của GN model |
+
+Với coherent, một phần characterization còn **gần như miễn phí**: DSP tự bù CD và PMD, nên nó *báo ra* lượng CD tích luỹ và DGD đo được trên mỗi bước sóng như số liệu vận hành liên tục. Đây là nguồn dữ liệu quý — coherent transponder vừa mang traffic vừa là **máy đo sợi phân tán** trên toàn mạng.
+
+Điểm thực tế: CD thường ổn định theo thời gian (đặc tính vật lý của sợi), còn **PMD biến động** theo nhiệt độ và rung động cơ học. Vì thế PMD phải được **giám sát**, không đo một lần rồi quên — nó là lý do bạn giữ EOL guard cho margin.
+
+## Spectral monitoring, digital twin và elastic optical network
+
+Gắn hết lại: một **digital twin** là bản sao phần mềm của line system chạy **song song** với mạng thật. Nó nhận telemetry (OCM phổ, power, gain, SNR transponder, CD/PMD DSP báo về), chạy mô hình GSNR trên trạng thái hiện tại, và cho phép **mô phỏng "what-if" trước khi tác động thật**.
+
+Vòng lặp vận hành theo dữ liệu:
+
+<svg viewBox="0 0 720 240" role="img" aria-label="Vòng lặp digital twin điều khiển elastic optical network" style={{maxWidth: '100%', height: 'auto', background: '#0d1117', borderRadius: '8px'}}>
+  <defs>
+    <marker id="a5" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#8b949e"/></marker>
+  </defs>
+  <rect x="40" y="90" width="150" height="60" rx="8" fill="none" stroke="#58a6ff" strokeWidth="2"/>
+  <text x="115" y="115" fill="#e6edf3" fontSize="12" textAnchor="middle">Mạng thật</text>
+  <text x="115" y="133" fill="#8b949e" fontSize="10" textAnchor="middle">OCM, EDFA, TXP</text>
+  <rect x="285" y="90" width="150" height="60" rx="8" fill="none" stroke="#3fb950" strokeWidth="2"/>
+  <text x="360" y="115" fill="#e6edf3" fontSize="12" textAnchor="middle">Digital twin</text>
+  <text x="360" y="133" fill="#8b949e" fontSize="10" textAnchor="middle">GSNR model</text>
+  <rect x="530" y="90" width="150" height="60" rx="8" fill="none" stroke="#f0883e" strokeWidth="2"/>
+  <text x="605" y="115" fill="#e6edf3" fontSize="12" textAnchor="middle">SDN controller</text>
+  <text x="605" y="133" fill="#8b949e" fontSize="10" textAnchor="middle">quyết định</text>
+  <line x1="190" y1="110" x2="283" y2="110" stroke="#8b949e" strokeWidth="1.5" markerEnd="url(#a5)"/>
+  <text x="236" y="102" fill="#8b949e" fontSize="10" textAnchor="middle">telemetry</text>
+  <line x1="435" y1="110" x2="528" y2="110" stroke="#8b949e" strokeWidth="1.5" markerEnd="url(#a5)"/>
+  <text x="481" y="102" fill="#8b949e" fontSize="10" textAnchor="middle">margin/GSNR</text>
+  <line x1="605" y1="150" x2="605" y2="195" stroke="#8b949e" strokeWidth="1.5"/>
+  <line x1="605" y1="195" x2="115" y2="195" stroke="#8b949e" strokeWidth="1.5"/>
+  <line x1="115" y1="195" x2="115" y2="152" stroke="#8b949e" strokeWidth="1.5" markerEnd="url(#a5)"/>
+  <text x="360" y="212" fill="#8b949e" fontSize="10" textAnchor="middle">tác động: đổi modulation/PCS, tái phân bổ phổ, chỉnh power</text>
+</svg>
+
+Đây chính là nền của **elastic optical network (EON)**: bước sóng không còn cố định 50 GHz một modulation cứng, mà **co giãn** — bit rate, baud, độ rộng phổ (flexgrid) và mode PCS được đặt theo GSNR *thực đo* của từng đường. Controller (SDN) dùng digital twin để:
+
+- **Trước khi bật dịch vụ**: mô phỏng chọn mode cao nhất mà GSNR tuyến cho phép, gán slot flexgrid vừa đủ.
+- **Trong vận hành**: theo dõi margin trôi; khi dư ổn định thì đề xuất harvest (nâng dung lượng); khi tụt thì hạ mode *chủ động* trước khi chạm ngưỡng FEC (soft-fail thay vì hard-fail).
+- **Trước reroute/nâng cấp**: chạy what-if trên twin để chắc traffic mới không đẩy phi tuyến vượt ngưỡng của các bước sóng đang chạy.
+
+<Quiz question="Vì sao margin harvesting chỉ khả thi và an toàn với coherent + digital twin, mà rất khó với hệ direct-detect 10G cổ điển?" options={[{text:'Coherent transponder báo SNR/margin real-time và DSP đo được CD/PMD, nên biết chính xác margin còn bao nhiêu; digital twin mô phỏng tác động trước khi thực hiện', correct:true, explain:'Đúng: harvesting cần đo được margin thật liên tục và mô phỏng được hệ quả — hai thứ coherent DSP và twin cung cấp, còn 10G on/off chỉ biết link up/down.'},{text:'Vì coherent luôn có sẵn nhiều margin hơn nên không cần đo gì', explain:'Sai: coherent không luôn dư — điểm mấu chốt là nó đo được và báo về được margin thực, chứ không phải dư nhiều hơn.'},{text:'Vì hệ 10G không dùng EDFA nên không có ASE để tính', explain:'Sai: hệ 10G vẫn dùng EDFA và có ASE; vấn đề là nó không có DSP telemetry để đọc margin real-time.'}]} />
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- **Tiền và thời gian**: margin harvesting biến "bảo hiểm chôn dưới đất" thành dung lượng bán được. Nâng một tuyến 16QAM lên 32QAM/PCS mà không kéo sợi mới, không thêm site — CAPEX gần như bằng 0. Nhưng phải có số đo tin cậy để dám làm; đây là lý do telemetry và GSNR estimation là điều kiện tiên quyết, không phải tính năng phụ.
+
+- **Ranh giới an toàn phải rõ ràng**: harvest sát ngưỡng nghĩa là margin nhỏ đi. Bạn phải chốt EOL guard dựa trên **aging còn lại thật** và **biến động PMD/OSNR đo được**, viết thành policy cho controller — chứ không để thuật toán tự do kéo về 0 dB rồi FEC sập lúc nhiệt độ thay đổi.
+
+- **Digital twin chỉ đúng khi được nuôi đủ**: một twin thiếu OCM phổ, thiếu characterization sợi thật (OTDR loss, CD/PMD) sẽ cho GSNR sai và dẫn tới quyết định harvest nguy hiểm. Đầu tư vào **giám sát và đo đạc** là điều kiện để tự động hoá đáng tin — "garbage in, garbage out" ở đây tính bằng dịch vụ rớt.
+
+- **Quy trình vận hành đổi vai**: kỹ sư chuyển từ "thiết kế một lần, để yên" sang "vận hành theo vòng lặp dữ liệu". Cần định nghĩa rõ **cái gì tự động, cái gì cần người duyệt**: đổi PCS trong biên độ nhỏ có thể tự động, còn bỏ regen hay đổi mode lớn nên qua change-control có twin làm bằng chứng.
+
+<Quiz question="Digital twin của một tuyến báo GSNR đủ cho 32QAM với margin 2,5 dB, nhưng transponder thật đang chạy 16QAM báo margin đo được thấp hơn dự đoán của twin 1 dB. Bước hợp lý nhất trước khi harvest lên 32QAM là gì?" hint="Lệch giữa twin và số đo thật nói lên điều gì?" options={[{text:'Điều tra nguyên nhân lệch (mối hàn/connector xấu, gain amplifier lệch, filter narrowing) và hiệu chỉnh mô hình trước khi tin con số để harvest', correct:true, explain:'Đúng: sai lệch twin-vs-đo-thật là cờ báo mô hình chưa khớp thực địa; harvest dựa trên GSNR chưa hiệu chỉnh là mạo hiểm. Sửa mô hình/tuyến trước.'},{text:'Cứ nâng lên 32QAM vì twin đã tính có margin 2,5 dB', explain:'Sai: twin đang lệch 1 dB so với thực tế — tin nó khi chưa giải thích được lệch có thể đẩy margin thật xuống âm.'},{text:'Bỏ hẳn twin và chỉ dùng số transponder báo', explain:'Sai: số transponder cho margin điểm hiện tại nhưng không mô phỏng được what-if khi đổi mode/tải phổ; giá trị của twin là ở dự báo. Cần hoà giải hai nguồn, không vứt một.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+ITU-T G.680 (physical transfer functions of optical network elements) và họ G.698.x/G.977 cho tham số hệ thống DWDM; ITU-T G.694.1 flexgrid; ITU-T G.650.x cho phương pháp đo CD/PMD sợi. Mô hình phi tuyến/GSNR: khung GN/EGN model (Poggiolini et al.) và công cụ open-source như GNPy (Telecom Infra Project, OOPT-PSE). Đo sợi: OTDR/OFDR theo IEC 61280-4-x. Khái niệm elastic optical network và margin harvesting: tài liệu công khai OIF, TIP OOPT cùng các bài khảo sát học thuật về EON — không gắn part number hay thông số hãng cụ thể.
+
+</Callout>
+
+➡️ Tiếp theo: **4.6 — Kinh tế mạng**: quy đổi những đòn tối ưu kỹ thuật ở bài này (harvest dung lượng, bỏ regen, kéo dài đời tuyến) thành CAPEX/OPEX và bài toán chọn kiến trúc theo tổng chi phí sở hữu.

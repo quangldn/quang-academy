@@ -1,10 +1,82 @@
 ---
 sidebar_position: 6
-title: "2.6 — Vận hành tuyến"
+title: "2.6 — Vận hành tuyến: turn-up & troubleshoot"
+description: "Quy trình commissioning một tuyến DWDM và cách khoanh vùng sự cố suy hao/OSNR thấp."
+concepts: [osa, osnr, margin]
 ---
 
-import LessonStub from '@site/src/components/LessonStub';
+# 2.6 — Vận hành tuyến: turn-up & troubleshoot
 
-# 2.6 — Vận hành tuyến
+<Callout type="goal">
 
-<LessonStub objective={"Commissioning/turn-up, power balancing, đọc alarm, troubleshoot OSNR/suy hao."} />
+Sau bài này bạn sẽ:
+
+- Nắm được trình tự commissioning/turn-up một tuyến DWDM: đo sợi, set gain EDFA, cân công suất per-channel, kiểm tra OSNR và pre-FEC BER.
+- Đọc được các alarm phổ biến (LOS, OSNR low, high BER) và biết chúng chỉ về đâu.
+- Có quy trình khoanh vùng khi gặp suy hao bất thường hoặc OSNR thấp so với thiết kế.
+
+</Callout>
+
+Turn-up là bước đưa một tuyến từ "đã đấu nối sợi" sang "mang traffic có margin". Nguyên tắc xuyên suốt: **so mọi số đo với con số thiết kế (design)**. Không có bản thiết kế thì không có "đúng/sai", chỉ có "đoán".
+
+## Trình tự commissioning/turn-up
+
+Làm tuần tự, không nhảy bước. Mỗi bước phải pass mới sang bước sau.
+
+| Bước | Việc làm | Tiêu chí pass |
+|------|----------|---------------|
+| 1. Đo sợi | OTDR + đo suy hao chèn (insertion loss) end-to-end mỗi span | Loss thực tế khớp thiết kế (điển hình lệch nhỏ hơn 1–2 dB); không có sự kiện lạ (mối hàn, connector bẩn) |
+| 2. Set gain EDFA | Đặt gain từng bộ khuếch đại theo loss span đứng trước nó | Công suất ra và tilt phổ nằm trong khoảng thiết kế |
+| 3. Cân công suất per-channel | Dùng VOA (thường tích hợp trong ROADM/WSS) đưa power mỗi kênh về mục tiêu | Độ phẳng phổ giữa các kênh trong khoảng cho phép (điển hình dưới 1–2 dB) |
+| 4. Kiểm tra OSNR | Đo OSNR mỗi kênh tại đầu thu bằng OSA | OSNR khớp thiết kế và còn margin so với ngưỡng của transponder |
+| 5. Kiểm tra pre-FEC BER | Đọc pre-FEC BER trên transponder coherent | Pre-FEC BER thấp hơn nhiều so với ngưỡng FEC; post-FEC sạch lỗi |
+
+Vài lưu ý:
+
+- **Đo sợi trước tiên.** Loss span sai kéo theo gain sai, kéo theo OSNR sai. Một connector bẩn có thể cộng thêm vài dB và làm hỏng toàn bộ phần sau.
+- **Set gain theo loss span, không theo cảm tính.** EDFA chạy đúng gain thiết kế mới cho noise figure và OSNR như mô phỏng.
+- **Cân công suất bằng VOA** để mọi kênh tới đầu thu ở mức tương đương; kênh lệch cao dễ bị đẩy vào vùng phi tuyến, kênh lệch thấp thì thiếu OSNR.
+
+## Đọc alarm phổ biến
+
+Ba alarm gặp nhiều nhất và hướng suy luận:
+
+| Alarm | Nghĩa | Nghĩ tới đầu tiên |
+|-------|-------|-------------------|
+| **LOS** (Loss of Signal) | Đầu thu không thấy công suất | Đứt sợi, connector tuột/hở, laser Tx tắt, VOA đóng quá mức |
+| **OSNR low** | Tỷ số tín hiệu trên nhiễu ASE dưới ngưỡng | Gain/tilt EDFA sai, quá nhiều span hoặc nhiều tầng khuếch đại, power kênh thấp, suy hao span tăng |
+| **High BER / pre-FEC BER cao** | Chất lượng tín hiệu kém dù có công suất | OSNR thấp, phi tuyến do power quá cao, tán sắc chưa bù đúng, lỗi phần cứng transponder |
+
+Điểm cần phân biệt: **LOS là vấn đề công suất** (có hay không có ánh sáng), còn **OSNR low và high BER là vấn đề chất lượng** (có ánh sáng nhưng bẩn). Cách xử lý khác hẳn nhau.
+
+## Troubleshoot suy hao bất thường / OSNR thấp
+
+Quy trình thực dụng, dựa trên **chia đoạn và so với design**:
+
+1. **Xác định lệch bao nhiêu so với thiết kế.** OSNR thấp hơn design 3 dB là chuyện lớn; thấp 0.5 dB có thể chỉ là sai số đo.
+2. **Chia tuyến thành từng span.** Đo lại loss từng span bằng OTDR hoặc power meter. So với giá trị commissioning ban đầu, không so với con số trong đầu.
+3. **Khoanh vùng span có bất thường.** Span nào loss tăng bất ngờ thì đó là nghi phạm: connector bẩn (hay gặp nhất), mối hàn xấu, bán kính uốn cong quá nhỏ, sợi bị đè hoặc gãy một phần.
+4. **Kiểm tra bộ khuếch đại của span đó.** Gain có đúng đặt không, có bị suy giảm bơm, tilt có lệch không. Một EDFA chạy sai gain sẽ vừa làm lệch power vừa làm hỏng OSNR.
+5. **Vệ sinh và đo lại.** Rất nhiều case "OSNR thấp" thực chất là connector bẩn cộng vài dB. Vệ sinh đúng cách rồi đo lại trước khi kết luận hỏng phần cứng.
+6. **Nếu tất cả span đều đúng thiết kế mà OSNR vẫn thấp:** khả năng là design margin quá mỏng cho số span hoặc số tầng khuếch đại thực tế, hoặc power launch chưa tối ưu — quay lại xem lại bản thiết kế.
+
+Nguyên tắc vàng: **luôn có baseline commissioning để so.** Con số ngày turn-up chính là "ảnh chụp lúc khỏe" của tuyến; troubleshoot sau này là so ảnh hiện tại với ảnh đó.
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- **Margin là thứ bạn bán.** Turn-up với đủ margin (OSNR và pre-FEC BER cách xa ngưỡng) nghĩa là tuyến chịu được lão hóa sợi, thêm span, thời tiết mà không rớt traffic. Turn-up sát ngưỡng thì sẽ có cuộc gọi lúc 2 giờ sáng.
+- **Không có baseline thì không troubleshoot được.** Đội nào bỏ qua khâu ghi lại số commissioning sẽ phải "đoán" khi có sự cố, kéo dài thời gian gián đoạn.
+- **Đa số sự cố suy hao là connector bẩn**, không phải "đứt cáp" hay "hỏng card". Kỷ luật vệ sinh và đo trước-đo-sau tiết kiệm rất nhiều giờ công.
+- **Đọc đúng loại alarm giúp đi đúng hướng ngay từ đầu:** LOS thì đi tìm chỗ mất công suất; OSNR low hoặc high BER thì đi soi chất lượng và chuỗi khuếch đại.
+
+<Quiz question="Đầu thu báo OSNR low nhưng công suất kênh vẫn ở mức thiết kế. Bước hợp lý nhất tiếp theo là gì?" hint="Có ánh sáng đủ mức nhưng 'bẩn' — vấn đề chất lượng, không phải công suất." options={[{text:'Chia tuyến theo span, đo lại loss từng span và so với số commissioning để khoanh vùng span hoặc EDFA gây suy giảm OSNR', correct:true, explain:'OSNR low với power đủ là vấn đề chất lượng: cần khoanh vùng span có loss tăng hoặc EDFA chạy sai gain/tilt so với thiết kế.'},{text:'Tăng công suất phát của laser lên hết mức để bù OSNR', explain:'Đẩy power quá cao dễ vào vùng phi tuyến, làm BER xấu hơn; và power vốn đã đủ mức thiết kế nên đây không phải nguyên nhân.'},{text:'Thay ngay transponder vì chắc chắn hỏng phần cứng', explain:'Chưa khoanh vùng thì chưa nên thay phần cứng; đa phần OSNR low đến từ span hoặc khuếch đại chứ không phải transponder.'}]} />
+
+<Quiz question="Trong trình tự turn-up, vì sao phải đo sợi (OTDR/insertion loss) trước khi set gain EDFA?" options={[{text:'Vì gain EDFA được đặt theo loss của span đứng trước; loss span sai sẽ kéo theo gain sai và OSNR sai', correct:true, explain:'Đúng: mọi bước sau phụ thuộc loss span thực tế, nên phải xác nhận sợi khớp thiết kế trước.'},{text:'Vì OTDR sẽ làm hỏng EDFA nếu bật khuếch đại trước', explain:'OTDR và EDFA không xung đột theo kiểu này; lý do là thứ tự phụ thuộc số liệu, không phải an toàn thiết bị.'},{text:'Vì không đo sợi thì không cắm được connector', explain:'Đo sợi là để lấy số liệu loss, không liên quan tới việc cắm connector.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+Thực hành dựa trên các khuyến nghị công khai của ITU-T: G.694.1 (lưới kênh DWDM), G.680 (đặc tính chuỗi thiết bị OADM/khuếch đại), G.697 (giám sát lớp quang, đo OSNR) và phương pháp đo OSNR bằng OSA theo IEC 61280-2-9. Ngưỡng OSNR và pre-FEC BER cụ thể lấy từ datasheet transponder của tuyến thực tế; các con số nêu trong bài là "điển hình" để minh họa, trung lập hãng.
+
+</Callout>
+
+➡️ Tiếp theo: Capstone 2 — tổng hợp thiết kế và vận hành một tuyến DWDM hoàn chỉnh.

@@ -1,10 +1,163 @@
 ---
 sidebar_position: 2
-title: "2.2 — Tán sắc chi tiết (CD & PMD)"
+title: "2.2 — Tán sắc chi tiết: CD & PMD"
+description: "Hiểu chromatic dispersion, PMD, cách chúng làm giãn xung và cách bù bằng DCF hay DSP số trong hệ coherent."
+concepts: [cd, pmd, dsp, fiber]
 ---
 
-import LessonStub from '@site/src/components/LessonStub';
+# 2.2 — Tán sắc chi tiết: CD & PMD
 
-# 2.2 — Tán sắc chi tiết (CD & PMD)
+<Callout type="goal">
 
-<LessonStub objective={"ps/nm/km, dispersion map, bù DCF vs bù số coherent; PMD và giới hạn tốc độ."} />
+Sau bài này bạn sẽ:
+
+- Giải thích được nguồn gốc vật lý của chromatic dispersion (CD) và polarization mode dispersion (PMD), tính được tán sắc tích luỹ trên một span.
+- Biết vì sao giới hạn CD giảm nhanh khi tốc độ bit tăng, và so sánh hai cách bù: DCF/DCM thời IMDD với bù số bằng DSP trong hệ coherent.
+
+</Callout>
+
+## Tán sắc là gì và vì sao xung bị giãn
+
+Một xung ánh sáng không đơn sắc: nó chứa một dải bước sóng $\Delta\lambda$ quanh bước sóng trung tâm. Trong sợi quang, mỗi thành phần bước sóng chạy với vận tốc nhóm hơi khác nhau, nên sau một quãng đường các thành phần "về đích" lệch thời điểm. Kết quả là xung bị giãn ra theo thời gian (pulse broadening). Khi xung giãn đủ nhiều để tràn sang khe bit lân cận, ta có inter-symbol interference (ISI) và BER xấu đi.
+
+<svg viewBox="0 0 640 240" width="100%" role="img" aria-label="Xung hẹp ở đầu vào bị giãn rộng và thấp hơn ở đầu ra sau khi qua sợi có tán sắc">
+  <line x1="40" y1="200" x2="600" y2="200" stroke="#888" stroke-width="1"/>
+  <text x="20" y="120" font-size="13" fill="#555" transform="rotate(-90 20 120)">Công suất</text>
+  <text x="300" y="228" font-size="13" fill="#555">Thời gian</text>
+  <path d="M 90 200 C 120 200 125 60 150 60 C 175 60 180 200 210 200" fill="none" stroke="#1e88e5" stroke-width="2.5"/>
+  <text x="105" y="45" font-size="13" fill="#1e88e5">Xung vào (hẹp, cao)</text>
+  <path d="M 360 200 C 410 200 420 120 470 120 C 520 120 530 200 580 200" fill="none" stroke="#e53935" stroke-width="2.5"/>
+  <text x="400" y="105" font-size="13" fill="#e53935">Xung ra (giãn, thấp)</text>
+  <line x1="150" y1="60" x2="150" y2="210" stroke="#1e88e5" stroke-width="1" stroke-dasharray="3 3"/>
+  <line x1="470" y1="120" x2="470" y2="210" stroke="#e53935" stroke-width="1" stroke-dasharray="3 3"/>
+  <path d="M 230 130 L 330 130" stroke="#444" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="238" y="120" font-size="13" fill="#444">Sợi có tán sắc D, dài L</text>
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#444"/>
+    </marker>
+  </defs>
+</svg>
+
+Xung giãn nhưng năng lượng bảo toàn, nên đỉnh xung thấp đi. Đó là lý do tán sắc vừa gây ISI vừa làm giảm biên độ hiệu dụng của tín hiệu.
+
+## Chromatic dispersion: nguyên nhân và hệ số D
+
+CD gồm hai thành phần cộng lại:
+
+- **Material dispersion**: chiết suất của thuỷ tinh silica phụ thuộc bước sóng ($n(\lambda)$), nên vận tốc nhóm phụ thuộc bước sóng. Đây là thành phần chủ đạo ở vùng 1550 nm.
+- **Waveguide dispersion**: sự phân bố năng lượng mode giữa lõi và vỏ thay đổi theo bước sóng, làm vận tốc nhóm hiệu dụng phụ thuộc bước sóng. Thành phần này nhỏ hơn nhưng cho phép nhà sản xuất "dịch" điểm zero-dispersion khi thiết kế sợi (ví dụ sợi NZ-DSF G.655).
+
+Hệ số tán sắc $D$ đo bằng $\text{ps}/(\text{nm}\cdot\text{km})$: một xung rộng $1\ \text{nm}$ đi qua $1\ \text{km}$ sẽ giãn thêm $D$ picô-giây. Với sợi tiêu chuẩn G.652 tại $1550\ \text{nm}$, giá trị điển hình:
+
+$$
+D \approx 17\ \text{ps}/(\text{nm}\cdot\text{km})
+$$
+
+Tán sắc tích luỹ (accumulated dispersion, đơn vị $\text{ps}/\text{nm}$) trên tuyến dài $L$:
+
+$$
+D_{\text{acc}} = D \times L
+$$
+
+và độ giãn xung theo thời gian với nguồn có độ rộng phổ $\Delta\lambda$:
+
+$$
+\Delta\tau = D \times L \times \Delta\lambda
+$$
+
+**Dispersion slope** $S$ ($\text{ps}/(\text{nm}^2\cdot\text{km})$, điển hình $\approx 0{,}06$ với G.652) mô tả việc $D$ bản thân nó thay đổi theo bước sóng. Trong một hệ WDM nhiều kênh trải trên băng C, các kênh ở rìa băng thấy $D$ khác kênh giữa băng, nên module bù cần khớp cả slope chứ không chỉ khớp $D$ tại một bước sóng.
+
+### Ví dụ số: tán sắc tích luỹ trên 80 km
+
+Span G.652 dài $L = 80\ \text{km}$, $D = 17\ \text{ps}/(\text{nm}\cdot\text{km})$:
+
+$$
+D_{\text{acc}} = 17 \times 80 = 1360\ \text{ps}/\text{nm}
+$$
+
+Nếu tín hiệu 10G IMDD dùng laser điều chế trực tiếp có $\Delta\lambda \approx 0{,}1\ \text{nm}$ (do chirp):
+
+$$
+\Delta\tau = 1360 \times 0{,}1 = 136\ \text{ps}
+$$
+
+So với khe bit 10G ($\approx 100\ \text{ps}$), độ giãn này đã lớn hơn cả một khe bit, nghĩa là span 80 km này bắt buộc phải bù CD nếu chạy IMDD 10G. Với nguồn coherent điều chế ngoài, phổ hẹp hơn nhiều, nhưng tán sắc tích luỹ $1360\ \text{ps}/\text{nm}$ vẫn cần được bù, chỉ khác là bù trong miền số.
+
+## Giới hạn CD theo tốc độ bit: vì sao 100G "khó hơn" 10G
+
+Băng thông tín hiệu tỉ lệ với tốc độ symbol. Khi tốc độ bit tăng gấp $N$ lần, khe bit ngắn đi $N$ lần, đồng thời phổ tín hiệu rộng ra $N$ lần, nên cùng một lượng $\Delta\tau$ gây hại gấp bội. Kết quả kinh điển: khoảng cách chịu được CD (không bù) giảm theo bình phương tốc độ bit.
+
+$$
+L_{\text{CD}} \propto \frac{1}{B^2}
+$$
+
+Bảng minh hoạ (bậc độ lớn điển hình cho on-off keying không bù trên G.652, chỉ để cảm nhận xu hướng, không phải trị tuyệt đối):
+
+| Tốc độ bit | Khoảng chịu CD điển hình (không bù) |
+|---|---|
+| 2,5G | hàng nghìn km |
+| 10G | vài chục đến trăm km |
+| 40G (OOK) | vài km |
+
+Chính hệ số $1/B^2$ này giải thích vì sao khi đi lên 40G/100G bằng điều chế cường độ cổ điển, việc bù CD trở nên bắt buộc và rất khắt khe, và cũng là một trong những động lực đẩy ngành chuyển sang coherent với bù số.
+
+## Bù CD: DCF/DCM thời IMDD so với DSP số trong coherent
+
+**Thời IMDD (direct detection):** vì detector chỉ đo cường độ, pha bị mất, không thể "gỡ" tán sắc trong miền điện. Phải bù CD trong miền quang bằng phần tử có tán sắc ngược dấu:
+
+- **DCF (Dispersion Compensating Fiber)**: cuộn sợi có $D$ âm lớn (ví dụ $-100\ \text{ps}/(\text{nm}\cdot\text{km})$), đặt tại trạm để đưa $D_{\text{acc}}$ về gần 0. Nhược điểm: thêm suy hao (cần EDFA bù lại), thêm chiều dài sợi lõi nhỏ có mật độ công suất cao làm tăng hiệu ứng phi tuyến, và cố định theo thiết kế.
+- **DCM (Dispersion Compensation Module)**: đóng gói DCF hoặc dùng chirped fiber Bragg grating; loại FBG ít suy hao và không thêm sợi phi tuyến nhưng có thể gây ripple.
+
+Trong IMDD, dispersion map (đồ thị $D_{\text{acc}}$ theo cự ly) phải được thiết kế cẩn thận: bù dưới hay quá mức tại từng span đều ảnh hưởng phi tuyến và penalty.
+
+**Hệ coherent:** máy thu coherent số hoá cả biên độ và pha của trường quang. Vì CD là một hàm truyền tuyến tính đã biết (pha bậc hai theo tần số), DSP có thể áp bộ lọc nghịch đảo để khử sạch tán sắc trong miền số.
+
+- Không cần DCF/DCM, nên không thêm suy hao và không thêm sợi phi tuyến.
+- Bù được lượng tán sắc tích luỹ rất lớn (hàng chục nghìn $\text{ps}/\text{nm}$) chỉ bằng cấu hình bộ lọc.
+- Linh hoạt: cùng một transponder chạy được nhiều cự ly khác nhau mà không cần đổi phần cứng bù.
+
+Đây là lý do các tuyến coherent hiện đại thường dùng sợi "trần" (không DCM) và để DSP lo toàn bộ CD.
+
+## PMD: tán sắc phân cực và bản chất thống kê
+
+Sợi thực không đối xứng trục hoàn hảo: ứng suất, uốn cong, và sai lệch hình học làm lõi có **birefringence** — hai trạng thái phân cực trực giao (hai principal states) chạy với vận tốc hơi khác nhau. Độ lệch thời gian giữa hai trạng thái gọi là **DGD** (Differential Group Delay), đo bằng ps.
+
+Khác với CD, PMD mang tính **ngẫu nhiên và biến đổi theo thời gian**: birefringence dọc sợi thay đổi theo nhiệt độ, rung động, thao tác cáp. Do sự ghép mode ngẫu nhiên, DGD tức thời tuân theo phân bố **Maxwell**, và giá trị trung bình tích luỹ theo **căn bậc hai** của chiều dài (không phải tuyến tính như CD):
+
+$$
+\langle \text{DGD} \rangle = D_{\text{PMD}} \times \sqrt{L}
+$$
+
+với $D_{\text{PMD}}$ là hệ số PMD, đơn vị $\text{ps}/\sqrt{\text{km}}$. Sợi mới đạt $\approx 0{,}04$–$0{,}1\ \text{ps}/\sqrt{\text{km}}$; sợi cũ chôn từ thập niên 1990 có thể tệ hơn nhiều, tới $0{,}5$–$1\ \text{ps}/\sqrt{\text{km}}$ hoặc hơn.
+
+Ví dụ, sợi cũ $D_{\text{PMD}} = 0{,}5\ \text{ps}/\sqrt{\text{km}}$ trên $400\ \text{km}$:
+
+$$
+\langle \text{DGD} \rangle = 0{,}5 \times \sqrt{400} = 0{,}5 \times 20 = 10\ \text{ps}
+$$
+
+Vì phân bố Maxwell có đuôi, quy tắc thiết kế thường tính DGD tức thời có thể lên tới $\approx 3$ lần giá trị trung bình, và giới hạn DGD trung bình cho phép thường đặt quanh $10\%$ của thời gian symbol. Với 10G IMDD, ngưỡng đó khá dễ chạm trên sợi cũ, khiến PMD là rào cản nâng cấp tốc độ trên hạ tầng cũ, và không bù được bằng DCF (DCF chỉ bù CD).
+
+**Coherent giải quyết PMD:** máy thu coherent thu cả hai phân cực (polarization diversity) và dùng bộ lọc thích nghi động (adaptive equalizer, ví dụ cấu trúc butterfly cập nhật liên tục) trong DSP để tách và cân bằng hai trạng thái phân cực theo thời gian thực. Nhờ vậy coherent chịu được DGD lớn hơn nhiều bậc so với IMDD và tự bám theo biến động PMD của sợi. Đây là một trong những lý do coherent "hồi sinh" được các tuyến sợi cũ mà IMDD tốc độ cao không chạy nổi.
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- **Chọn kiến trúc bù đúng thời đại**: nếu tuyến còn thiết bị IMDD 10G/40G, bạn phải thiết kế dispersion map với DCM và tính cả suy hao/phi tuyến của DCF vào link budget. Nếu là coherent, đừng lắp DCM — nó chỉ thêm suy hao và phi tuyến vô ích, còn CD thì DSP xử lý tốt hơn.
+- **Đánh giá sợi cũ trước khi nâng cấp**: trước khi bật tốc độ cao trên hạ tầng cũ, đo PMD của tuyến. CD có thể bù, nhưng PMD của sợi cũ có thể là giới hạn cứng với IMDD; đây là lập luận kỹ thuật để chọn coherent.
+- **Đừng quên slope trong hệ WDM băng rộng**: bù CD chỉ khớp tại một bước sóng sẽ để lại tán sắc dư ở các kênh rìa băng — cần module khớp cả slope hoặc dựa vào DSP per-channel của coherent.
+- **PMD là biến động, không tĩnh**: sự cố PMD thường thoáng qua (phụ thuộc nhiệt độ/rung), khó tái hiện. Hiểu bản chất Maxwell giúp bạn không truy tìm nhầm nguyên nhân khi BER thỉnh thoảng nhảy.
+
+<Quiz question="Một span G.652 dài 80 km, D = 17 ps/(nm·km). Tán sắc tích luỹ D_acc là bao nhiêu?" hint="D_acc = D × L" options={[{text:'1360 ps/nm', correct:true, explain:'17 × 80 = 1360 ps/nm. Đây là lượng tán sắc cần bù bằng DCM (IMDD) hoặc bằng DSP (coherent).'},{text:'136 ps/nm', explain:'Đây là kết quả nếu quên nhân đủ 80 km; 17 × 80 = 1360, không phải 136.'},{text:'17 ps/nm', explain:'Đó là hệ số D cho 1 km, chưa nhân với chiều dài tuyến.'},{text:'80 ps/nm', explain:'Nhầm dùng chiều dài làm kết quả; phải nhân D với L.'}]} />
+
+<Quiz question="Vì sao hệ coherent không cần DCF/DCM để bù chromatic dispersion?" options={[{text:'Máy thu coherent số hoá cả biên độ và pha, nên DSP áp được bộ lọc nghịch đảo để khử CD trong miền số', correct:true, explain:'CD là hàm truyền tuyến tính đã biết; có thông tin pha thì DSP đảo ngược được, không thêm suy hao hay sợi phi tuyến.'},{text:'Vì tín hiệu coherent không bị chromatic dispersion', explain:'CD vẫn tác động lên tín hiệu coherent; điểm khác là nó được bù trong miền số chứ không phải không tồn tại.'},{text:'Vì coherent luôn dùng bước sóng nằm đúng điểm zero-dispersion', explain:'Coherent hoạt động khắp băng C với D khác 0; nó bù bằng DSP chứ không dựa vào zero-dispersion.'},{text:'Vì DCF chỉ dùng được cho PMD', explain:'DCF bù CD chứ không bù PMD; và coherent bù CD bằng DSP.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+- ITU-T G.652 (đặc tính sợi single-mode chuẩn), G.655 (NZ-DSF), G.653 (DSF): giá trị D, slope, PMD.
+- ITU-T G.671 và G.691/G.959.1: tham số chịu tán sắc của giao diện quang.
+- Vật lý tán sắc (material/waveguide dispersion, thống kê Maxwell của PMD) theo các giáo trình sợi quang phổ biến. Số liệu ghi "điển hình" — tra datasheet sợi cụ thể khi thiết kế.
+
+</Callout>
+
+➡️ Tiếp theo: 2.3 — Khuếch đại nâng cao (EDFA gain flatness, Raman, tilt và quản lý công suất).

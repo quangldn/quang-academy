@@ -44,7 +44,7 @@
       "cat": "foundation",
       "url": "/hoc/level-1-fresher/1-1-2-soi-quang",
       "hasLesson": true,
-      "val": 5
+      "val": 6
     },
     {
       "id": "db",
@@ -60,7 +60,7 @@
       "cat": "mux",
       "url": "/hoc/level-1-fresher/1-2-1-wdm-la-gi",
       "hasLesson": true,
-      "val": 6
+      "val": 7
     },
     {
       "id": "cwdm",
@@ -76,7 +76,7 @@
       "cat": "mux",
       "url": "/hoc/level-1-fresher/1-2-2-itu-grid",
       "hasLesson": true,
-      "val": 3
+      "val": 5
     },
     {
       "id": "flexgrid",
@@ -84,7 +84,7 @@
       "cat": "mux",
       "url": "/hoc/level-1-fresher/1-2-2-itu-grid",
       "hasLesson": true,
-      "val": 3
+      "val": 7
     },
     {
       "id": "transponder",
@@ -92,7 +92,7 @@
       "cat": "component",
       "url": "/hoc/level-1-fresher/1-2-4-khoi-chuc-nang",
       "hasLesson": true,
-      "val": 4
+      "val": 7
     },
     {
       "id": "oadm",
@@ -100,7 +100,7 @@
       "cat": "component",
       "url": "/hoc/level-1-fresher/1-2-4-khoi-chuc-nang",
       "hasLesson": true,
-      "val": 2
+      "val": 4
     },
     {
       "id": "muxdemux",
@@ -116,7 +116,7 @@
       "cat": "component",
       "url": "/hoc/level-1-fresher/1-3-2-edfa",
       "hasLesson": true,
-      "val": 6
+      "val": 8
     },
     {
       "id": "raman",
@@ -124,7 +124,7 @@
       "cat": "component",
       "url": "/hoc/level-1-fresher/1-3-3-raman",
       "hasLesson": true,
-      "val": 2
+      "val": 4
     },
     {
       "id": "osc",
@@ -132,15 +132,15 @@
       "cat": "component",
       "url": "/hoc/level-1-fresher/1-3-4-osc-voa-tap",
       "hasLesson": true,
-      "val": 2
+      "val": 4
     },
     {
       "id": "roadm",
       "label": "ROADM / WSS",
       "cat": "component",
-      "url": null,
-      "hasLesson": false,
-      "val": 5
+      "url": "/hoc/level-2-junior/2-4-roadm",
+      "hasLesson": true,
+      "val": 9
     },
     {
       "id": "attenuation",
@@ -156,7 +156,7 @@
       "cat": "impairment",
       "url": "/hoc/level-1-fresher/1-1-3-ba-ke-thu",
       "hasLesson": true,
-      "val": 2
+      "val": 3
     },
     {
       "id": "pmd",
@@ -164,7 +164,7 @@
       "cat": "impairment",
       "url": "/hoc/level-1-fresher/1-1-3-ba-ke-thu",
       "hasLesson": true,
-      "val": 2
+      "val": 3
     },
     {
       "id": "nonlinear",
@@ -172,15 +172,15 @@
       "cat": "impairment",
       "url": "/hoc/level-1-fresher/1-1-3-ba-ke-thu",
       "hasLesson": true,
-      "val": 4
+      "val": 6
     },
     {
       "id": "spm",
       "label": "SPM / XPM / FWM",
       "cat": "impairment",
-      "url": null,
-      "hasLesson": false,
-      "val": 1
+      "url": "/hoc/level-3-senior/3-3-phi-tuyen",
+      "hasLesson": true,
+      "val": 3
     },
     {
       "id": "ase",
@@ -188,7 +188,7 @@
       "cat": "impairment",
       "url": "/hoc/level-1-fresher/1-3-2-edfa",
       "hasLesson": true,
-      "val": 2
+      "val": 5
     },
     {
       "id": "osa",
@@ -196,7 +196,7 @@
       "cat": "quality",
       "url": "/hoc/level-1-fresher/1-4-1-do-cong-suat",
       "hasLesson": true,
-      "val": 2
+      "val": 3
     },
     {
       "id": "linkbudget",
@@ -204,7 +204,7 @@
       "cat": "quality",
       "url": "/hoc/level-1-fresher/1-4-4-link-budget",
       "hasLesson": true,
-      "val": 4
+      "val": 7
     },
     {
       "id": "osnr",
@@ -212,7 +212,7 @@
       "cat": "quality",
       "url": "/hoc/level-1-fresher/1-4-2-osnr-khai-niem",
       "hasLesson": true,
-      "val": 9
+      "val": 13
     },
     {
       "id": "ber",
@@ -236,7 +236,7 @@
       "cat": "quality",
       "url": "/hoc/level-1-fresher/1-4-3-ber-qfactor",
       "hasLesson": true,
-      "val": 3
+      "val": 7
     },
     {
       "id": "margin",
@@ -244,15 +244,15 @@
       "cat": "quality",
       "url": "/hoc/level-1-fresher/1-4-4-link-budget",
       "hasLesson": true,
-      "val": 3
+      "val": 11
     },
     {
       "id": "gsnr",
       "label": "GSNR",
       "cat": "quality",
-      "url": null,
-      "hasLesson": false,
-      "val": 4
+      "url": "/hoc/level-3-senior/3-3-phi-tuyen",
+      "hasLesson": true,
+      "val": 9
     },
     {
       "id": "coherent",
@@ -260,7 +260,7 @@
       "cat": "coherent",
       "url": "/hoc/level-3-senior/3-1-coherent",
       "hasLesson": true,
-      "val": 8
+      "val": 14
     },
     {
       "id": "qam",
@@ -268,7 +268,7 @@
       "cat": "coherent",
       "url": "/hoc/level-3-senior/3-1-coherent",
       "hasLesson": true,
-      "val": 3
+      "val": 6
     },
     {
       "id": "dsp",
@@ -276,7 +276,7 @@
       "cat": "coherent",
       "url": "/hoc/level-3-senior/3-1-coherent",
       "hasLesson": true,
-      "val": 3
+      "val": 4
     },
     {
       "id": "baud",
@@ -284,55 +284,55 @@
       "cat": "coherent",
       "url": "/hoc/level-3-senior/3-1-coherent",
       "hasLesson": true,
-      "val": 2
+      "val": 5
     },
     {
       "id": "pcs",
       "label": "PCS",
       "cat": "coherent",
-      "url": null,
-      "hasLesson": false,
-      "val": 1
+      "url": "/hoc/level-3-senior/3-2-fec-spectral-efficiency",
+      "hasLesson": true,
+      "val": 4
     },
     {
       "id": "otn",
       "label": "OTN (G.709)",
       "cat": "network",
-      "url": null,
-      "hasLesson": false,
-      "val": 2
+      "url": "/hoc/level-4-veteran/4-3-otn",
+      "hasLesson": true,
+      "val": 5
     },
     {
       "id": "ipodwdm",
       "label": "IPoDWDM",
       "cat": "network",
-      "url": null,
-      "hasLesson": false,
-      "val": 2
+      "url": "/hoc/level-4-veteran/4-1-kien-truc-hien-dai",
+      "hasLesson": true,
+      "val": 6
     },
     {
       "id": "zr",
       "label": "400ZR / 800ZR",
       "cat": "network",
-      "url": null,
-      "hasLesson": false,
-      "val": 2
+      "url": "/hoc/level-4-veteran/4-1-kien-truc-hien-dai",
+      "hasLesson": true,
+      "val": 3
     },
     {
       "id": "protection",
       "label": "Bảo vệ / Restoration",
       "cat": "network",
-      "url": null,
-      "hasLesson": false,
-      "val": 2
+      "url": "/hoc/level-4-veteran/4-4-bao-ve-khoi-phuc",
+      "hasLesson": true,
+      "val": 4
     },
     {
       "id": "sdn",
       "label": "SDN & Telemetry",
       "cat": "network",
-      "url": null,
-      "hasLesson": false,
-      "val": 2
+      "url": "/hoc/level-4-veteran/4-2-dieu-khien-tu-dong",
+      "hasLesson": true,
+      "val": 7
     }
   ],
   "links": [
@@ -625,12 +625,232 @@
       "source": "protection",
       "target": "sdn",
       "co": false
+    },
+    {
+      "source": "linkbudget",
+      "target": "ase",
+      "co": true
+    },
+    {
+      "source": "linkbudget",
+      "target": "edfa",
+      "co": true
+    },
+    {
+      "source": "ase",
+      "target": "margin",
+      "co": true
+    },
+    {
+      "source": "margin",
+      "target": "edfa",
+      "co": true
+    },
+    {
+      "source": "cd",
+      "target": "pmd",
+      "co": true
+    },
+    {
+      "source": "dsp",
+      "target": "fiber",
+      "co": true
+    },
+    {
+      "source": "raman",
+      "target": "ase",
+      "co": true
+    },
+    {
+      "source": "oadm",
+      "target": "flexgrid",
+      "co": true
+    },
+    {
+      "source": "oadm",
+      "target": "osc",
+      "co": true
+    },
+    {
+      "source": "flexgrid",
+      "target": "osc",
+      "co": true
+    },
+    {
+      "source": "transponder",
+      "target": "itugrid",
+      "co": true
+    },
+    {
+      "source": "coherent",
+      "target": "itugrid",
+      "co": true
+    },
+    {
+      "source": "osa",
+      "target": "margin",
+      "co": true
+    },
+    {
+      "source": "roadm",
+      "target": "osnr",
+      "co": true
+    },
+    {
+      "source": "roadm",
+      "target": "linkbudget",
+      "co": true
+    },
+    {
+      "source": "roadm",
+      "target": "margin",
+      "co": true
+    },
+    {
+      "source": "fec",
+      "target": "qam",
+      "co": true
+    },
+    {
+      "source": "fec",
+      "target": "baud",
+      "co": true
+    },
+    {
+      "source": "fec",
+      "target": "pcs",
+      "co": true
+    },
+    {
+      "source": "baud",
+      "target": "pcs",
+      "co": true
+    },
+    {
+      "source": "baud",
+      "target": "coherent",
+      "co": true
+    },
+    {
+      "source": "pcs",
+      "target": "coherent",
+      "co": true
+    },
+    {
+      "source": "spm",
+      "target": "gsnr",
+      "co": true
+    },
+    {
+      "source": "spm",
+      "target": "coherent",
+      "co": true
+    },
+    {
+      "source": "osnr",
+      "target": "nonlinear",
+      "co": true
+    },
+    {
+      "source": "margin",
+      "target": "nonlinear",
+      "co": true
+    },
+    {
+      "source": "roadm",
+      "target": "gsnr",
+      "co": true
+    },
+    {
+      "source": "flexgrid",
+      "target": "gsnr",
+      "co": true
+    },
+    {
+      "source": "flexgrid",
+      "target": "osnr",
+      "co": true
+    },
+    {
+      "source": "raman",
+      "target": "wdm",
+      "co": true
+    },
+    {
+      "source": "coherent",
+      "target": "margin",
+      "co": true
+    },
+    {
+      "source": "gsnr",
+      "target": "qam",
+      "co": true
+    },
+    {
+      "source": "qam",
+      "target": "margin",
+      "co": true
+    },
+    {
+      "source": "ipodwdm",
+      "target": "coherent",
+      "co": true
+    },
+    {
+      "source": "zr",
+      "target": "transponder",
+      "co": true
+    },
+    {
+      "source": "fec",
+      "target": "transponder",
+      "co": true
+    },
+    {
+      "source": "margin",
+      "target": "sdn",
+      "co": true
+    },
+    {
+      "source": "gsnr",
+      "target": "sdn",
+      "co": true
+    },
+    {
+      "source": "osnr",
+      "target": "sdn",
+      "co": true
+    },
+    {
+      "source": "ipodwdm",
+      "target": "otn",
+      "co": true
+    },
+    {
+      "source": "ipodwdm",
+      "target": "protection",
+      "co": true
+    },
+    {
+      "source": "ipodwdm",
+      "target": "sdn",
+      "co": true
+    },
+    {
+      "source": "otn",
+      "target": "protection",
+      "co": true
+    },
+    {
+      "source": "otn",
+      "target": "sdn",
+      "co": true
     }
   ],
   "meta": {
     "generated": true,
-    "taggedLessons": 0,
+    "taggedLessons": 21,
     "nodeCount": 38,
-    "edgeCount": 58
+    "edgeCount": 102
   }
 }

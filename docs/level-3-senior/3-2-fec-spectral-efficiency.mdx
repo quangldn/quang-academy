@@ -1,10 +1,122 @@
 ---
 sidebar_position: 2
 title: "3.2 — FEC & spectral efficiency"
+description: Hard vs soft-decision FEC, coding gain, giới hạn Shannon, spectral efficiency, và probabilistic constellation shaping.
+concepts: [fec, qam, baud, pcs, coherent]
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 3.2 — FEC & spectral efficiency
 
-<LessonStub objective={"Hard vs soft-decision FEC, coding gain, giới hạn Shannon, baud vs bits/symbol, PCS."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ hiểu **FEC** làm gì và vì sao **soft-decision FEC** cho coding gain lớn hơn hard-decision; đọc được **giới hạn Shannon** và khoảng cách của một tuyến thật tới nó; và nắm được **probabilistic constellation shaping (PCS)** — kỹ thuật cho phép per-λ leo từ 400G lên 800G rồi 1.2T một cách liên tục.
+
+</Callout>
+
+## FEC: đổi băng thông lấy độ nhạy
+
+Máy thu coherent luôn có lỗi bit trước khi sửa — gọi là **pre-FEC BER**. **FEC (Forward Error Correction)** thêm các **bit dư (parity)** vào luồng dữ liệu để bên thu **phát hiện và sửa** lỗi mà không cần truyền lại. Cái giá phải trả là **overhead**: một phần băng thông (và baud) dành cho parity thay vì payload.
+
+Ta mô tả overhead bằng phần trăm:
+
+$$
+\text{OH} = \frac{\text{line rate}}{\text{payload rate}} - 1
+$$
+
+- **FEC cổ điển (G.709 / GFEC)**: overhead **~7%** (RS(255,239) Reed–Solomon, tức 16 byte parity trên 239 byte payload), coding gain khiêm tốn.
+- **FEC hiện đại (coherent)**: overhead **~15–25%**, coding gain lớn hơn nhiều nhờ soft-decision + iterative decoding.
+
+Ví dụ: một bước sóng payload 400G với FEC overhead 20% cần line rate ≈ 480 Gb/s. Chính overhead này là lý do ta thấy line rate luôn cao hơn con số "400G/800G" ghi trên cổng.
+
+## Hard-decision vs soft-decision
+
+Điểm mấu chốt của FEC hiện đại nằm ở **loại thông tin** mà bộ giải mã nhận từ DSP.
+
+- **Hard-decision (HD-FEC)**: DSP quyết định dứt khoát mỗi bit là 0 hay 1 *trước khi* đưa vào decoder. Decoder chỉ thấy chuỗi bit "cứng" — đã vứt đi thông tin về **độ tin cậy** của từng bit.
+- **Soft-decision (SD-FEC)**: DSP chuyển cho decoder một **giá trị mềm** (thường là LLR — log-likelihood ratio) cho mỗi bit: "bit này gần như chắc là 1" khác với "bit này 51% là 1". Decoder dùng thông tin tin cậy đó để sửa được nhiều lỗi hơn.
+
+Chênh lệch này đáng giá **~1.5–2 dB** coding gain. Tổng lại, **net coding gain (NCG)** của SD-FEC hiện đại đạt **~8–11 dB** — nghĩa là tuyến chịu được OSNR thấp hơn 8–11 dB so với khi không có FEC, ở cùng post-FEC BER mục tiêu.
+
+## Pre-FEC threshold: ngưỡng sống–chết của tuyến
+
+FEC chỉ sửa được lỗi tới một mức nhất định. **Pre-FEC threshold** là mức pre-FEC BER cao nhất mà decoder vẫn kéo post-FEC BER về mức "không lỗi thực dụng" (thường mục tiêu post-FEC BER nhỏ hơn $10^{-15}$).
+
+- Ví dụ điển hình: một SD-FEC có ngưỡng pre-FEC BER ≈ $2 \times 10^{-2}$ (tức 2E-2). Nếu tuyến chạy ở pre-FEC BER = 1E-2 → dưới ngưỡng → post-FEC sạch, còn **margin**. Nếu leo lên 3E-2 → vượt ngưỡng → **post-FEC bùng lỗi**, tuyến sập.
+- Đây là lý do NOC theo dõi **pre-FEC BER** như một chỉ báo sức khoẻ: nó cho thấy tuyến còn cách "vực" bao xa, *trước khi* có lỗi thực sự tới khách hàng.
+
+Quan hệ pre-FEC BER với **Q-factor** và margin sẽ được nối tiếp ở bài OSNR/GSNR (3.4). Ở đây chỉ cần nhớ: ngưỡng pre-FEC là điểm quy chiếu để tính mọi margin của lớp coherent.
+
+## Giới hạn Shannon & spectral efficiency
+
+Câu hỏi nền tảng: một kênh với băng thông $B$ và tỉ số tín/nhiễu SNR chứa tối đa bao nhiêu bit? **Định lý Shannon–Hartley** trả lời:
+
+$$
+C = B \cdot \log_2(1 + \mathrm{SNR})
+$$
+
+trong đó $C$ (bit/s) là dung lượng tối đa lý thuyết. Chia cho băng thông ta được **spectral efficiency (SE)**, đơn vị **bit/s/Hz** — thước đo "nhồi được bao nhiêu bit vào mỗi Hz phổ":
+
+$$
+\text{SE} = \frac{C}{B} = \log_2(1 + \mathrm{SNR})
+$$
+
+Vài mốc trực giác (giới hạn Shannon, một phân cực): SNR = 10 dB (tỉ số 10) → SE ≈ $\log_2(11)$ ≈ **3.46 bit/s/Hz**; SNR = 20 dB → SE ≈ **6.66 bit/s/Hz**. Ở vùng SNR cao, mỗi khi muốn **thêm 1 bit/s/Hz** thì SNR (tỉ số tuyến tính) phải **tăng gấp đôi** — tức mỗi bit "ngốn" thêm cỡ **3 dB**; SE tăng *tuyến tính* còn SNR phải tăng *theo cấp số nhân*. Đó là lý do vật lý khiến việc leo dung lượng ngày càng đắt đỏ.
+
+**Baud, bits/symbol, và SE — đừng nhầm lẫn:**
+
+- **Baud (symbol rate)** quyết định **băng thông** kênh chiếm (baud ≈ băng thông tín hiệu, cộng roll-off).
+- **bits/symbol** (do format QAM quyết định) × 2 (DP) quyết định **SE**.
+- **Line rate = baud × bits/symbol × 2**. Tăng baud → cùng SE nhưng cần nhiều phổ hơn; tăng bits/symbol → cùng phổ nhưng cần SNR cao hơn.
+
+Ví dụ: DP-16QAM = 4 bit/symbol × 2 = 8 bit/symbol ròng. Trên lưới 75 GHz với ~64 GBd, SE thực ≈ $\frac{64 \times 8}{75}$ ≈ **6.8 bit/s/Hz** — đã khá gần trần Shannon ứng với OSNR đường trục điển hình. Khoảng cách còn lại tới Shannon (**Shannon gap**) chính là "đất" mà FEC mạnh và PCS đi vào khai thác.
+
+## Probabilistic Constellation Shaping (PCS)
+
+Với QAM cổ điển, mọi điểm constellation được dùng với **xác suất bằng nhau**. Nhưng Shannon nói dung lượng cực đại đạt được khi phân bố biên độ tín hiệu **gần Gaussian**, không phải đều. **PCS** khai thác đúng điều này: cho các điểm **năng lượng thấp (gần gốc)** xuất hiện **thường xuyên hơn**, các điểm **năng lượng cao (ngoài rìa)** xuất hiện **hiếm hơn**.
+
+Hai lợi ích lớn:
+
+1. **Shaping gain**: tiến sát giới hạn Shannon hơn QAM đều — thu hẹp Shannon gap thêm tới ~1 dB tùy cấu hình.
+2. **Điều chỉnh dung lượng liên tục**: bằng cách chỉnh phân bố xác suất, kỹ sư đặt được **bất kỳ SE nào** giữa hai nấc QAM — thay vì buộc phải nhảy bậc rời rạc QPSK (2) → 8QAM (3) → 16QAM (4) bit/symbol.
+
+Điểm (2) là thay đổi tư duy vận hành. Trước PCS, nếu tuyến không đủ OSNR cho 16QAM, bạn *phải* tụt hẳn xuống 8QAM và mất một mảng dung lượng lớn. Với PCS, bạn tinh chỉnh SE **theo từng nấc nhỏ** để bám sát đúng OSNR/GSNR thực có của tuyến — vắt kiệt mọi bit khả dụng ở mỗi khoảng cách. Đây là cơ chế cho phép một transponder **cùng phần cứng** phủ dải từ ~200G (đường siêu dài) tới 800G–1.2T (metro/DCI) chỉ bằng cấu hình phần mềm.
+
+## Vì sao quan trọng khi triển khai thật
+
+- **Pre-FEC BER là đồng hồ sức khoẻ của tuyến.** NOC không đợi tới khi khách hàng thấy lỗi — họ theo dõi pre-FEC BER so với **pre-FEC threshold** để biết còn bao nhiêu margin. Một tuyến bò dần từ 1E-3 lên gần ngưỡng 2E-2 là dấu hiệu suy giảm (fiber bend, connector bẩn, EDFA tilt, lão hoá) cần xử lý *trước khi* post-FEC bùng lỗi.
+- **Line rate ≠ client rate.** Khi tính fill phổ, số kênh trên băng C, hay so bandwidth WSS, phải dùng **line rate đã gồm FEC overhead** (ví dụ 400G payload → ~480 Gb/s), không phải con số ghi trên cổng.
+- **Chọn format/SE phải bám OSNR/GSNR thực của tuyến.** PCS cho phép đặt SE theo nấc nhỏ để vắt kiệt dung lượng ở mỗi khoảng cách — cùng một transponder phủ từ đường siêu dài (SE thấp) tới metro/DCI (SE cao) chỉ bằng cấu hình phần mềm, giảm số loại phần cứng phải kho.
+- **SD-FEC đắt về DSP/điện năng.** Coding gain lớn đi kèm iterative decoding tốn tài nguyên; khi so sánh transponder cần cân nhắc NCG **cùng với** công suất tiêu thụ và độ trễ, không chỉ nhìn con số gain.
+
+## Thực hành: đọc constellation theo góc nhìn FEC & SE
+
+Chọn format và kéo **nhiễu mô phỏng**. Liên hệ với bài học: điểm bắt đầu "vỡ" (chồng lấn) tương ứng với **pre-FEC BER tăng**. FEC mạnh cho phép chạy ở mức nhiễu cao hơn (pre-FEC BER cao hơn) mà vẫn về post-FEC sạch — đó là "coding gain" bạn thấy bằng mắt. Format càng dày (SE càng cao) thì cửa sổ nhiễu càng hẹp → càng cần OSNR cao.
+
+<ConstellationExplorer />
+
+<Quiz
+  question="Vì sao soft-decision FEC (SD-FEC) cho coding gain cao hơn hard-decision (HD-FEC)?"
+  hint="Khác biệt nằm ở thông tin mà decoder nhận được."
+  options={[
+    {text: 'Decoder nhận thông tin độ tin cậy (soft/LLR) của mỗi bit thay vì chỉ 0/1 cứng', correct: true, explain: 'Đúng — LLR giữ lại độ tin cậy, giúp sửa nhiều lỗi hơn; chênh ~1.5–2 dB.'},
+    {text: 'SD-FEC dùng ít overhead hơn nên tiết kiệm băng thông', explain: 'Ngược lại — SD-FEC hiện đại thường có overhead cao hơn (15–25%), không phải nguồn gốc của gain.'},
+    {text: 'SD-FEC không cần DSP', explain: 'FEC coherent luôn nằm sau DSP; soft-value chính là do DSP cung cấp.'},
+  ]}
+/>
+
+<Quiz
+  question="Một transponder cần hạ SE để tuyến dài hơn nhưng vẫn muốn tận dụng tối đa OSNR có được. Kỹ thuật nào cho phép chỉnh dung lượng theo nấc nhỏ liên tục thay vì nhảy bậc QAM?"
+  options={[
+    {text: 'Probabilistic Constellation Shaping (PCS)', correct: true, explain: 'Đúng — PCS chỉnh phân bố xác suất điểm để đặt SE ở bất kỳ giá trị nào giữa hai nấc QAM.'},
+    {text: 'Tăng overhead FEC lên 100%', explain: 'Overhead vô lý và vẫn không cho điều chỉnh liên tục SE; không phải cơ chế shaping.'},
+    {text: 'Chuyển từ DP về single-polarization', explain: 'Giảm phân cực chỉ cắt đôi dung lượng theo bậc cố định, không phải tinh chỉnh liên tục.'},
+  ]}
+/>
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+FEC khung OTN và GFEC 7% theo **ITU-T G.709 / G.975 / G.975.1** (super-FEC). Giới hạn Shannon–Hartley là kết quả lý thuyết thông tin chuẩn (Shannon, 1948). Nguyên lý PCS và shaping gain dựa trên tài liệu học thuật public (probabilistic amplitude shaping) và được nhiều dòng coherent thương mại triển khai. Các con số NCG (~8–11 dB), overhead (~15–25%) và pre-FEC threshold là **giá trị điển hình theo bậc độ lớn**, không phải thông số của một hãng cụ thể.
+
+</Callout>
+
+➡️ Tiếp theo: [3.3 — Hiệu ứng phi tuyến](./3-3-phi-tuyen)

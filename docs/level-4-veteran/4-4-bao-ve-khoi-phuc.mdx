@@ -1,10 +1,131 @@
 ---
 sidebar_position: 4
 title: "4.4 — Bảo vệ & khả dụng"
+description: Bảo vệ OMS vs OCh, sơ đồ 1+1 và 1:N, protection vs restoration, mục tiêu 50 ms, ASON/GMPLS, SRLG và bài toán availability (MTBF/MTTR).
+concepts: [protection, roadm, sdn]
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 4.4 — Bảo vệ & khả dụng
 
-<LessonStub objective={"OMS/OCh protection, restoration, ASON, SRLG, mục tiêu 50 ms, availability."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ:
+
+- Phân biệt các **lớp bảo vệ** theo mặt cắt: **OMS** (đoạn ghép kênh) so với **OCh** (từng bước sóng), và các sơ đồ **1+1, 1:N**.
+- Hiểu đánh đổi giữa **protection** (dự phòng cấu hình sẵn) và **restoration** (tính lại đường sau lỗi, kiểu mesh) — nhanh hay tiết kiệm tài nguyên.
+- Nắm khái niệm **SRLG**, mục tiêu chuyển mạch **50 ms**, và cách quy đổi từ **MTBF/MTTR** ra **availability** để đặt SLA có cơ sở.
+
+</Callout>
+
+## Bảo vệ ở lớp nào: OMS hay OCh
+
+Trong mạng WDM, "bảo vệ" không phải một khái niệm đơn nhất — nó xảy ra ở những **mặt cắt (layer) khác nhau**, và chọn sai lớp dẫn tới hoặc tốn kém hoặc không đủ mịn.
+
+- **OMS protection (Optical Multiplex Section)** — bảo vệ **cả đoạn ghép kênh**, tức toàn bộ băng WDM (tất cả các bước sóng) giữa hai điểm, như một khối. Khi đoạn sợi/khuếch đại làm việc hỏng, toàn bộ dải phổ được chuyển sang đường dự phòng cùng lúc. Đơn giản, rẻ về số lượng chuyển mạch, phù hợp khi mọi bước sóng đi chung một cặp tuyến. Nhược điểm: không phân biệt được từng dịch vụ — cả đoạn sống hoặc cả đoạn chết.
+- **OCh protection (Optical Channel)** — bảo vệ **từng bước sóng riêng lẻ**. Mỗi lightpath có đường làm việc và đường bảo vệ của riêng nó, có thể đi tuyến vật lý khác nhau. Mịn hơn, cho phép chỉ bảo vệ những dịch vụ quan trọng (premium) và để phần còn lại chạy unprotected, nhưng tốn phổ và tốn phần cứng chuyển mạch/transponder hơn.
+
+Một cách nhìn thực dụng: OMS bảo vệ **hạ tầng đường trục** (đứt cáp, hỏng amplifier trên một span), còn OCh bảo vệ **từng dịch vụ** và cho phép đường bảo vệ tránh rủi ro riêng của từng lightpath. Nhiều mạng dùng cả hai ở các phần khác nhau.
+
+| Tiêu chí | OMS protection | OCh protection |
+|---|---|---|
+| Đối tượng bảo vệ | Cả băng WDM của một đoạn | Từng bước sóng |
+| Độ mịn | Thô — tất cả hoặc không | Mịn — chọn từng dịch vụ |
+| Chi phí phần cứng | Thấp (ít điểm chuyển mạch) | Cao hơn (mỗi OCh một cơ chế) |
+| Định tuyến đường dự phòng | Chung cho cả đoạn | Riêng từng lightpath |
+| Hợp với | Point-to-point, đường trục | Dịch vụ phân hạng, mesh |
+
+## Sơ đồ 1+1 và 1:N
+
+Khi đã chọn lớp, còn phải chọn **kiểu đấu dự phòng**.
+
+- **1+1** — tín hiệu được **phát đồng thời trên cả hai đường** (làm việc và bảo vệ). Đầu thu chọn đường tốt hơn (chọn ở phía thu). Vì cả hai đường luôn mang bản sao, chuyển mạch chỉ là "đổi chọn" nên **rất nhanh** và không cần báo hiệu qua lại. Đổi lại: tốn gấp đôi tài nguyên phổ/đường — mỗi dịch vụ chiếm hai lightpath.
+- **1:N** — **một** đường bảo vệ dùng chung cho **N** đường làm việc. Bình thường đường bảo vệ rảnh (hoặc chở lưu lượng ưu tiên thấp, có thể bị chiếm dụng). Khi một đường làm việc hỏng, hệ thống **báo hiệu** để chuyển dịch vụ đó sang đường bảo vệ. Tiết kiệm tài nguyên hơn nhiều, nhưng **chậm hơn** (cần phối hợp hai đầu) và **không chống được lỗi đồng thời** nhiều đường làm việc (chỉ một được cứu tại một thời điểm).
+
+Sơ đồ nguyên lý 1+1 (chọn ở phía thu):
+
+<svg viewBox="0 0 460 190" role="img" aria-label="Sơ đồ 1+1: nguồn phát đồng thời hai đường, đầu thu chọn đường tốt hơn" style={{maxWidth:'100%',height:'auto',background:'#fff',borderRadius:'8px'}}>
+  <rect x="20" y="80" width="70" height="34" rx="5" fill="#e3f2fd" stroke="#1565c0"/>
+  <text x="55" y="101" fontSize="12" textAnchor="middle" fill="#0d47a1">Nguồn (Tx)</text>
+  <rect x="370" y="80" width="70" height="34" rx="5" fill="#e8f5e9" stroke="#2e7d32"/>
+  <text x="405" y="97" fontSize="12" textAnchor="middle" fill="#1b5e20">Chọn</text>
+  <text x="405" y="109" fontSize="12" textAnchor="middle" fill="#1b5e20">(Rx)</text>
+  <path d="M90 92 C 180 30, 280 30, 370 92" fill="none" stroke="#1565c0" strokeWidth="2.5"/>
+  <text x="230" y="40" fontSize="12" textAnchor="middle" fill="#1565c0">Đường làm việc</text>
+  <path d="M90 102 C 180 165, 280 165, 370 102" fill="none" stroke="#9e9e9e" strokeWidth="2.5" strokeDasharray="6 4"/>
+  <text x="230" y="168" fontSize="12" textAnchor="middle" fill="#616161">Đường bảo vệ (bản sao)</text>
+</svg>
+
+Trong ROADM/coherent hiện đại, "chọn ở phía thu" cho OCh 1+1 thường được hiện thực bằng cầu (bridge) ở đầu phát và **selector** trước bộ thu, hoặc bằng chức năng chuyển mạch trong WSS của ROADM. 1:N thì cần **báo hiệu** — đây là điểm giao với control plane (bài 4.2).
+
+<Quiz question="Vì sao 1+1 chuyển mạch nhanh hơn 1:N?" hint="Nghĩ xem bên nào cần phối hợp hai đầu." options={[{text:'1+1 phát đồng thời trên cả hai đường, đầu thu chỉ đổi chọn nên không cần báo hiệu qua lại; 1:N phải báo hiệu để phân bổ đường bảo vệ dùng chung', correct:true, explain:'Đúng — 1+1 là quyết định cục bộ ở phía thu; 1:N cần phối hợp hai đầu nên chậm hơn.'},{text:'1+1 dùng sợi tốt hơn nên tín hiệu nhanh hơn', explain:'Tốc độ chuyển mạch bảo vệ không liên quan chất lượng sợi, mà là cơ chế quyết định.'},{text:'1:N không có đường bảo vệ nên phải dựng lại từ đầu', explain:'1:N có đường bảo vệ dùng chung; điểm chậm là bước báo hiệu phân bổ nó, không phải dựng mới.'}]} />
+
+## Protection so với restoration
+
+Đây là trục đánh đổi quan trọng nhất của chương này.
+
+- **Protection** — đường dự phòng được **tính và cấu hình trước**, tài nguyên (phổ, cổng) đã **giữ sẵn**. Khi lỗi xảy ra, chỉ việc chuyển sang. Ưu điểm: **nhanh, tất định** (thời gian phục hồi biết trước). Nhược điểm: **tốn tài nguyên** vì đường bảo vệ nằm chờ, và thường chỉ chống được một kịch bản lỗi đã dự trù.
+- **Restoration** — sau khi lỗi xảy ra, control plane **tính lại một đường mới** trên phần mạng còn sống (điển hình là **mesh**), rồi thiết lập lightpath. Ưu điểm: **tiết kiệm tài nguyên** (không giữ đường chờ; phổ dùng chung cho nhiều kịch bản lỗi), linh hoạt trước nhiều loại sự cố. Nhược điểm: **chậm hơn** (phải tính đường, gán bước sóng, dò khả thi quang, bật transponder — hàng trăm ms tới giây), và **không đảm bảo cứu được** nếu tài nguyên đã cạn.
+
+Cách nhớ: protection trả trước bằng **tài nguyên** để mua **tốc độ và chắc chắn**; restoration trả sau bằng **thời gian và độ bất định** để tiết kiệm **tài nguyên**. Mạng thật thường **lai**: dịch vụ premium dùng protection (thậm chí 1+1) để đạt mục tiêu nhanh, còn phần lớn lưu lượng dùng restoration mesh để hạ chi phí phổ. Một biến thể phổ biến là **pre-planned restoration** (tính sẵn đường khôi phục nhưng không giữ tài nguyên cứng) — cân bằng giữa tốc độ tính và mức chiếm dụng.
+
+Mục tiêu kinh điển là **50 ms** — con số kế thừa từ thời SDH/SONET APS, đủ nhanh để hầu hết dịch vụ không rớt phiên. **1+1 protection** đạt được ngưỡng này. **Restoration mesh** nhìn chung **không** đạt 50 ms; nó thường tính bằng trăm ms tới vài giây, và điều đó **chấp nhận được** cho lưu lượng không yêu cầu bảo vệ hạng cao. Đừng áp mù mục tiêu 50 ms lên mọi dịch vụ — đó là cách làm mạng đắt vô ích.
+
+### ASON/GMPLS và SRLG
+
+Restoration cần một **control plane** biết topology và tính được đường mới. Đây là vai trò của **ASON** (ITU-T G.8080) và bộ giao thức **GMPLS**, hoặc một **SDN controller** với PCE tập trung (đã bàn ở bài 4.2). Khi một liên kết đứt, control plane nhận sự kiện, chạy tính đường (RWA/RSA) trên đồ thị còn lại, rồi báo hiệu thiết lập lightpath thay thế.
+
+Nhưng tính lại đường thôi chưa đủ — đường bảo vệ/khôi phục phải **thật sự tách rời rủi ro** với đường làm việc. Đó là lý do có **SRLG (Shared Risk Link Group)**:
+
+- Nhiều liên kết logic khác nhau có thể **chia sẻ cùng một rủi ro vật lý**: cùng nằm trong một ống cáp, cùng đi qua một cầu, cùng một mối hàn, cùng một nguồn điện trạm. Chúng được gắn cùng một **SRLG id**.
+- Khi tính đường bảo vệ, thuật toán phải chọn đường **disjoint theo SRLG** — không dùng chung SRLG nào với đường làm việc. Nếu không, một nhát cuốc đứt ống cáp có thể **hạ cả hai đường cùng lúc**, và "bảo vệ" trở thành ảo tưởng.
+
+Bài học vận hành: hai đường trông "khác nhau" trên bản đồ logic vẫn có thể đi chung một đoạn cống bể ngoài thực địa. SRLG chỉ đúng khi **dữ liệu vật lý (as-built) được nạp chính xác** vào control plane — đây là công việc dữ liệu tẻ nhạt nhưng quyết định mạng có thực sự sống sót khi đứt cáp hay không.
+
+## Availability, MTBF và MTTR
+
+SLA khả dụng ("99.99%") không phải con số marketing — nó suy ra được từ độ tin cậy phần cứng và tốc độ sửa chữa.
+
+- **MTBF (Mean Time Between Failures)** — thời gian trung bình giữa hai lần hỏng của một thành phần (giờ).
+- **MTTR (Mean Time To Repair)** — thời gian trung bình để khôi phục sau một lỗi (gồm phát hiện, điều xe, thay thế, kiểm tra).
+- **Availability** của một phần tử:
+
+$$
+A = \frac{\text{MTBF}}{\text{MTBF} + \text{MTTR}}
+$$
+
+Ví dụ số: một thành phần có MTBF $= 100{,}000$ giờ và MTTR $= 8$ giờ cho $A = 100000 / 100008 \approx 0.99992$, tức "four nines". **Unavailability** (thời gian chết) $U = 1 - A \approx 8\times10^{-5}$, quy ra khoảng **42 phút/năm**.
+
+Vài quy đổi hữu ích để cảm nhận "số nine":
+
+| Availability | Thời gian chết mỗi năm (xấp xỉ) |
+|---|---|
+| 99.9% (three nines) | ~8,8 giờ |
+| 99.99% (four nines) | ~53 phút |
+| 99.999% (five nines) | ~5,3 phút |
+
+Hai điểm mấu chốt cho kỹ sư:
+
+- Các phần tử **nối tiếp** (mọi thành phần phải sống thì đường mới sống) làm availability **nhân lại**, nên availability đầu-cuối luôn **thấp hơn** từng thành phần. Một tuyến dài nhiều span, nhiều amplifier có nhiều điểm hỏng nối tiếp.
+- **Bảo vệ/khôi phục tạo ra dự phòng song song**, kéo availability lên bậc "nine" cao hơn — nhưng chỉ khi hai nhánh **thật sự độc lập** (SRLG-disjoint). Nếu không, bạn chỉ nhân đôi chi phí mà không nhân số nine.
+- Giảm **MTTR** thường **rẻ và hiệu quả hơn** tăng MTBF: phụ tùng dự phòng tại chỗ, giám sát tốt (telemetry, bài 4.2) để phát hiện sớm, quy trình ứng cứu rõ ràng — tất cả kéo MTTR xuống và đẩy availability lên mà không cần đổi phần cứng.
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- **Đừng bảo vệ đồng hạng mọi dịch vụ.** Phân hạng: dịch vụ premium dùng OCh 1+1 để đạt ~50 ms; lưu lượng thường dùng restoration mesh để hạ chi phí phổ. Áp 1+1 cho tất cả là cách đốt phổ và transponder nhanh nhất.
+- **SRLG là dữ liệu, không phải tính năng.** Control plane chỉ tính được đường bảo vệ an toàn nếu bản đồ rủi ro vật lý (ống cáp, cống bể, nguồn điện) được nạp đúng. Ngân sách và quy trình cho việc **duy trì dữ liệu as-built** phải nằm trong kế hoạch vận hành, nếu không "bảo vệ" chỉ đúng trên giấy.
+- **Cam kết 50 ms phải khớp cơ chế.** Nếu SLA yêu cầu 50 ms mà thiết kế dùng restoration mesh, bạn sẽ vi phạm. Ghi rõ trong hồ sơ: dịch vụ nào protection (nhanh, tất định), dịch vụ nào restoration (chậm hơn, tiết kiệm) — và kiểm chứng thời gian chuyển mạch thực tế khi nghiệm thu.
+- **Tối ưu MTTR trước.** Trong công thức availability, cải thiện MTTR (phụ tùng tại chỗ, giám sát streaming, quy trình rõ) thường cho nhiều "nine" hơn trên mỗi đồng chi so với đuổi theo MTBF cao hơn.
+- **Availability đầu-cuối nhân lại.** Khi cam kết SLA, tính theo chuỗi nối tiếp các thành phần trên đường, đừng lấy con số của một phần tử. Dự phòng song song chỉ tăng số nine khi các nhánh độc lập rủi ro.
+
+<Quiz question="Vì sao việc nạp đúng dữ liệu SRLG lại quyết định giá trị thực của bảo vệ/khôi phục?" options={[{text:'Nếu đường làm việc và đường bảo vệ chia sẻ cùng rủi ro vật lý (cùng ống cáp/nguồn), một sự cố có thể hạ cả hai cùng lúc — bảo vệ trở nên vô nghĩa', correct:true, explain:'Đúng — disjoint về SRLG là điều kiện để hai nhánh thực sự độc lập; thiếu nó, dự phòng chỉ tốn tiền mà không tăng availability.'},{text:'SRLG giúp tăng tốc độ chuyển mạch xuống dưới 50 ms', explain:'SRLG là về tính độc lập rủi ro của tuyến, không phải tốc độ chuyển mạch.'},{text:'SRLG làm giảm MTTR của thiết bị', explain:'SRLG không liên quan thời gian sửa chữa; nó đảm bảo đường bảo vệ không cùng chết với đường làm việc.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+- ITU-T G.808.1 (bảo vệ chung, thuật ngữ 1+1/1:N/APS), G.873.1/G.873.2 (bảo vệ tuyến OTN), G.8080 (ASON — kiến trúc mạng quang chuyển mạch tự động).
+- ITU-T G.798, G.872 (kiến trúc lớp truyền tải quang, khái niệm OMS/OCh).
+- IETF: các RFC GMPLS (RSVP-TE, OSPF-TE/IS-IS-TE), RFC 4655 (PCE), khái niệm SRLG trong TE routing.
+- Mục tiêu 50 ms kế thừa từ SDH/SONET APS. Số MTBF/MTTR minh hoạ là ví dụ tính toán — luôn dùng số liệu độ tin cậy thực của thiết bị và điều kiện vận hành thực tế, không suy từ tài liệu tiếp thị.
+
+</Callout>
+
+➡️ Tiếp theo: 4.5 — Tối ưu vận hành: margin harvesting, telemetry và điều chỉnh mạng đang chạy.

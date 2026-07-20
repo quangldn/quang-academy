@@ -1,10 +1,107 @@
 ---
 sidebar_position: 6
 title: "3.6 — Băng tần mở rộng C+L"
+description: "Mở L-band khi C-band đầy: kiến trúc C+L, Super-C, hiệu ứng SRS tilt và bài toán kinh tế."
+concepts: [edfa, raman, wdm]
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 3.6 — Băng tần mở rộng C+L
 
-<LessonStub objective={"C+L band, Super-C; mở rộng phổ vs thêm sợi; kinh tế của L-band."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ:
+
+- Hiểu vì sao mở L-band (hoặc Super-C) thay vì kéo thêm sợi khi C-band đã đầy kênh.
+- Nắm kiến trúc C+L cơ bản: band splitter/combiner và hai nhánh khuếch đại song song.
+- Biết vì sao SRS làm nghiêng công suất từ C sang L và vì sao phải bù tilt.
+
+</Callout>
+
+## Vì sao mở thêm băng tần khi C-band đầy
+
+C-band tiêu chuẩn phủ khoảng $1530$–$1565$ nm, tương ứng gần $4.4$ THz phổ khả dụng. Khi đã lấp đầy kênh (ví dụ 96 kênh $50$ GHz, hoặc dày hơn với flexgrid) mà lưu lượng vẫn tăng, kỹ sư có ba lựa chọn chính:
+
+1. Kéo thêm sợi (thêm cặp sợi mới trên tuyến).
+2. Nâng hiệu suất phổ mỗi kênh (điều chế bậc cao hơn, PCS — giới hạn bởi OSNR).
+3. Mở rộng phổ trên chính sợi đang dùng.
+
+Khi quỹ OSNR không cho phép ép thêm bit/symbol, và việc kéo sợi mới tốn kém hoặc bất khả thi (cống bể đầy, tuyến biển, quyền đi dây), thì mở rộng phổ là hướng khả thi nhất. L-band phủ xấp xỉ $1565$–$1625$ nm, bổ sung thêm khoảng $4$–$5$ THz — về cơ bản gấp đôi dung lượng phổ trên cùng một sợi mà không đụng tới hạ tầng chôn cáp.
+
+## Kiến trúc C+L
+
+Vì EDFA cho C-band và L-band có vùng khuếch đại (và thiết kế buồng erbium) khác nhau, hai băng phải được khuếch đại riêng. Kiến trúc điển hình tách và ghép băng ở hai đầu mỗi chặng:
+
+<svg viewBox="0 0 640 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sơ đồ chặng C+L với band splitter và hai nhánh EDFA">
+  <rect x="0" y="0" width="640" height="220" fill="#0f172a" />
+  <text x="20" y="30" fill="#e2e8f0" font-size="14" font-family="sans-serif">Chặng khuếch đại C+L (một chiều)</text>
+
+  <line x1="20" y1="110" x2="120" y2="110" stroke="#94a3b8" stroke-width="2" />
+  <text x="24" y="100" fill="#94a3b8" font-size="12" font-family="sans-serif">sợi vào (C+L)</text>
+
+  <rect x="120" y="80" width="70" height="60" fill="#1e293b" stroke="#64748b" />
+  <text x="132" y="106" fill="#e2e8f0" font-size="11" font-family="sans-serif">Band</text>
+  <text x="130" y="122" fill="#e2e8f0" font-size="11" font-family="sans-serif">splitter</text>
+
+  <line x1="190" y1="95" x2="270" y2="70" stroke="#38bdf8" stroke-width="2" />
+  <line x1="190" y1="125" x2="270" y2="150" stroke="#f472b6" stroke-width="2" />
+
+  <rect x="270" y="52" width="90" height="36" fill="#0c4a6e" stroke="#38bdf8" />
+  <text x="284" y="75" fill="#e0f2fe" font-size="12" font-family="sans-serif">EDFA C</text>
+
+  <rect x="270" y="132" width="90" height="36" fill="#5b1d3a" stroke="#f472b6" />
+  <text x="284" y="155" fill="#fce7f3" font-size="12" font-family="sans-serif">EDFA L</text>
+
+  <line x1="360" y1="70" x2="440" y2="95" stroke="#38bdf8" stroke-width="2" />
+  <line x1="360" y1="150" x2="440" y2="125" stroke="#f472b6" stroke-width="2" />
+
+  <rect x="440" y="80" width="70" height="60" fill="#1e293b" stroke="#64748b" />
+  <text x="450" y="106" fill="#e2e8f0" font-size="11" font-family="sans-serif">Band</text>
+  <text x="452" y="122" fill="#e2e8f0" font-size="11" font-family="sans-serif">comb.</text>
+
+  <line x1="510" y1="110" x2="620" y2="110" stroke="#94a3b8" stroke-width="2" />
+  <text x="516" y="100" fill="#94a3b8" font-size="12" font-family="sans-serif">sợi ra (C+L)</text>
+</svg>
+
+Ở phía thu của mỗi chặng, band splitter tách C và L; mỗi băng đi qua EDFA riêng của nó; band combiner ghép lại trước khi đưa vào sợi. Chi tiết thực tế còn có Raman pump, gain flattening filter riêng cho từng băng, và bù tilt (xem dưới). Điểm cốt lõi: mỗi băng có một chuỗi khuếch đại độc lập chạy song song.
+
+Một phương án nhẹ hơn L-band là **Super-C**: mở rộng chính C-band tới xấp xỉ $6$ THz (kéo dài về phía bước sóng ngắn quanh $1524$ nm) bằng EDFA băng rộng hơn. Super-C tránh được nhánh L riêng và band splitter, nên hạ tầng quang gần với C-band truyền thống hơn, đổi lại mức mở rộng phổ khiêm tốn hơn C+L.
+
+## SRS làm nghiêng công suất và bài toán tilt
+
+Khi truyền đồng thời C và L trên cùng sợi, hiệu ứng **Stimulated Raman Scattering (SRS)** chuyển năng lượng từ các kênh bước sóng ngắn (C) sang các kênh bước sóng dài (L). Đỉnh khuếch đại Raman cách nguồn khoảng $13$–$14$ THz, mà khoảng cách phổ C-tới-L nằm đúng trong vùng SRS đáng kể, nên với tổng công suất cao (nhiều kênh) độ nghiêng (tilt) có thể lên tới vài dB ngang phổ: C mất công suất, L được bơm thêm.
+
+Nếu không bù, các kênh C ở đầu ngắn sẽ tụt OSNR còn các kênh L bị nhô lên, phá vỡ độ phẳng công suất mà quỹ OSNR đã tính. Hệ thống C+L vì thế phải bù tilt chủ động: đặt pre-tilt ngược ở đầu phát, dùng gain tilt của EDFA/VOA theo băng, và điều chỉnh động theo tải kênh. Đây là điểm phức tạp vận hành mà hệ chỉ-C không gặp ở mức tương tự.
+
+<Callout type="note" title="Kinh tế của việc mở băng">
+
+So sánh thô hai hướng tăng dung lượng trên một tuyến đã đầy C-band:
+
+| Tiêu chí | Mở C+L | Kéo sợi mới |
+|---|---|---|
+| Phổ tăng thêm | ~gấp đôi (+$4$–$5$ THz) | tuỳ số sợi kéo thêm |
+| Hạ tầng chôn cáp | dùng lại sợi hiện có | phải thi công/thuê |
+| Thiết bị khuếch đại | ~nhân đôi (nhánh L + splitter) | tương đương mỗi sợi |
+| Rủi ro/độ phức tạp | SRS tilt, quản lý 2 băng | vận hành như tuyến C đơn |
+
+Nguyên tắc: khi sợi khan hiếm hoặc thi công đắt (tuyến biển, đô thị nghẽn cống bể), C+L thắng dù chi phí thiết bị gần gấp đôi. Khi sợi rẻ và sẵn (đã có sợi tối trong cùng bó cáp), kéo thêm sợi thường đơn giản và rẻ hơn về vận hành.
+
+</Callout>
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- **Quyết định CapEx đúng thời điểm:** mở C+L là khoản đầu tư lớn (line amplifier hai băng, filter, có thể cả transponder mới). Chỉ hợp lý khi sợi thực sự khan; nếu còn sợi tối trong bó cáp, so lại tổng chi phí trước khi chọn C+L.
+- **SRS tilt là rủi ro vận hành thật:** khi bật thêm L-band trên tuyến C đang chạy, công suất C sẽ tụt do SRS. Phải lập kế hoạch bù tilt và tính lại quỹ OSNR cho các kênh C hiện hữu, tránh làm rớt kênh đang dịch vụ.
+- **Super-C vs C+L là đánh đổi thật:** Super-C mở rộng phổ ít hơn nhưng giữ kiến trúc quang gần C-band, ít điểm hỏng mới; C+L cho phổ gấp đôi nhưng thêm splitter/combiner và một chuỗi khuếch đại phải bảo trì.
+- **Tương thích sợi:** một số sợi cũ có suy hao và nonlinear khác nhau ở vùng L; cần xác nhận đặc tính sợi ở $1565$–$1625$ nm trước khi cam kết mở L-band.
+
+<Quiz question="Vì sao hệ C+L cần bù tilt mà hệ chỉ-C ít gặp ở mức tương tự?" hint="Nghĩ về khoảng cách phổ giữa C và L." options={[{text:'Vì SRS chuyển công suất từ các kênh C (bước sóng ngắn) sang các kênh L (bước sóng dài), gây nghiêng vài dB ngang phổ', correct:true, explain:'Đúng. Khoảng cách phổ C-L nằm trong vùng khuếch đại Raman đáng kể, nên tổng công suất cao gây SRS tilt cần bù chủ động.'},{text:'Vì L-band luôn có suy hao sợi thấp hơn C-band nên phải giảm công suất', explain:'Không đúng bản chất; vấn đề là SRS chuyển công suất giữa các băng, không phải chênh lệch suy hao cố định.'},{text:'Vì EDFA của L-band không thể làm phẳng gain', explain:'GFF vẫn làm phẳng được; nguyên nhân nghiêng liên băng là SRS.'}]} />
+
+<Quiz question="Trường hợp nào C+L thường hợp lý hơn kéo thêm sợi?" options={[{text:'Tuyến cáp biển hoặc đô thị nghẽn cống bể, nơi thêm sợi rất đắt hoặc bất khả thi', correct:true, explain:'Đúng. Khi sợi khan hiếm/thi công đắt, tái dùng sợi hiện có bằng C+L thắng dù thiết bị gần gấp đôi.'},{text:'Tuyến đã có sẵn nhiều sợi tối trong cùng bó cáp', explain:'Khi sợi rẻ và sẵn, kéo thêm sợi thường đơn giản hơn về vận hành.'},{text:'Tuyến ngắn, tải thấp, C-band mới dùng một nửa kênh', explain:'Chưa đầy C-band thì chưa cần mở băng; lấp nốt C-band trước.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+ITU-T G.694.1 (lưới DWDM), G.652/G.654 (đặc tính sợi), G.698.x và các khuyến nghị G.metro/G.680 về đặc tính khuếch đại; tài liệu công khai của OIF và các bài báo kỹ thuật về C+L, Super-C và bù SRS tilt. Số liệu phổ (~$4.4$ THz cho C, ~$4$–$5$ THz cho L) là giá trị điển hình, phụ thuộc biên băng cụ thể của từng hệ.
+
+</Callout>
+
+➡️ Tiếp theo: Capstone 3 — tổng hợp thiết kế tuyến ở mức Senior.

@@ -1,10 +1,147 @@
 ---
 sidebar_position: 3
-title: "4.3 — Lớp OTN (G.709)"
+title: "4.3 — Lớp OTN (ITU-T G.709)"
+description: OTN như một digital wrapper OPU/ODU/OTU, phân cấp OTU1..OTU4 và OTUCn/FlexO, FEC OTN và multiplexing — đủ để SE tính line rate và tư vấn mapping client.
+concepts: [otn, fec, transponder]
 ---
 
-import LessonStub from '@site/src/components/LessonStub';
+# 4.3 — Lớp OTN (ITU-T G.709)
 
-# 4.3 — Lớp OTN (G.709)
+<Callout type="goal">
 
-<LessonStub objective={"OTU/ODU/OPU, mapping & multiplexing, FEC OTN, FlexO, OTN switching — đủ để SE tư vấn."} />
+Sau bài này bạn sẽ hình dung được **OTN (Optical Transport Network, ITU-T G.709)** như một *digital wrapper* ba lớp **OPU → ODU → OTU**, biết mỗi lớp thêm gì (payload, OAM/TCM, FEC); đọc được phân cấp tốc độ **OTU1..OTU4** và **OTUCn/FlexO** cho beyond-100G; và tự tính được **line rate** từ tốc độ client cùng overhead + FEC để tư vấn mapping dịch vụ.
+
+</Callout>
+
+## OTN là gì: một chiếc "phong bì số" cho tín hiệu client
+
+Trước OTN, mạng truyền dẫn số dùng SDH/SONET — rất tốt cho OAM nhưng đóng khung chặt quanh phân cấp thoại và không hợp để "gói" một cách trung lập mọi loại client (Ethernet, SDH, Fibre Channel, OTU khác...). OTN sinh ra để làm đúng một việc: **bọc bất kỳ tín hiệu client nào vào một khung số chuẩn hoá**, gắn kênh giám sát và mã sửa lỗi, rồi đẩy lên bước sóng.
+
+Điểm mấu chốt: OTN là lớp **số** (digital), nằm *bên trong* transponder/muxponder, không phải lớp quang analog của EDFA/ROADM. Khi bạn nghe "digital wrapper", nó nghĩa là: lấy client, quấn thêm các lớp overhead số quanh nó — giống bỏ thư vào phong bì rồi bỏ phong bì đó vào một phong bì lớn hơn.
+
+Ba lớp lồng nhau, từ trong ra ngoài:
+
+- **OPU** (Optical channel Payload Unit) — mang **payload** client. Có phần OPU overhead nhỏ mô tả *kiểu mapping* (client được nhồi vào ra sao) và bù tốc độ (justification).
+- **ODU** (Optical channel Data Unit) — thêm **OAM** và là **đơn vị chuyển mạch / quản lý end-to-end**. Đây là lớp mang **TCM (Tandem Connection Monitoring)** và các byte giám sát đường (path). ODU là "container" mà mạng OTN thực sự switch và bảo vệ.
+- **OTU** (Optical channel Transport Unit) — thêm **FEC** và các byte section, tạo ra tín hiệu thực sự **lên sợi** (đúng hơn: lên bước sóng của một section giữa hai điểm 3R).
+
+<svg viewBox="0 0 720 260" role="img" aria-label="Ba lớp lồng nhau OPU ODU OTU của OTN" style={{maxWidth: '100%', height: 'auto', background: '#0d1117', borderRadius: '8px'}}>
+  <text x="360" y="28" fill="#e6edf3" fontSize="15" fontWeight="bold" textAnchor="middle">Digital wrapper: client được quấn ba lớp</text>
+  <rect x="60" y="60" width="600" height="150" rx="8" fill="none" stroke="#f0883e" strokeWidth="2"/>
+  <text x="72" y="80" fill="#f0883e" fontSize="12" fontWeight="bold">OTU — FEC + section, lên bước sóng</text>
+  <rect x="110" y="92" width="500" height="102" rx="8" fill="none" stroke="#8957e5" strokeWidth="2"/>
+  <text x="122" y="112" fill="#a371f7" fontSize="12" fontWeight="bold">ODU — OAM, TCM, đơn vị switch</text>
+  <rect x="160" y="124" width="400" height="54" rx="8" fill="none" stroke="#1f6feb" strokeWidth="2"/>
+  <text x="172" y="144" fill="#58a6ff" fontSize="12" fontWeight="bold">OPU — payload + mapping</text>
+  <rect x="205" y="150" width="310" height="20" rx="4" fill="#238636" opacity="0.85"/>
+  <text x="360" y="164" fill="#fff" fontSize="11" textAnchor="middle">Client (Ethernet / SDH / FC ...)</text>
+  <text x="360" y="238" fill="#8b949e" fontSize="11" textAnchor="middle">Mỗi lớp ngoài thêm overhead riêng — càng ra ngoài càng gần vật lý sợi.</text>
+</svg>
+
+Một câu để nhớ thứ tự: **OPU mang, ODU quản, OTU truyền.**
+
+## OPU: mapping client vào payload
+
+OPU là nơi client "vào" khung OTN. Vấn đề thực tế: tốc độ client (ví dụ 10GbE = 10.3125 Gb/s dòng bit) và tốc độ payload của container OTN không khớp tuyệt đối, và đồng hồ hai bên trôi độc lập. Vì vậy OPU overhead mang thông tin **justification** (nhồi/rút bit đệm) và **payload type (PT)** cho biết client là gì và mapping kiểu nào.
+
+Vài kiểu mapping thường gặp mà SE sẽ nghe:
+
+- **AMP / BMP** (Asynchronous / Bit-synchronous Mapping) — mapping "trong suốt bit" cho client kiểu SDH/OTU.
+- **GMP** (Generic Mapping Procedure) — cơ chế tổng quát, dùng nhiều cho client tốc độ tuỳ ý và cho mux ODU vào ODU cao.
+- **GFP-F** (Generic Framing Procedure, frame-mapped) — đóng gói theo khung, hay dùng cho một số dịch vụ gói.
+
+Với SE, chi tiết bit của mapping ít khi phải thuộc; điều cần nắm là: **client nào vào được container OTN nào**, và mapping đó là *transparent* (giữ nguyên cả mã dòng/timing client, ví dụ 10GbE LAN PHY vào ODU2e) hay chỉ mang payload. Sự khác biệt này quyết định dịch vụ có "bit-transparent" cho khách hàng hay không — một câu hỏi rất hay gặp trong hợp đồng dịch vụ truyền dẫn.
+
+## ODU: đơn vị chuyển mạch và giám sát (TCM)
+
+ODU là lớp "linh hồn" của OTN vận hành. Toàn bộ **cross-connect, bảo vệ và giám sát end-to-end** diễn ra ở mức ODU, không phải ở bit client. Hai điểm đáng để một SE hiểu:
+
+**Path monitoring** — ODU mang byte giám sát đường từ điểm nguồn tới điểm đích của container, cho phép định vị lỗi theo suốt hành trình logic của dịch vụ.
+
+**TCM (Tandem Connection Monitoring)** — đây là thứ SDH cũng có nhưng OTN làm mạnh hơn: tối đa **6 mức TCM lồng nhau (TCM1..TCM6)**. Ý tưởng: một dịch vụ đi qua nhiều miền (domain) của nhiều nhà mạng/nhiều nhà cung cấp; mỗi bên muốn giám sát *đúng đoạn của mình* mà không đụng byte path end-to-end. Mỗi bên "mượn" một mức TCM, bật giám sát ở biên vào và biên ra đoạn của mình.
+
+Ví dụ thực tế: một circuit thuê từ nhà mạng A đi xuyên qua nhà mạng B (transit). A đặt TCM1 giám sát toàn tuyến A-tới-A; B đặt TCM2 chỉ trên đoạn đi qua B. Khi có lỗi bit (BIP-8 đếm sai) hoặc gián đoạn, hai bên nhìn vào mức TCM của mình để biết **lỗi nằm trong domain ai** — cực kỳ hữu ích để phân định trách nhiệm SLA thay vì đổ lỗi qua lại.
+
+<Callout type="note">
+
+TCM giải quyết đúng bài toán "ai làm hỏng bit" khi dịch vụ chạy qua nhiều nhà cung cấp. Không có nó, một lỗi BER end-to-end chỉ nói "tuyến hỏng" chứ không chỉ ra đoạn nào. Đây là lý do OTN vẫn được ưa dùng cho dịch vụ wholesale/carrier-of-carriers dù client đã là gói.
+
+</Callout>
+
+## OTU: FEC và tín hiệu lên bước sóng
+
+OTU là lớp ngoài cùng, thêm hai thứ: **section overhead** (giám sát đoạn giữa hai điểm tái tạo 3R) và **FEC**. Chính FEC là điều làm OTN đặc biệt "đáng tiền" so với chỉ bọc khung.
+
+**FEC chuẩn (hard-decision):** G.709 định nghĩa FEC nội bảng dựa trên mã **Reed-Solomon RS(255,239)**, overhead khoảng **~7%** (239 byte dữ liệu + 16 byte parity trên mỗi codeword). RS(255,239) cho *net coding gain* điển hình khoảng **6 dB** ở BER đích $10^{-15}$ — nghĩa là tuyến chịu được OSNR thấp hơn khoảng 6 dB so với khi không có FEC, đổi lại tăng ~7% tốc độ dòng.
+
+**SD-FEC (soft-decision):** các hệ coherent hiện đại dùng FEC mạnh hơn nhiều, với overhead thường **~15-25%** và net coding gain có thể đạt **~10-11 dB**. SD-FEC không nằm trong bảng RS gốc của G.709 mà là mã riêng của từng thế hệ transponder/coherent DSP (hoặc chuẩn hoá qua OpenROADM/OIF cho interop). Với beyond-100G, SD-FEC gần như bắt buộc — bài 3.6 về FEC/margin đã đào sâu phần này.
+
+Điểm SE cần rút ra: **FEC làm line rate phồng lên**, và overhead FEC là một phần của con số "tốc độ trên sợi" mà bạn phải khai báo cho line system.
+
+## Phân cấp tốc độ: OTU1..OTU4 và OTUCn/FlexO
+
+Phân cấp "cổ điển" của G.709 là các bậc rời rạc, mỗi bậc bọc một họ client:
+
+| Bậc | Payload danh nghĩa | Line rate OTU (điển hình) | Client tiêu biểu |
+|-----|--------------------|---------------------------|------------------|
+| OTU1 | khoảng 2.5 Gb/s | khoảng 2.666 Gb/s | STM-16 |
+| OTU2 | khoảng 10 Gb/s | khoảng 10.709 Gb/s | STM-64, 10GbE (LAN PHY qua ODU2e; OTU2e ~11.1) |
+| OTU3 | khoảng 40 Gb/s | khoảng 43.018 Gb/s | STM-256, 40GbE |
+| OTU4 | khoảng 100 Gb/s | khoảng 111.810 Gb/s | 100GbE (100GBASE-R) |
+
+Con số đáng nhớ nhất: **OTU4 ≈ 111.8 Gb/s** trên sợi để mang **100GbE**. Lưu ý bản thân 100GbE đã là **~103.125 Gb/s** dòng bit (đã gồm mã dòng 64/66b của client), nên phần OTN thêm vào — khung OPU/ODU/OTU cộng FEC RS(255,239) — chỉ khoảng **~8.7 Gb/s**; còn nếu so với tốc độ payload danh nghĩa 100G thì chênh khoảng 11.8 Gb/s. Đây là ví dụ điển hình để trả lời câu hỏi "vì sao một bước sóng 100G lại chạy ở 111.8 Gb/s".
+
+**Vấn đề beyond-100G:** các bậc rời rạc (OTU1..4) hết dư địa khi client vượt 100G và khi ta muốn bước sóng coherent mang 200G/400G/800G. G.709 mở rộng bằng:
+
+- **OTUCn** — chữ **C** là 100 (số La Mã), $n$ là bội số. **OTUCn = n × ~100G**. Ví dụ **OTUC2 ≈ 200G**, **OTUC4 ≈ 400G**, **OTUC8 ≈ 800G**. Bên trong là ODUCn/OPUCn tương ứng.
+- **FlexO (Flexible OTN, ITU-T G.709.1/G.709.3)** — cơ chế mang OTUCn lên một hoặc nhiều "instance" giao diện vật lý khoảng 100G, bó (bond) lại với nhau. FlexO cho phép tách phần *logic* (OTUCn) khỏi *số làn vật lý*, và mang FEC riêng của giao diện. Đây là nền để interoperate coherent giữa các hãng ở beyond-100G.
+
+Nói ngắn: **OTU1..4** là thang cũ, bậc cứng; **OTUCn/FlexO** là thang mới, cộng dồn theo bội 100G, hợp với thế giới coherent flex-rate.
+
+## Multiplexing: ghép ODU thấp lên ODU cao
+
+OTN không chỉ bọc một client — nó còn **ghép nhiều container nhỏ vào một container lớn** để tận dụng một bước sóng. Cơ chế: chia payload của ODU cao thành các khe **tributary slot (TS)**, mỗi TS khoảng **1.25 Gb/s** (với ODU2/3/4) và nhồi các ODU thấp (ODU0, ODU1, ODUflex...) vào các nhóm TS bằng GMP.
+
+Ví dụ thường gặp:
+
+- **ODU0 ≈ 1.25G** (mang 1GbE) — ghép 8 × ODU0 vào một **ODU2**, hoặc 80 × ODU0 vào một **ODU4**.
+- **ODUflex** — container "co giãn", tốc độ đặt theo bội tributary slot, dùng để mang client tốc độ tuỳ ý (ví dụ một luồng Ethernet n×1.25G) một cách vừa khít, không phí băng thông như phải nhét vào bậc cố định.
+
+Đây chính là chức năng **muxponder**: gom nhiều client sub-rate lên một bước sóng 100G/200G/400G, thay vì lãng phí cả một bước sóng cho một client 10G lẻ. Với SE, "ghép được bao nhiêu 10GbE lên một bước sóng 400G" là bài toán đếm tributary slot — và đó là lý do phải hiểu tầng ODU multiplexing.
+
+## Thực hành: chọn client, xem container và line rate
+
+Chọn một client bên dưới để xem nó được map vào container OPU/ODU/OTU nào và line rate danh nghĩa ra sao. Chú ý cách con số line rate luôn *lớn hơn* tốc độ client — phần dôi ra là OTN overhead cộng FEC.
+
+<OtnMapper />
+
+<Quiz question="Client 100GbE được bọc vào OTU4 chạy khoảng 111.8 Gb/s trên sợi, trong khi bản thân 100GbE chỉ khoảng 103 Gb/s dòng bit. Phần chênh vài Gb/s chủ yếu đến từ đâu?" hint="Nghĩ về việc lớp ngoài cùng OTU thêm gì." options={[{text:'OTN overhead (khung OPU/ODU/OTU) cộng với FEC RS(255,239) ~7%', correct:true, explain:'Đúng. Line rate OTU4 phồng lên vì phải cõng cả overhead khung lẫn 16 byte parity FEC trên mỗi 255-byte codeword.'},{text:'Do dịch vụ được mã hoá bảo mật nên tăng băng thông', explain:'OTN không thêm mã hoá payload trong khung tiêu chuẩn; phần dôi là overhead cộng FEC.'},{text:'Do chuyển từ 1310 nm sang 1550 nm nên đổi tốc độ', explain:'Bước sóng quang không quyết định line rate số; đó là chuyện của lớp analog.'}]} />
+
+<Quiz question="Một circuit đi từ nhà mạng A xuyên qua nhà mạng B (transit) rồi về A. Cả hai muốn giám sát riêng đoạn của mình mà không đụng byte path end-to-end. Cơ chế OTN nào phục vụ đúng nhu cầu này?" hint="Nó nằm ở lớp ODU và có tối đa 6 mức lồng nhau." options={[{text:'TCM (Tandem Connection Monitoring) — mỗi domain mượn một mức TCM1..6', correct:true, explain:'Đúng. TCM cho phép giám sát lồng nhau theo từng đoạn/domain, tách biệt với path monitoring end-to-end, giúp phân định trách nhiệm SLA.'},{text:'FEC ở lớp OTU', explain:'FEC sửa lỗi bit trên section, không phân đoạn giám sát theo domain.'},{text:'Justification trong OPU overhead', explain:'Justification chỉ để bù chênh tốc độ khi mapping client, không liên quan giám sát đoạn.'}]} />
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+Một SE hiếm khi phải cấu hình từng byte OTN, nhưng OTN chi phối ba quyết định thực tế:
+
+- **Tính line rate đúng để khai báo bước sóng.** Line system, OSNR budget và mật độ kênh đều tính theo tốc độ *trên sợi*, không phải tốc độ client. Nếu khách nói "100G", bạn phải biết đó là OTU4 khoảng 111.8G (client transparent) hay 100GE payload trong OTUCn — con số baud và OSNR yêu cầu khác nhau, ảnh hưởng thẳng tới cự ly đạt được.
+
+- **Mapping client quyết định tính "trong suốt" của dịch vụ.** Khách hàng thuê "10G transparent" muốn giữ nguyên timing và mã dòng (ví dụ 10GbE LAN PHY qua ODU2e), không phải payload-only. Chọn sai mapping làm hỏng ứng dụng nhạy timing (đồng bộ, một số giao thức lưu trữ) và là nguồn tranh cãi hợp đồng.
+
+- **Đếm tributary slot để tối ưu chi phí bước sóng.** Gom nhiều client sub-rate (n×1GbE, n×10GbE) lên một bước sóng 400G bằng ODU multiplexing/ODUflex tiết kiệm hẳn số transponder và số bước sóng. "Một bước sóng chở được bao nhiêu dịch vụ" là câu hỏi thương mại, và câu trả lời nằm ở tầng ODU mux.
+
+- **TCM cho vận hành đa nhà mạng.** Khi dịch vụ đi qua nhiều domain, TCM là công cụ phân định trách nhiệm khi có lỗi. SE tư vấn dịch vụ wholesale cần biết mình có bao nhiêu mức TCM để "chia" cho các bên transit.
+
+Nói ngắn gọn: OTN là **lớp số** giữa client và bước sóng coherent — hiểu nó là hiểu vì sao "100G" trên giấy lại thành "111.8G" hay "một làn của 400G" trên sợi, và làm sao gói dịch vụ khách hàng vào bước sóng một cách vừa khít.
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+- **ITU-T G.709 / Y.1331** — Interfaces for the Optical Transport Network (khung OPU/ODU/OTU, phân cấp OTU1..4 và OTUCn, mapping, multiplexing, FEC RS(255,239)).
+- **ITU-T G.709.1 / G.709.3** — FlexO (Flexible OTN) short-reach / long-reach interfaces cho OTUCn.
+- **ITU-T G.798** — Characteristics of OTN hierarchy equipment functional blocks (OAM, TCM).
+- **OIF** — các Implementation Agreement liên quan FlexO/beyond-100G interop.
+
+Các tốc độ ghi trong bài là danh nghĩa/điển hình theo G.709; con số line rate chính xác lấy từ bảng tốc độ trong khuyến nghị.
+
+</Callout>
+
+➡️ Tiếp theo: **4.4 — Bảo vệ và khôi phục (protection & restoration)**: OTN/optical protection, cơ chế switch dưới 50 ms và khôi phục điều khiển bằng control plane.

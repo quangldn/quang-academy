@@ -1,10 +1,154 @@
 ---
 sidebar_position: 1
-title: "4.1 — Kiến trúc mạng hiện đại"
+title: "4.1 — Kiến trúc mạng hiện đại: IPoDWDM & ZR/ZR+"
+description: Cắm optic coherent thẳng vào router (IPoDWDM), họ pluggable OIF 400ZR/OpenZR+/800ZR, disaggregation & Open Line System và bài toán ai chịu trách nhiệm hiệu năng.
+concepts: [ipodwdm, zr, coherent, transponder]
 ---
 
-import LessonStub from '@site/src/components/LessonStub';
+# 4.1 — Kiến trúc mạng hiện đại: IPoDWDM & ZR/ZR+
 
-# 4.1 — Kiến trúc mạng hiện đại
+<Callout type="goal">
 
-<LessonStub objective={"IPoDWDM; 400ZR/OpenZR+/800ZR (OIF, QSFP-DD/OSFP); disaggregation & Open Line System."} />
+Sau bài này bạn sẽ hiểu **IPoDWDM** (IP-optical convergence) là gì và vì sao cắm optic coherent dạng pluggable thẳng vào router lại xoá được cả một lớp transponder rời; phân biệt được ba nhánh chuẩn OIF **400ZR / OpenZR+ / 800ZR** theo cự ly, modulation và FEC; và nắm được **disaggregation / Open Line System** cùng câu hỏi khó nhất khi triển khai thật: *ai chịu trách nhiệm hiệu năng của bước sóng?*
+
+</Callout>
+
+## Từ transponder rời đến optic cắm thẳng vào router
+
+Kiến trúc truyền dẫn "cổ điển" tách bạch hai thế giới:
+
+- **Lớp IP/router** phát tín hiệu client "xám" (grey) — thường là optic short-reach (SR/LR) trên bước sóng 1310 nm hoặc 850 nm, không lên được sợi đường dài.
+- **Lớp quang (DWDM)** có **transponder** (hoặc muxponder) làm nhiệm vụ *OEO*: nhận tín hiệu xám từ router, tái tạo về điện, rồi phát lại thành một bước sóng coherent "màu" (colored) đúng lưới ITU để đẩy vào line system.
+
+Nghĩa là mỗi hướng truyền, tín hiệu đi qua **hai** giao diện quang và **một** lần chuyển O-E-O chỉ để đổi màu bước sóng. Transponder là hộp riêng, tốn slot, tốn nguồn, tốn làm mát, tốn cáp client nối giữa router và hàng DWDM.
+
+**IPoDWDM** (IP over DWDM, hay IP-optical convergence) rút gọn chuỗi đó: coherent engine không còn nằm trong hộp transponder riêng nữa mà được đóng gói vào một **module pluggable** đúng chuẩn form factor của router — cắm thẳng vào cổng line card. Bước sóng coherent "màu", đúng lưới, đủ sức đi đường dài phát ra **ngay từ cổng router** và vào thẳng OLS.
+
+Sơ đồ dưới so sánh hai chuỗi:
+
+<svg viewBox="0 0 720 300" role="img" aria-label="So sánh chuỗi transponder cổ điển và IPoDWDM" style={{maxWidth: '100%', height: 'auto', background: '#0d1117', borderRadius: '8px'}}>
+  <text x="360" y="26" fill="#e6edf3" fontSize="15" fontWeight="bold" textAnchor="middle">Cổ điển: router — transponder — OLS</text>
+  <rect x="30" y="45" width="110" height="46" rx="6" fill="#1f6feb" opacity="0.85"/>
+  <text x="85" y="73" fill="#fff" fontSize="12" textAnchor="middle">Router</text>
+  <rect x="185" y="45" width="150" height="46" rx="6" fill="#8957e5" opacity="0.85"/>
+  <text x="260" y="66" fill="#fff" fontSize="11" textAnchor="middle">Transponder</text>
+  <text x="260" y="82" fill="#fff" fontSize="10" textAnchor="middle">(OEO đổi màu)</text>
+  <rect x="380" y="45" width="130" height="46" rx="6" fill="#238636" opacity="0.85"/>
+  <text x="445" y="73" fill="#fff" fontSize="11" textAnchor="middle">Mux / OLS</text>
+  <rect x="555" y="45" width="130" height="46" rx="6" fill="#3d444d" opacity="0.9"/>
+  <text x="620" y="73" fill="#fff" fontSize="11" textAnchor="middle">Sợi DWDM</text>
+  <line x1="140" y1="68" x2="185" y2="68" stroke="#8b949e" strokeWidth="2"/>
+  <text x="162" y="60" fill="#8b949e" fontSize="9" textAnchor="middle">grey</text>
+  <line x1="335" y1="68" x2="380" y2="68" stroke="#f0883e" strokeWidth="2"/>
+  <text x="357" y="60" fill="#f0883e" fontSize="9" textAnchor="middle">màu</text>
+  <line x1="510" y1="68" x2="555" y2="68" stroke="#f0883e" strokeWidth="2"/>
+
+  <text x="360" y="150" fill="#e6edf3" fontSize="15" fontWeight="bold" textAnchor="middle">IPoDWDM: coherent pluggable trong router</text>
+  <rect x="30" y="175" width="220" height="60" rx="6" fill="#1f6feb" opacity="0.85"/>
+  <text x="140" y="200" fill="#fff" fontSize="12" textAnchor="middle">Router</text>
+  <rect x="150" y="188" width="90" height="34" rx="4" fill="#8957e5" opacity="0.95"/>
+  <text x="195" y="203" fill="#fff" fontSize="9" textAnchor="middle">ZR/ZR+</text>
+  <text x="195" y="215" fill="#fff" fontSize="9" textAnchor="middle">pluggable</text>
+  <rect x="300" y="182" width="130" height="46" rx="6" fill="#238636" opacity="0.85"/>
+  <text x="365" y="210" fill="#fff" fontSize="11" textAnchor="middle">Mux / OLS</text>
+  <rect x="475" y="182" width="130" height="46" rx="6" fill="#3d444d" opacity="0.9"/>
+  <text x="540" y="210" fill="#fff" fontSize="11" textAnchor="middle">Sợi DWDM</text>
+  <line x1="250" y1="205" x2="300" y2="205" stroke="#f0883e" strokeWidth="2"/>
+  <text x="275" y="197" fill="#f0883e" fontSize="9" textAnchor="middle">màu</text>
+  <line x1="430" y1="205" x2="475" y2="205" stroke="#f0883e" strokeWidth="2"/>
+  <text x="360" y="270" fill="#8b949e" fontSize="11" textAnchor="middle">Bỏ hộp transponder rời và một lần OEO → ít thiết bị, ít nguồn, ít slot.</text>
+</svg>
+
+Lợi ích trực tiếp: giảm số thiết bị, giảm điện năng và không gian rack, bớt một lớp cáp client, và thường bớt cả một điểm cần quản lý. Với các trung tâm dữ liệu (DCI) và mạng metro nơi mật độ cổng cao, đây là động lực kinh tế rất mạnh.
+
+## OIF coherent pluggable: 400ZR, OpenZR+ và 800ZR/ZR+
+
+Điều làm IPoDWDM khả thi là ngành đã **chuẩn hoá** coherent trong khuôn khổ một module cắm rút được. Có hai dòng đặc tả cần phân biệt:
+
+- **400ZR** — do **OIF** (Optical Internetworking Forum) chuẩn hoá, nhắm mục tiêu **DCI point-to-point cự ly ngắn** (điển hình khoảng 80–120 km, có khuếch đại — amplified). Dùng **DP-16QAM ~60 GBd**, FEC **CFEC** (concatenated FEC), tương tác được (interop) giữa các hãng. Đây là trường hợp "một màu, một chặng, khuếch đại đơn giản".
+- **OpenZR+** — do **OpenZR+ MSA** đặc tả, mở rộng 400ZR để đi **xa hơn nhiều** (metro, regional, thậm chí một số tuyến long-haul). Điểm khác then chốt: dùng **oFEC** (open FEC) mạnh hơn CFEC, và hỗ trợ **nhiều bậc điều chế** (QPSK, 8QAM, 16QAM) cùng nhiều tốc độ line (100/200/300/400G) — cho phép đánh đổi dung lượng lấy cự ly ngay trên cùng một module.
+
+Thế hệ **800G** kế thừa đúng triết lý đó: **800ZR** (OIF) cho DCI ngắn ở 800G, và **800G-ZR+ / OpenZR+ thế hệ 800G** cho cự ly xa hơn với FEC mạnh và nhiều format. Chúng chạy baud cao hơn (khoảng 100+ GBd) và thường dùng DP-16QAM cho 800G/λ ở cự ly ngắn, hạ format khi cần đi xa.
+
+Bảng dưới tóm tắt định hướng (số liệu là **điển hình**, không phải part number của hãng nào):
+
+| Đặc tả | Chuẩn hoá | Cự ly mục tiêu | Modulation điển hình | FEC | Line rate |
+|---|---|---|---|---|---|
+| 400ZR | OIF | DCI ngắn, ~80–120 km, amplified | DP-16QAM (~60 GBd) | CFEC | 400G |
+| OpenZR+ | OpenZR+ MSA | Metro → regional/long-haul | QPSK / 8QAM / 16QAM | oFEC | 100–400G |
+| 800ZR | OIF | DCI ngắn ở 800G | DP-16QAM (~100+ GBd) | CFEC-class | 800G |
+| 800G-ZR+ | OpenZR+ (800G) | Xa hơn 800ZR, nhiều format | QPSK…16QAM | oFEC-class | 400–800G |
+
+**Form factor** là mảnh ghép cuối: các module này theo chuẩn **QSFP-DD** hoặc **OSFP** — đúng khuôn cổng của router/switch hiện đại, cùng khuôn với optic client tốc độ cao. Nhờ vậy nhà vận hành cắm ZR/ZR+ vào chính line card mà không cần khung phụ. Ràng buộc thực tế là **công suất tiêu thụ và tản nhiệt**: coherent DSP tiêu tốn điện đáng kể trong một vỏ QSFP-DD/OSFP nhỏ, nên số cổng ZR "nhồi" được trên một line card thường bị giới hạn bởi nhiệt và nguồn, chứ không phải bởi số cổng vật lý.
+
+<Quiz
+  question="Bạn cần một pluggable coherent cho tuyến regional dài ~600 km qua nhiều span khuếch đại, chấp nhận hạ dung lượng để đủ margin. Chọn nhánh nào?"
+  hint="Cự ly xa cần FEC mạnh và khả năng đổi format."
+  options={[
+    {text: 'OpenZR+ (oFEC, chọn được QPSK/8QAM/16QAM)', correct: true, explain: 'Đúng — oFEC mạnh hơn CFEC và khả năng hạ xuống 8QAM/QPSK cho phép đổi dung lượng lấy cự ly, phù hợp regional/long-haul.'},
+    {text: '400ZR (CFEC, DP-16QAM cố định)', explain: '400ZR nhắm DCI ngắn ~80-120 km với 16QAM; FEC yếu hơn và không đổi được format nên hụt margin ở 600 km.'},
+    {text: 'Cái nào cũng như nhau vì đều là coherent', explain: 'Không — coherent chỉ là nền tảng chung; FEC và tập format khác nhau mới quyết định cự ly khả thi.'},
+  ]}
+/>
+
+## Disaggregation & Open Line System: tách lớp ra khỏi hộp
+
+IPoDWDM đi kèm một xu hướng rộng hơn: **disaggregation** — tháo rời hệ thống tích hợp một-hãng thành các thành phần mua riêng rồi ghép lại.
+
+Trong mô hình cổ điển, transponder và line system (amplifier, ROADM, mux/demux) thường đến từ **cùng một hãng**, được thiết kế và bảo hành như một khối. Khi coherent đã nằm trong pluggable trên router, ta có thể tách:
+
+- **Open Line System (OLS)** — chỉ gồm phần *line*: EDFA/Raman, ROADM/WSS, mux/demux, OSC, kênh giám sát. OLS "mù màu" với dữ liệu — nó khuếch đại và định tuyến bước sóng mà không cần biết bên trong là 400ZR của hãng nào.
+- **Bước sóng "alien" (alien wavelength / foreign wavelength)** — bước sóng do transceiver *bên thứ ba* (ví dụ ZR pluggable trên router hãng X) bơm vào OLS hãng Y. OLS coi nó như một alien λ và chỉ đảm bảo các tham số *lớp quang* tại điểm giao (công suất vào, độ phẳng, OSNR khả dụng của span).
+
+Đây là kiến trúc gọn và cởi mở, nhưng nó đẻ ra một câu hỏi vận hành cực kỳ thực tế:
+
+> **Ai chịu trách nhiệm hiệu năng của bước sóng?**
+
+Trong hệ tích hợp một-hãng, khi một λ không đạt OSNR/BER, có **một** nhà cung cấp để quy trách. Với alien wavelength trên OLS mở, trách nhiệm bị **chia**:
+
+- Hãng router/pluggable đảm bảo **Tx/Rx** (công suất phát, required OSNR, dải chỉnh tần, FEC).
+- Hãng OLS đảm bảo **quỹ quang của tuyến** (gain, tilt, OSNR sinh ra, penalty do filtering/nonlinear).
+- Nhà vận hành (hoặc một bên tích hợp) phải **ráp** hai phần lại: kiểm chứng rằng OSNR mà OLS cung cấp tại đầu thu **lớn hơn** required-OSNR của pluggable, cộng đủ margin.
+
+Không có "một cổ để nắm" nghĩa là **interop testing**, quy ước **điểm demarcation quang**, và đo đạc nghiệm thu (commissioning) trở nên tối quan trọng. Nhiều nhà vận hành lớn giải quyết bằng cách chuẩn hoá một **profile alien λ** (công suất vào WSS, OSNR tối thiểu, danh sách pluggable đã kiểm chứng) và yêu cầu OLS phơi bày các tham số này qua telemetry mở.
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+Chọn IPoDWDM hay giữ transponder rời **không phải** quyết định thuần kỹ thuật — nó chạm vào tổ chức, quy trình xử lý lỗi và ranh giới trách nhiệm giữa team IP và team truyền dẫn.
+
+- **Kinh tế & mật độ.** Với DCI và metro cổng dày, bỏ transponder rời tiết kiệm rõ về CapEx, điện, làm mát và rack. Nhưng lợi ích *giảm dần* khi cự ly tăng: tuyến long-haul thường vẫn cần coherent engine "xịn" (baud cao, PCS, soft-FEC mạnh) mà một pluggable QSFP-DD giới hạn nhiệt chưa chắc theo kịp transponder embedded. Đừng áp IPoDWDM đại trà cho mọi tuyến.
+- **Ranh giới lỗi (fault domain).** Khi coherent nằm trong router, một sự cố quang giờ hiện lên **trong domain của team IP**. Cần thoả thuận rõ: ai đọc OSNR/pre-FEC BER, ai chỉnh công suất phát, ai mở ticket với hãng OLS. Thiếu quy trình này, một alien λ "trôi OSNR" dễ bị đá qua đá lại giữa hai team.
+- **Kiểm soát & telemetry.** Router phải phơi bày được các đếm lớp quang (pre-FEC BER, Q, công suất Rx, tần số) để NOC/controller lớp quang nhìn thấy. Nếu router chỉ báo "link up/down", bạn mất khả năng chẩn đoán lớp WDM — một bước lùi so với transponder truyền thống vốn giàu telemetry quang.
+- **Bảo vệ & phân lớp.** Kiến trúc cổ điển cho phép bảo vệ ở *lớp quang* (OLP, wavelength protection) độc lập với IP. IPoDWDM đẩy nhiều việc bảo vệ lên *lớp IP* (ECMP, FRR, segment routing). Thường tốt cho hiệu suất băng thông nhưng đổi lại là mất một số cơ chế khôi phục nhanh thuần quang — cần cân nhắc theo SLA.
+- **Đa hãng = nhiều interop test hơn.** OLS mở + alien λ mở ra lựa chọn nhà cung cấp, nhưng chi phí là **kiểm chứng**: mỗi cặp (pluggable, OLS) nên được test trước khi vào sản xuất, và profile phải được kiểm soát cấu hình chặt.
+
+<Quiz
+  question="Trong mô hình Open Line System với alien wavelength, đâu là rủi ro vận hành đặc trưng KHÔNG có ở hệ transponder tích hợp một-hãng?"
+  options={[
+    {text: 'Trách nhiệm hiệu năng bị chia giữa hãng pluggable và hãng OLS, khó quy lỗi khi λ tụt OSNR', correct: true, explain: 'Đúng — mất "một cổ để nắm"; cần demarcation quang rõ, interop test và telemetry mở để xác định lỗi thuộc Tx/Rx hay thuộc line.'},
+    {text: 'Sợi quang không còn truyền được ánh sáng coherent', explain: 'Sai — sợi và vật lý truyền dẫn không đổi; vấn đề nằm ở ranh giới trách nhiệm, không phải khả năng truyền.'},
+    {text: 'Bước sóng alien luôn có OSNR cao hơn nên không cần đo', explain: 'Ngược lại — chính vì OSNR do OLS cung cấp phải khớp required-OSNR của pluggable nên việc đo và nghiệm thu càng quan trọng.'},
+  ]}
+/>
+
+## Tóm tắt đánh đổi: IPoDWDM vs transponder truyền thống
+
+| Tiêu chí | IPoDWDM (ZR/ZR+ pluggable) | Transponder rời truyền thống |
+|---|---|---|
+| Thiết bị / rack / điện | Ít hơn: bỏ hộp transponder, bỏ một lần OEO | Nhiều hơn: khung + card transponder riêng |
+| Cự ly khả thi | Tốt cho DCI/metro; long-haul hạn chế bởi nhiệt/nguồn pluggable | Rộng, kể cả long-haul/xuyên biển (engine embedded mạnh) |
+| Telemetry lớp quang | Phụ thuộc router phơi bày; có thể nghèo hơn | Giàu, chuyên biệt cho lớp quang |
+| Fault domain | Gộp vào team IP; cần quy trình phối hợp | Tách bạch IP / truyền dẫn |
+| Bảo vệ | Nghiêng về lớp IP (FRR/ECMP/SR) | Có bảo vệ lớp quang độc lập (OLP) |
+| Multi-vendor / OLS mở | Bật disaggregation + alien λ, nhưng cần interop test | Thường tích hợp một-hãng, ít test hơn |
+| Mô hình trách nhiệm | Chia (pluggable ↔ OLS ↔ operator) | Tập trung (một hãng) |
+
+Không có phương án "đúng tuyệt đối": phần lớn nhà vận hành đi theo mô hình **hybrid** — IPoDWDM cho DCI/metro mật độ cao, giữ transponder/coherent embedded cho các tuyến đường dài và những nơi cần bảo vệ lớp quang hoặc telemetry chuyên sâu.
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+Các đặc tả pluggable: **OIF** cho *400ZR* và *800ZR* (Implementation Agreement công khai của OIF); *OpenZR+* của **OpenZR+ MSA**. Form factor **QSFP-DD** và **OSFP** theo các MSA tương ứng. Khái niệm *Open Line System*, *disaggregation* và *alien wavelength* là kiến thức chuẩn ngành; các con số cự ly/baud/format ở đây là **điển hình**, không phải part number của hãng cụ thể. Tài liệu trung lập hãng — luôn kiểm chứng interop trước khi triển khai sản xuất.
+
+</Callout>
+
+➡️ Tiếp theo: [4.2 — Điều khiển & tự động hoá](./4-2-dieu-khien-tu-dong)

@@ -1,10 +1,178 @@
 ---
 sidebar_position: 1
 title: "2.1 — Link budget & OSNR budget chi tiết"
+description: Bóc tách từng nguồn suy hao, cộng thành span loss, và tính OSNR budget cho chuỗi N span bằng công thức tổng quát.
+concepts: [linkbudget, osnr, ase, margin, edfa]
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 2.1 — Link budget & OSNR budget chi tiết
 
-<LessonStub objective={"Loss connector/splice/filter/span; ASE tích luỹ qua chuỗi EDFA; margin & aging."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ:
+
+- Lập được **bảng suy hao chi tiết** cho một span (sợi/km, connector, splice, filter, VOA) và cộng đúng thành span loss.
+- Hiểu vì sao OSNR của **chuỗi N span không đồng đều** phải cộng theo công thức tổng quát $1/\text{OSNR}_\text{tổng} = \sum 1/\text{OSNR}_i$, và khi nào rút gọn về công thức $58 + P - L - NF - 10\log_{10}(N)$.
+- Phân biệt **BOL vs EOL margin**, aging margin và repair margin — và ghi chúng vào budget cho đúng.
+
+</Callout>
+
+Bài 1.4.4 đã cho bạn hai phép tính nền: link budget (cộng dB công suất) và OSNR chuỗi span giống nhau. Bài này đào sâu hai chỗ mà thực tế hay sai: **cộng suy hao đúng từng nguồn** và **cộng OSNR cho chuỗi span không giống nhau**.
+
+## Bóc tách span loss: từng nguồn một
+
+Span loss không phải "một con số dB/km nhân chiều dài". Nó là tổng của nhiều thành phần, và mỗi thành phần có cách tính riêng. Bảng dưới là các giá trị **điển hình** để ước lượng (số thật lấy từ đo OTDR và datasheet linh kiện):
+
+| Nguồn suy hao | Giá trị điển hình | Ghi chú |
+|---|---|---|
+| Sợi G.652 @ 1550 nm | 0.19–0.25 dB/km | Nhân theo chiều dài span |
+| Sợi G.652 @ 1310 nm | 0.32–0.40 dB/km | Band O suy hao cao hơn |
+| Connector (mỗi mặt ghép) | 0.3–0.5 dB | Đếm cả hai đầu patch panel |
+| Splice (mối hàn fusion) | 0.05–0.1 dB | Trung bình ~0.1 dB/mối khi thiết kế |
+| Mux/Demux (mỗi tầng filter) | 3–6 dB | AWG/thin-film; đưa vào loss hai đầu terminal |
+| VOA (đặt cố ý) | biến thiên | Để cân bằng gain, không phải "hao phí" |
+| Aging/repair margin | 2–4 dB | Dự phòng, tính riêng — xem mục margin |
+
+Ba lưu ý dễ sai:
+
+1. **Connector đếm theo mặt ghép.** Một span đi qua 2 ODF (Optical Distribution Frame) ở hai đầu, mỗi ODF một cặp connector, rất dễ cộng thiếu 1–2 dB.
+2. **Splice cộng theo số mối thực tế.** Một tuyến 80 km chôn cáp có thể có nhiều mối hàn (cứ mỗi cuộn cáp khoảng 2–4 km một mối). Thiết kế thường lấy suy hao mối hàn trung bình rồi nhân số mối, hoặc gộp thành một hệ số dB/km hiệu dụng.
+3. **Filter loss thuộc về terminal, không thuộc về "sợi".** Loss của Mux ở đầu phát và Demux ở đầu thu nằm ngoài span nhưng vẫn nằm trong link budget tổng. Đừng nhét nó vào span loss của EDFA giữa tuyến.
+
+### Cộng thành span loss
+
+Ví dụ một span sợi 80 km, G.652 @ 0.21 dB/km, hai đầu mỗi đầu một cặp connector 0.4 dB, ước 20 mối hàn 0.08 dB:
+
+$$
+L_\text{span} = \underbrace{80 \times 0.21}_{16.8} + \underbrace{4 \times 0.4}_{1.6} + \underbrace{20 \times 0.08}_{1.6} \approx 20.0\ \text{dB}
+$$
+
+Đây chính là $L_\text{span}$ mà EDFA sau span phải bù lại (gain đặt bằng span loss ở chế độ khuếch đại inline).
+
+## OSNR chuỗi span: công thức tổng quát
+
+Công thức $58 + P - L - NF - 10\log_{10}(N)$ ở bài 1.4.4 **chỉ đúng khi mọi span giống nhau**: cùng launch power, cùng loss, cùng NF. Tuyến thật hiếm khi như vậy — span dài ngắn khác nhau, EDFA khác loại, có chỗ Raman, có chỗ ROADM chen vào.
+
+Cách đúng luôn dùng được: **tính OSNR từng span rồi cộng nghịch đảo** (OSNR ở dạng tuyến tính, không phải dB):
+
+$$
+\frac{1}{\text{OSNR}_\text{tổng}} = \sum_{i=1}^{N} \frac{1}{\text{OSNR}_i}
+$$
+
+Trực giác: ASE là nhiễu **cộng dồn** theo công suất. Mỗi span góp một lượng nhiễu; nghịch đảo OSNR tỉ lệ với nhiễu-trên-tín-hiệu, nên tổng nhiễu bằng tổng các nghịch đảo. Span nào OSNR thấp nhất (span dài nhất, NF cao nhất) sẽ **thống trị** tổng — giống điện trở song song, nhánh nhỏ nhất quyết định.
+
+OSNR một span đơn (linear, tham chiếu 0.1 nm):
+
+$$
+\text{OSNR}_i\,[\text{dB}] = 58 + P_{i} - L_{i} - NF_{i}
+$$
+
+Khi cả N span giống hệt nhau, $\sum 1/\text{OSNR}_i = N/\text{OSNR}_1$, và số hạng $-10\log_{10}(N)$ chính là dạng dB của phép chia cho $N$ đó. Đó là lý do công thức rút gọn tồn tại — nó là **trường hợp riêng** của công thức tổng quát.
+
+<Callout type="warning">
+
+Cộng OSNR phải làm ở **thang tuyến tính** rồi mới đổi ngược ra dB. Cộng trực tiếp các giá trị dB (kiểu $21 + 21 = 42$) là sai hoàn toàn. Quy trình: dB sang linear ($10^{\text{OSNR}/10}$), cộng nghịch đảo, rồi đổi ngược ra dB.
+
+</Callout>
+
+## Ví dụ số: tuyến 6 span không đều
+
+Tuyến 6 span, launch power mỗi kênh $P = 0$ dBm cố định, EDFA inline. Bốn span "chuẩn" 20 dB và hai span khó (dài hơn hoặc hàn nhiều) 26 dB. NF các EDFA đều 5 dB.
+
+**Bước 1 — OSNR từng span** (dùng $58 + P - L - NF$):
+
+| Span | $L_i$ (dB) | $\text{OSNR}_i$ (dB) | linear ($1/\text{OSNR}$) |
+|---|---|---|---|
+| 1 | 20 | $58+0-20-5=33$ | $1/10^{3.3}=5.01\times10^{-4}$ |
+| 2 | 20 | 33 | $5.01\times10^{-4}$ |
+| 3 | 26 | $58+0-26-5=27$ | $1/10^{2.7}=2.00\times10^{-3}$ |
+| 4 | 20 | 33 | $5.01\times10^{-4}$ |
+| 5 | 26 | 27 | $2.00\times10^{-3}$ |
+| 6 | 20 | 33 | $5.01\times10^{-4}$ |
+
+**Bước 2 — cộng nghịch đảo:**
+
+$$
+\sum \frac{1}{\text{OSNR}_i} = 4\times(5.01\times10^{-4}) + 2\times(2.00\times10^{-3}) = 2.00\times10^{-3} + 4.00\times10^{-3} = 6.00\times10^{-3}
+$$
+
+**Bước 3 — đổi ngược ra dB:**
+
+$$
+\text{OSNR}_\text{tổng} = -10\log_{10}(6.00\times10^{-3}) \approx 22.2\ \text{dB}
+$$
+
+Nhận xét quan trọng: nếu ngây thơ coi cả 6 span như span 20 dB chuẩn, công thức rút gọn cho $58 + 0 - 20 - 5 - 10\log_{10}(6) = 33 - 7.8 = 25.2$ dB. Nhưng hai span 26 dB đã **kéo tụt 3 dB** OSNR thực. Trong tuyến không đều, span xấu nhất mới là kẻ định đoạt — đó chính là điều công thức rút gọn giấu đi.
+
+## BOL vs EOL: margin không phải một con số
+
+Kết quả 22.2 dB ở trên là **giá trị lý tưởng ngày lắp đặt** — gọi là **BOL (Beginning of Life)**. Nhưng tuyến phải chạy 15–20 năm, và mọi thứ đều xấu đi. Cái bạn thật sự phải bảo đảm là OSNR ở **EOL (End of Life)**:
+
+$$
+\text{OSNR}_\text{EOL} = \text{OSNR}_\text{BOL} - M_\text{aging} - M_\text{repair}
+$$
+
+- **Aging margin (khoảng 1–2 dB):** connector bẩn dần, linh kiện trôi thông số, EDFA gain ripple thay đổi theo tuổi. Dự phòng cho sự suy giảm chậm theo thời gian.
+- **Repair margin (khoảng 1–2 dB):** mỗi lần cáp đứt và hàn nối lại, tuyến **dài thêm** một khúc dây chùng (cable slack) và **thêm mối hàn**. Chuẩn thiết kế thường giả định vài lần sửa trong đời cáp, mỗi lần cộng suy hao. Đây là suy hao sẽ xuất hiện trong tương lai, không phải hôm nay.
+
+Nguyên tắc nghiệm thu (commissioning): OSNR đo được lúc bàn giao phải ở mức **BOL**, tức phải **cao hơn required OSNR một khoảng bằng toàn bộ aging + repair margin**. Nếu ngày đầu đã sát ngưỡng, tuyến chắc chắn rớt trước khi hết đời.
+
+$$
+\text{Margin}_\text{thiết kế} = \text{OSNR}_\text{BOL} - \text{OSNR}_\text{required} \geq M_\text{aging} + M_\text{repair}
+$$
+
+Với ví dụ trên: BOL 22.2 dB, giả sử required OSNR của transponder là 16 dB (lấy từ datasheet), aging 2 dB, repair 2 dB:
+
+$$
+\text{OSNR}_\text{EOL} = 22.2 - 2 - 2 = 18.2\ \text{dB} \;\Rightarrow\; \text{margin cuối đời} = 18.2 - 16 = 2.2\ \text{dB} > 0 \;\checkmark
+$$
+
+Tuyến qua — nhưng chỉ dư 2.2 dB ở cuối đời. Nếu required OSNR là 18 dB (modulation cao hơn), tuyến này **không đạt EOL** dù BOL nhìn có vẻ thoải mái.
+
+## Thực hành: dựng budget và quan sát đánh đổi
+
+Công cụ dưới cho bạn kéo launch power, span loss, số span N, NF và modulation để thấy OSNR và margin đổi theo thời gian thực. Ba thí nghiệm nên làm:
+
+1. Đặt N = 6, tăng span loss từ 20 lên 26 dB, xem OSNR tụt và margin đổi màu.
+2. Giữ OSNR cố định, đổi modulation (QPSK sang 16QAM sang 64QAM), thấy required OSNR nhảy vọt và "ăn" hết margin.
+3. Tăng N gấp đôi, kiểm chứng quy tắc mất khoảng 3 dB mỗi lần gấp đôi số span.
+
+<LinkBudgetCalculator />
+
+Lưu ý: công cụ giả định các span giống nhau (dùng công thức rút gọn). Trong tuyến không đều thực tế, hãy tính tay bằng công thức nghịch đảo ở mục trên — kết quả sẽ **bi quan hơn** vì span xấu nhất thống trị.
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- **Nghiệm thu tuyến (commissioning):** OSNR đo ngày bàn giao phải là mức BOL, cao hơn required một khoảng bằng toàn bộ aging + repair. Nếu kỹ sư nhà thầu báo "đạt sát ngưỡng", tuyến sẽ rớt trong vài năm.
+- **Thẩm định RFP:** khi khách hỏi tuyến 480 km có chạy 400G không, bạn phải cộng OSNR theo span thật (không đều), trừ EOL margin, rồi so với required OSNR của transponder mục tiêu — chứ không phải nhìn công thức rút gọn cho ra con số đẹp.
+- **Truy sự cố:** tuyến "chập chờn sau 5 năm" thường là aging cộng vài lần repair đã ăn hết margin. Nếu ngày đầu ghi rõ budget BOL/EOL, bạn biết ngay còn dư bao nhiêu để xử lý.
+- **Span xấu nhất quyết định:** trong tuyến dài, đầu tư giảm loss ở span tệ nhất (làm sạch connector, hàn lại mối xấu, hoặc thêm Raman) cho hiệu quả OSNR cao hơn nhiều so với tối ưu các span vốn đã tốt.
+
+<Quiz
+  question="Tuyến 4 span: ba span cho OSNR đơn 30 dB, một span cho OSNR đơn 24 dB. OSNR tổng gần nhất với giá trị nào?"
+  hint="Đổi ra linear (1/OSNR), cộng lại, rồi đổi ngược ra dB."
+  options={[
+    {text: 'Khoảng 21.6 dB', correct: true, explain: 'Σ(1/OSNR) = 3×10^-3 + 3.98×10^-3 = 6.98×10^-3 → -10·log10 ≈ 21.6 dB. Span 24 dB kéo tổng xuống dưới cả span xấu nhất.'},
+    {text: 'Khoảng 27 dB (trung bình các span)', explain: 'OSNR không phải trung bình cộng dB; span xấu nhất kéo tổng xuống thấp hơn nhiều.'},
+    {text: 'Khoảng 24 dB đúng bằng span xấu nhất', explain: 'Các span tốt vẫn góp thêm nhiễu nên tổng phải thấp hơn cả span xấu nhất một chút.'},
+    {text: 'Khoảng 30 dB vì đa số span tốt', explain: 'Sai — nhiễu cộng dồn, một span xấu đủ kéo tổng xuống dưới 30 dB rõ rệt.'},
+  ]}
+/>
+
+<Quiz
+  question="Đo OSNR ngày nghiệm thu = 19 dB. Required OSNR = 16 dB. Aging + repair margin cộng lại 4 dB. Kết luận?"
+  options={[
+    {text: 'Không đạt: OSNR EOL khoảng 15 dB, thấp hơn required 16 dB', correct: true, explain: 'Đúng. 19 − 4 = 15 dB EOL, nhỏ hơn 16 dB required → margin cuối đời âm, tuyến sẽ rớt trước khi hết đời.'},
+    {text: 'Đạt vì 19 dB đã lớn hơn required 16 dB', explain: 'So sánh ở BOL là sai; phải trừ aging + repair rồi mới so với required.'},
+    {text: 'Đạt vì margin hiện tại là 3 dB', explain: 'Margin BOL 3 dB nhỏ hơn tổng aging+repair 4 dB, nên EOL âm — không đạt.'},
+    {text: 'Không đủ dữ liệu để kết luận', explain: 'Đủ: BOL, required và tổng margin đã cho, chỉ cần trừ và so sánh.'},
+  ]}
+/>
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+Suy hao sợi tham chiếu ITU-T G.652 (band O/C). Công thức OSNR chuỗi span và hằng số ~58 dB (tham chiếu RBW 0.1 nm tại band C, $\nu \approx 193.1$ THz) là kiến thức kỹ thuật chuẩn ngành. Cách cộng OSNR theo nghịch đảo tuyến tính là hệ quả trực tiếp của tính cộng dồn công suất ASE. Các giá trị connector/splice/margin là **số điển hình để ước lượng** — thiết kế thật lấy từ đo OTDR và datasheet linh kiện; required OSNR lấy từ datasheet transponder.
+
+</Callout>
+
+➡️ Tiếp theo: **2.2 — EDFA, gain tilt và cân bằng công suất theo kênh**.

@@ -1,10 +1,149 @@
 ---
 sidebar_position: 7
-title: "★ Capstone Cấp 2 — Tuyến metro ROADM"
+title: "★ Capstone Cấp 2 — Tuyến metro 3 site ROADM"
+description: "Bài tổng hợp Cấp 2: thiết kế tuyến metro A-B-C, tính OSNR tới site cuối, kiểm tra filtering penalty qua 3 ROADM và kết luận margin."
+concepts: [roadm, osnr, linkbudget, margin]
 ---
 
-import LessonStub from '@site/src/components/LessonStub';
+# ★ Capstone Cấp 2 — Tuyến metro 3 site ROADM
 
-# ★ Capstone Cấp 2 — Tuyến metro ROADM
+<Callout type="goal">
 
-<LessonStub objective={"Thiết kế tuyến metro 3 site ROADM có add/drop; kiểm tra OSNR & filtering penalty."} />
+Sau bài này bạn sẽ:
+
+- Ghép được OSNR của nhiều span có ROADM add/drop để ra OSNR tại site cuối.
+- Dùng công cụ để kiểm tra filtering penalty khi kênh đi express qua 3 ROADM xếp tầng, và chọn slot/spacing đủ rộng.
+- Kết luận được margin của tuyến và biết khi nào margin bắt đầu "mỏng".
+
+</Callout>
+
+Đây là bài capstone khép lại Cấp 2. Nó nối lại toàn bộ Module 2.1 (OSNR & link budget), 2.2 (tán sắc), 2.3 (khuếch đại), 2.4 (ROADM & filtering penalty), 2.5 (transceiver) và 2.6 (vận hành). Bạn sẽ đóng vai kỹ sư thiết kế một tuyến metro thật, tính bằng số, rồi tự phản biện.
+
+## Đề bài: tuyến metro A-B-C
+
+Ba site ROADM nối thành tuyến thẳng (mỗi node 2-degree), có add/drop tại cả ba. Ta bám theo **một kênh 200G** (điều chế 16QAM, baud khoảng $34.4$ GBd) được **add tại A**, đi **express qua B**, và **drop tại C**.
+
+Sơ đồ và thông số:
+
+```
+[A] ---- span A-B ---- [B] ---- span B-C ---- [C]
+ add       80 km       express     72 km      drop
+ booster   preamp+booster          preamp
+```
+
+| Thông số | Span A-B | Span B-C |
+|---|---|---|
+| Chiều dài | 80 km | 72 km |
+| Suy hao sợi (0.25 dB/km) | 20.0 dB | 18.0 dB |
+| Suy hao connector/patch + margin sợi | 2.0 dB | 2.0 dB |
+| **Tổng span loss** | **22.0 dB** | **20.0 dB** |
+
+Thông số chung (điển hình cho metro C-band):
+
+- Công suất phóng vào mỗi span: $P_{launch} = 0$ dBm/kênh.
+- EDFA (booster/preamp) noise figure: $NF = 5.5$ dB.
+- Số ROADM kênh chịu lọc WSS dọc đường: **3** (A add, B express, C drop).
+
+Yêu cầu: (1) tính OSNR tới C; (2) kiểm tra filtering penalty qua 3 ROADM; (3) đề xuất slot/spacing; (4) kết luận margin.
+
+## Bước 1 — OSNR tới site C
+
+Với mỗi span khuếch đại, OSNR do span đó sinh ra (tham chiếu băng $0.1$ nm, C-band) xấp xỉ:
+
+$$
+\text{OSNR}_{span} \approx 58 + P_{launch} - L_{span} - NF
+$$
+
+trong đó $58$ dB là hằng số quy đổi cho băng đo $0.1$ nm ở C-band, $P_{launch}$ tính bằng dBm/kênh, $L_{span}$ và $NF$ tính bằng dB.
+
+Tính từng span:
+
+$$
+\text{OSNR}_{AB} = 58 + 0 - 22.0 - 5.5 = 30.5 \text{ dB}
+$$
+
+$$
+\text{OSNR}_{BC} = 58 + 0 - 20.0 - 5.5 = 32.5 \text{ dB}
+$$
+
+Nhiễu ASE tích luỹ tuyến tính, nên **OSNR ghép nghịch đảo** (cộng theo miền tuyến tính rồi đổi lại dB):
+
+$$
+\frac{1}{\text{OSNR}_{tot}} = \frac{1}{\text{OSNR}_{AB}} + \frac{1}{\text{OSNR}_{BC}}
+$$
+
+Đổi ra tuyến tính: $10^{-30.5/10} = 8.91\times10^{-4}$ và $10^{-32.5/10} = 5.62\times10^{-4}$. Cộng lại được $1.453\times10^{-3}$, đổi về dB:
+
+$$
+\text{OSNR}_{tot} = -10\log_{10}(1.453\times10^{-3}) \approx 28.4 \text{ dB}
+$$
+
+Vậy OSNR quang tới C khoảng **28.4 dB @ 0.1 nm**. Quy tắc nhanh: hai span OSNR gần bằng nhau thì OSNR tổng thấp hơn span yếu nhất khoảng $3$ dB — khớp với kết quả ($30.5 - 3 \approx 27.5$, gần $28.4$).
+
+<Quiz question="Nếu ta tăng công suất phóng của cả hai span thêm 2 dB (giả sử vẫn nằm trong vùng tuyến tính, chưa bị nonlinear), OSNR tới C thay đổi thế nào?" hint="Trong công thức, P_launch cộng trực tiếp vào OSNR mỗi span." options={[{text:'Tăng khoảng 2 dB, lên ~30.4 dB', correct:true, explain:'P_launch cộng trực tiếp vào từng span nên cả hai OSNR span tăng 2 dB; phép ghép nghịch đảo bảo toàn độ dịch chung, OSNR tổng cũng tăng ~2 dB. Lưu ý ngoài đời tăng quá tay sẽ dính phạt phi tuyến.'},{text:'Không đổi vì nhiễu cũng tăng theo', explain:'ASE do EDFA sinh ra không phụ thuộc công suất tín hiệu vào; tăng tín hiệu thì tỉ số tín trên nhiễu tăng.'},{text:'Giảm vì công suất cao sinh nhiều nhiễu hơn', explain:'Chỉ đúng khi vượt ngưỡng phi tuyến; trong vùng tuyến tính, tăng công suất giúp OSNR tốt hơn.'}]} />
+
+## Bước 2 — Filtering penalty qua 3 ROADM và chọn spacing
+
+OSNR đẹp chưa đủ. Kênh bị **lọc WSS tại mỗi ROADM**, và các passband xếp tầng làm hẹp phổ hiệu dụng theo xấp xỉ $BW_{eff} \approx BW_{WSS}/\sqrt{N}$. Khi băng thông tín hiệu tiến sát $BW_{eff}$, mép phổ bị cắt và sinh **filtering penalty** (méo dạng, cắt năng lượng, tăng nhiễu liên ký tự).
+
+Kênh của ta là 200G ở $34.4$ GBd, băng tín hiệu khoảng $34.4 \times (1 + 0.1) \approx 37.8$ GHz. Hãy thử hai kịch bản spacing bằng công cụ dưới đây: đặt **Baud = 34 GBd**, **N = 3**, rồi so sánh **slot 75 GHz** với **slot 100 GHz**.
+
+<CascadedFilterPenalty />
+
+Kết quả bạn sẽ thấy:
+
+- **Slot 75 GHz, N = 3:** $BW_{WSS} = 75 - 12.5 = 62.5$ GHz, $BW_{eff} = 62.5/\sqrt{3} \approx 36.1$ GHz. Tín hiệu $37.8$ GHz **rộng hơn** passband hiệu dụng, rơi vào trạng thái "nghẽn phổ", phạt lọc cỡ vài dB. Không chấp nhận được.
+- **Slot 100 GHz, N = 3:** $BW_{WSS} = 87.5$ GHz, $BW_{eff} = 87.5/\sqrt{3} \approx 50.5$ GHz. Tín hiệu chỉ chiếm khoảng $75\%$ passband hiệu dụng, trạng thái "thoải mái", phạt lọc chỉ cỡ $0.2$–$0.3$ dB.
+
+**Đề xuất:** chọn **slot/spacing 100 GHz** cho kênh 200G này. Với flexgrid (G.694.1), $100$ GHz tương ứng $16$ slice $6.25$ GHz — hoàn toàn hợp lệ. $75$ GHz tiết kiệm phổ hơn nhưng sau 3 ROADM thì mép phổ bị cắt quá nhiều; chỉ nên dùng $75$ GHz cho kênh baud thấp hơn hoặc số ROADM xếp tầng ít hơn.
+
+Con số phạt trong công cụ là **minh hoạ** (mô hình Gaussian đơn giản). Thiết kế thật lấy từ mô phỏng đường truyền hoặc số liệu passband thực của WSS, nhưng xu hướng thì đúng: baud càng cao, slot càng hẹp, N càng lớn thì penalty càng dốc.
+
+## Bước 3 — Kết luận margin
+
+Gộp lại thành một bảng margin cho kênh 200G tới C (dùng slot 100 GHz):
+
+| Hạng mục | Giá trị |
+|---|---|
+| OSNR tới C (Bước 1) | 28.4 dB |
+| OSNR yêu cầu của transceiver (200G 16QAM, sau SD-FEC, điển hình) | 19.0 dB |
+| Filtering penalty quy về OSNR (Bước 2, 100 GHz) | 0.3 dB |
+| Dự phòng lão hoá/sửa chữa (aging + repair) | 2.0 dB |
+| **Margin còn lại** | **28.4 − 19.0 − 0.3 − 2.0 = 7.1 dB** |
+
+Margin khoảng **7 dB** — tuyến khoẻ mạnh, đủ chỗ cho lão hoá sợi, thêm mối hàn khi sửa cáp và biến động nhiệt độ. Nếu chọn nhầm slot 75 GHz, riêng filtering penalty đã ngốn vài dB và margin tụt xuống vùng nguy hiểm — đó là lý do Bước 2 quan trọng ngang Bước 1.
+
+<Quiz question="Vì sao filtering penalty được cộng vào phía 'OSNR yêu cầu' (làm hao margin) chứ không trừ thẳng vào OSNR đo được?" options={[{text:'Vì méo dạng lọc làm transceiver cần OSNR cao hơn để đạt cùng BER — nó là một dạng implementation/OSNR penalty', correct:true, explain:'Đúng. Penalty phản ánh việc bộ thu phải gánh thêm méo, tức ngưỡng OSNR yêu cầu để đạt cùng BER bị nâng lên. Quy về margin thì tương đương.'},{text:'Vì filtering không liên quan gì đến OSNR', explain:'Nó có liên quan: méo dạng lọc làm suy giảm chất lượng tín hiệu, biểu hiện như một penalty trên trục OSNR/GSNR.'},{text:'Vì OSNR đo được không bao giờ thay đổi', explain:'OSNR đo là đại lượng vật lý của tuyến; penalty là phần transceiver phải bù thêm, nên hạch toán ở phía yêu cầu.'}]} />
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- **OSNR và filtering là hai hàng rào độc lập.** Một tuyến có thể dư OSNR nhưng vẫn hỏng vì chọn spacing quá hẹp qua nhiều ROADM. Khi thiết kế thật, luôn kiểm tra cả hai — nhất là các kênh baud cao (400G/800G) đi express qua nhiều node mesh.
+- **Margin không phải để đẹp báo cáo.** $7$ dB nghe nhiều, nhưng lão hoá sợi, mỗi lần sửa cáp thêm mối hàn, gain tilt của EDFA và drift nhiệt độ đều ăn dần. Thiết kế nên chừa margin, đừng dồn hết vào ngày khai trương.
+- **Chọn spacing là quyết định kiến trúc, không phải chỉnh tay phút chót.** Slot rộng cứu filtering penalty nhưng tốn phổ (ít kênh hơn trên sợi). Đây là bài toán đánh đổi phổ với số kênh với số ROADM tối đa mà một kênh được phép đi qua — nên khoá sớm trong pha thiết kế.
+- **Số của công cụ chỉ để định hướng.** Trước khi bàn giao, luôn kiểm chứng bằng mô phỏng đường truyền hoặc đo thực (OSA cộng máy đo BER/pre-FEC), rồi ghi lại như baseline để so sánh khi vận hành (nối lại Module 2.6).
+
+## Thử thách: thêm ROADM thứ 4
+
+Giả sử tương lai kéo dài tuyến tới site D: thêm span **C-D dài 88 km, span loss $24$ dB**, và kênh 200G giờ đi express qua C để **drop tại D** — tức **4 ROADM xếp tầng**. Hãy tự tính, rồi so với gợi ý:
+
+<Callout type="note" title="Gợi ý lời giải thử thách">
+
+- OSNR span C-D: $58 + 0 - 24 - 5.5 = 28.5$ dB.
+- Ghép với tuyến cũ (tổng tuyến tính $1.453\times10^{-3}$ cộng $10^{-28.5/10} = 1.413\times10^{-3}$) cho $2.87\times10^{-3}$, tức OSNR mới $\approx 25.4$ dB.
+- Filtering: trong công cụ đặt $N = 4$, slot $100$ GHz cho $BW_{eff} = 87.5/2 = 43.75$ GHz, tín hiệu chiếm khoảng $86\%$ passband, phạt lọc tăng lên cỡ $0.9$ dB.
+- Margin mới: $25.4 - 19.0 - 0.9 - 2.0 \approx 3.5$ dB. Vẫn dương nhưng đã mỏng.
+
+Kết luận: với 4 ROADM, hoặc nới slot lên $150$ GHz (kéo filtering penalty gần về 0), hoặc xét đặt một điểm regen/khuếch đại giữa đường để cứu OSNR, hoặc chấp nhận margin mỏng nếu tuyến ổn định và giám sát tốt. Đây chính là ranh giới nơi metro chuyển sang bài toán long-haul nhiều span của Cấp 3.
+
+</Callout>
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+- ITU-T G.694.1 — lưới tần số DWDM và flexgrid (slice $6.25$ GHz, nominal central frequency).
+- ITU-T G.680 — tham số phụ (subsystem) và tích luỹ penalty khi kênh qua nhiều node quang (concatenation).
+- ITU-T G.798 / G.872 — kiến trúc lớp truyền tải quang (OTN, optical layer).
+- Nguyên lý OSNR ghép nghịch đảo và công thức $\text{OSNR} \approx 58 + P - L - NF$ là kiến thức link-budget C-band phổ biến; hằng số $58$ dB ứng với băng đo $0.1$ nm. Con số filtering penalty trong công cụ là mô hình minh hoạ, không thay cho mô phỏng/đo thực.
+
+</Callout>
+
+➡️ Tiếp theo: Cấp 3 — Long-haul & coherent nâng cao. Ta rời metro ít span để bước vào tuyến nhiều span khuếch đại: GSNR thay cho OSNR đơn thuần, tối ưu công suất phóng chống phi tuyến, và margin trên hàng chục span.

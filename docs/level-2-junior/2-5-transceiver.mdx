@@ -1,10 +1,95 @@
 ---
 sidebar_position: 5
 title: "2.5 — Bộ thu phát & giao diện"
+description: Phân biệt grey optics và colored/DWDM optics, transponder và coherent pluggable (CFP2-DCO, QSFP-DD ZR), tunable DWDM theo lưới ITU và thách thức alien wavelength.
+concepts: [transponder, coherent, itugrid]
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 2.5 — Bộ thu phát & giao diện
 
-<LessonStub objective={"Grey vs colored optics; transponder vs pluggable; DWDM tunable; alien wavelength."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ:
+
+- Phân biệt được **grey optics** (client, 1310/1550 không màu chuẩn ITU) với **colored/DWDM optics** và biết mỗi loại nằm ở đâu trong tuyến.
+- Hiểu khác biệt giữa **transponder** hộp rời và **coherent pluggable** (CFP2-DCO, QSFP-DD 400ZR/ZR+), cùng khái niệm **tunable DWDM** theo lưới ITU.
+- Nắm được vì sao **alien wavelength** (bước sóng của hãng thứ ba đưa vào open line system) hấp dẫn nhưng khó vận hành.
+
+</Callout>
+
+Một kênh DWDM bắt đầu và kết thúc ở bộ thu phát. Bài này gom các dạng optic và giao diện thường gặp: đâu là tín hiệu "màu xám" phía client, đâu là tín hiệu "có màu" đi vào sợi đường dài, và các lựa chọn đóng gói coherent hiện nay.
+
+## Grey optics vs colored/DWDM optics
+
+**Grey optics** (optic "xám", còn gọi client optic) phát ở bước sóng danh nghĩa **1310 nm** hoặc **1550 nm**, không neo vào một tần số ITU cụ thể và có độ rộng phổ tương đối rộng. Chúng dùng cho đoạn nối ngắn giữa router/switch và transponder — ví dụ các module quen thuộc như SR/LR/ER chạy trên một sợi hoặc một cặp sợi riêng. Vì "không có màu chuẩn", nhiều grey optic không thể ghép chung nhiều bước sóng lên một sợi qua Mux DWDM.
+
+**Colored optics** (optic "có màu", DWDM optic) phát đúng một tần số trên **lưới ITU-T G.694.1** (ví dụ 100 GHz hoặc 50 GHz, hoặc flex-grid), với bước sóng ổn định và phổ hẹp để nhiều kênh cùng nằm gọn trên một sợi. Đây là tín hiệu thật sự đi qua Mux/Demux, EDFA và ROADM của line system.
+
+| Đặc điểm | Grey optics | Colored/DWDM optics |
+|---|---|---|
+| Bước sóng | 1310/1550 nm danh nghĩa | Neo theo lưới ITU G.694.1 |
+| Ổn định tần số | Lỏng, phổ rộng | Chặt, phổ hẹp (thường có TEC ổn nhiệt) |
+| Ghép nhiều kênh/sợi | Không (hoặc rất hạn chế) | Có — đây là mục đích chính |
+| Vị trí điển hình | Client side, đoạn ngắn | Line side, qua Mux/EDFA/ROADM |
+
+Ranh giới grey/colored chính là ranh giới **client side vs line side** của một transponder: phía client nhận grey, phía line phát colored.
+
+## Transponder vs coherent pluggable
+
+**Transponder** truyền thống là một card/hộp rời trong khung DWDM: nhận tín hiệu client (grey) ở một cổng, chuyển đổi (O-E-O) và phát ra line side một bước sóng DWDM coherent. Nó tách bạch thiết bị IP và thiết bị quang: router cắm grey optic ngắn vào transponder, transponder lo phần đường dài. Ưu điểm là quản lý tập trung, nhiều tính năng OTN/monitoring; nhược điểm là thêm một lớp thiết bị, không gian và điện năng.
+
+**Coherent pluggable** đưa toàn bộ engine coherent (DSP, modulator, laser tunable) vào một module cắm rút được, bỏ qua lớp transponder rời. Hai dạng phổ biến:
+
+- **CFP2-DCO** (Digital Coherent Optics): module coherent cỡ CFP2, DSP nằm ngay trong module, thường dùng cho các cự ly và tốc độ cao (100G/200G/400G tùy cấu hình điều chế).
+- **QSFP-DD ZR / ZR+**: coherent 400G trong khuôn dạng QSFP-DD, cắm thẳng vào cổng router. **400ZR** (theo OIF Implementation Agreement) nhắm cự ly ngắn kiểu DCI (data center interconnect) với công suất thấp; **ZR+** (định nghĩa mở rộng ngoài OIF, tùy nhà cung cấp) tăng cự ly/độ nhạy cho tuyến metro–regional.
+
+Điểm mấu chốt: pluggable coherent làm mờ ranh giới giữa router và line system — router có thể trực tiếp phát colored optic lên sợi (nền tảng của mô hình IPoDWDM). Đổi lại, việc quản lý và bảo hành optic dịch từ nhóm quang sang nhóm IP, và ngân sách công suất/cự ly của pluggable thường khắt khe hơn transponder chuyên dụng.
+
+## Tunable DWDM và alien wavelength
+
+**Tunable DWDM** nghĩa là module (dạng SFP+, QSFP28, QSFP-DD, CFP2...) có thể **đặt tần số theo phần mềm** trên lưới ITU, thay vì mỗi bước sóng một part number cố định. Một loại tunable phủ được cả band C, nên kho vật tư và cấu hình đơn giản hơn nhiều: cùng một module, chỉ khai báo channel khác nhau. Với DWDM 50 GHz hay flex-grid, tunable gần như là mặc định.
+
+**Alien wavelength** là khi bạn đưa một bước sóng do **hãng thứ ba** (khác hãng line system) vào chung một **open line system** — ví dụ cắm QSFP-DD ZR+ của hãng router A lên hệ thống Mux/EDFA/ROADM của hãng B. Điều này hấp dẫn vì tận dụng pluggable coherent giá rẻ và bỏ bớt lớp transponder, nhưng đặt ra vài thách thức:
+
+- **Cân chỉnh công suất và phổ:** line system không "biết" đặc tính chi tiết của bước sóng lạ, nên việc set launch power, cân bằng theo kênh và tránh gain tilt phải làm thủ công/theo thỏa thuận.
+- **Ranh giới trách nhiệm:** khi OSNR không đạt hay kênh rớt, khó phân định lỗi thuộc optic của hãng A hay line system của hãng B — cần thống nhất "demarcation" và các điểm đo trước khi triển khai.
+- **Tương tác phi tuyến và OSNR:** bước sóng lạ vẫn chia sẻ EDFA, sợi và các hiệu ứng phi tuyến với các kênh sẵn có; phải kiểm tra ngân sách GSNR/OSNR như một kênh chính thức, không phải "cắm là chạy".
+- **Quản lý/giám sát:** performance monitoring của optic lạ thường không hiện trong NMS của line system, phải lấy từ phía router — làm rời rạc bức tranh vận hành.
+
+Alien wavelength khả thi và ngày càng phổ biến, nhưng nó là bài toán **kỹ thuật hệ thống** (đo, thỏa thuận, cân chỉnh) chứ không chỉ là việc chọn module.
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- **Chọn đúng lớp thiết bị quyết định chi phí và vận hành.** Router + pluggable ZR bỏ được lớp transponder (rẻ hơn, ít thiết bị hơn) nhưng chuyển gánh nặng quản lý optic sang nhóm IP và siết chặt ngân sách cự ly. Transponder rời tốn không gian/điện nhưng cho OTN, giám sát và cự ly linh hoạt hơn. Không có lựa chọn "luôn đúng" — phụ thuộc cự ly, tổ chức đội ngũ và mô hình bảo hành.
+- **Đừng nhầm grey với colored khi đấu nối.** Cắm grey optic vào cổng line DWDM (hoặc ngược lại) là lỗi triển khai kinh điển: bước sóng không neo lưới sẽ không qua được Mux/Demux, hoặc lệch khỏi passband của ROADM.
+- **Alien wavelength phải được thiết kế, không phải cắm bừa.** Trước khi đưa optic hãng thứ ba lên open line system, cần thỏa thuận launch power, điểm đo OSNR, demarcation trách nhiệm và kiểm tra ngân sách GSNR — nếu không, sự cố sẽ rất khó quy trách nhiệm.
+- **Tunable giảm mạnh phức tạp kho vật tư.** Một loại tunable phủ cả band thay cho hàng chục part number cố định, giảm rủi ro lắp nhầm channel và đơn giản hóa dự phòng.
+
+<Quiz
+  question="Đội IP muốn cắm QSFP-DD 400ZR+ của hãng router lên hệ thống Mux/EDFA/ROADM của hãng khác để bỏ lớp transponder. Rủi ro kỹ thuật chính cần xử lý trước là gì?"
+  hint="Line system không 'biết' đặc tính bước sóng của hãng khác."
+  options={[
+    {text: 'Cân chỉnh công suất/OSNR và phân định demarcation cho bước sóng lạ (alien wavelength) trên open line system', correct: true, explain: 'Đúng. Đây chính là bài toán alien wavelength: line system không nắm đặc tính optic hãng thứ ba nên phải thỏa thuận launch power, điểm đo OSNR và ranh giới trách nhiệm trước khi chạy.'},
+    {text: 'Không có rủi ro gì vì mọi optic coherent đều tương thích hoàn toàn với mọi line system', explain: 'Sai. Coherent giúp thu tín hiệu tốt hơn nhưng cân chỉnh công suất, phi tuyến và giám sát vẫn cần thống nhất giữa hai hãng.'},
+    {text: 'Phải đổi toàn bộ sợi G.652 sang G.655 mới cắm được', explain: 'Không liên quan; loại sợi không quyết định việc một bước sóng lạ có chạy được hay không.'},
+    {text: 'Grey optic không thể đạt 400G nên phải hạ tốc độ', explain: 'Nhầm khái niệm: 400ZR+ là colored/coherent line-side optic, không phải grey client optic.'},
+  ]}
+/>
+
+<Quiz
+  question="Câu nào mô tả đúng khác biệt cốt lõi giữa grey optics và colored/DWDM optics?"
+  options={[
+    {text: 'Grey phát 1310/1550 nm không neo lưới ITU (client side); colored neo đúng tần số trên lưới G.694.1 để ghép nhiều kênh trên một sợi (line side)', correct: true, explain: 'Đúng. Grey là tín hiệu client đoạn ngắn; colored neo lưới ITU và phổ hẹp nên đi qua được Mux/EDFA/ROADM.'},
+    {text: 'Grey luôn nhanh hơn colored vì không phải điều chế coherent', explain: 'Tốc độ không phải tiêu chí phân loại; grey/colored khác nhau ở việc neo lưới bước sóng và vị trí client/line.'},
+    {text: 'Colored optic chỉ dùng cho đoạn nối ngắn trong data center', explain: 'Ngược lại — colored/DWDM optic là tín hiệu đi đường dài qua line system.'},
+    {text: 'Grey optic bắt buộc phải tunable theo lưới 50 GHz', explain: 'Tunable theo lưới ITU là đặc tính của DWDM/colored optic, không phải grey.'},
+  ]}
+/>
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+Lưới tần số DWDM tham chiếu ITU-T G.694.1 (fixed grid và flex-grid). 400ZR tham chiếu OIF 400ZR Implementation Agreement; "ZR+" là tên gọi cho các biến thể mở rộng ngoài phạm vi OIF, đặc tính cụ thể tùy nhà cung cấp — không có part number nào được nêu ở đây. CFP2-DCO và QSFP-DD là các khuôn dạng module theo MSA công khai. Các nhận định về grey/colored optic, transponder, tunable và alien wavelength là kiến thức kỹ thuật chuẩn ngành; thông số cự ly/công suất thực tế phải lấy từ datasheet của module và line system cụ thể.
+
+</Callout>
+
+➡️ Tiếp theo: **2.6 — Vận hành tuyến DWDM (turn-up, giám sát và xử lý sự cố)**.

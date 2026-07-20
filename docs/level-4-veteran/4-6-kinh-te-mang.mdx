@@ -1,10 +1,204 @@
 ---
 sidebar_position: 6
 title: "4.6 — Kinh tế mạng & tư duy SE"
+description: "Chỉ số $/bit, $/bit/km, W/bit và sustainability thật; TCO capex+opex; đánh đổi IPoDWDM vs transponder; đọc RFP và xây BoM chuẩn kỹ thuật."
+concepts: [ipodwdm, coherent]
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 4.6 — Kinh tế mạng & tư duy SE
 
-<LessonStub objective={"$/bit, W/bit, TCO & sustainability thật; đọc RFP; xây BoM chuẩn kỹ thuật; chọn giải pháp theo ràng buộc."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ:
+
+- Tính và dùng đúng các chỉ số kinh tế: \$/bit, \$/bit/km và W/bit — hiểu chúng nói gì và không nói gì.
+- Dựng TCO đầy đủ (capex + opex qua vòng đời) và dùng nó để cân nhắc IPoDWDM vs transponder truyền thống một cách trung thực.
+- Đọc một RFP, map yêu cầu → cấu hình, rồi xây BoM mà mỗi dòng ứng 1:1 với một requirement — không over-spec, không nhồi margin.
+
+</Callout>
+
+Ở các bài trước bạn đã biết cách làm cho một tuyến *chạy được*: OSNR/GSNR, margin, FEC, bảo vệ. Bài này trả lời câu hỏi khác của người mua: *chạy được với chi phí bao nhiêu, trong bao lâu, và tôi có đang trả tiền cho thứ mình không cần không?* Đây là địa hạt của Sales Engineer — nơi vật lý gặp bảng tính.
+
+## \$/bit, \$/bit/km và W/bit: đọc đúng con số
+
+Ba chỉ số hay bị dùng lẫn lộn. Chúng đo ba thứ khác nhau.
+
+**\$/bit** — chi phí trên mỗi bit/giây dung lượng cung cấp. Nếu một transponder giá 40.000 USD tải 400 Gb/s thì \$/bit thô là $40{,}000 / (400 \times 10^9) = 100$ nUSD trên mỗi bit/s. Con số này chỉ có nghĩa khi so hai giải pháp *cùng phục vụ một nhu cầu*. Nó bỏ qua khoảng cách hoàn toàn.
+
+**\$/bit/km** — chuẩn hoá theo cả dung lượng và cự ly, dùng để so sánh hiệu quả của công nghệ trên các quãng dài ngắn khác nhau. Một card 400G chạy 400 Gb/s qua 800 km cho \$/bit/km thấp hơn nhiều so với cùng card đó chỉ chạy metro 80 km, vì mẫu số km lớn hơn. Cẩn thận: chỉ số này *thưởng* cho khoảng cách, nên đừng dùng nó để biện minh việc kéo dài tuyến khi khách chỉ cần metro.
+
+**W/bit** — công suất điện tiêu thụ trên mỗi bit/s. Đây là chỉ số sustainability *thật*. Không phải slide "xanh", mà là số watt chia cho throughput. Một transceiver coherent thế hệ mới có thể tiêu thụ 20–30 W cho 400 Gb/s; so với thế hệ trước tải 100 Gb/s ở 15–20 W, W/bit giảm rõ. Đó là tiến bộ bền vững có thể kiểm chứng — nó xuất hiện trực tiếp trên hoá đơn điện và trên tải nhiệt của phòng máy.
+
+<Callout type="note" title="Sustainability trung thực">
+
+Một tuyến "tiết kiệm điện" không phải là tuyến dùng ít watt tuyệt đối — mà là tuyến có **W/bit thấp hơn** ở cùng khoảng cách và cùng độ khả dụng. Nếu bạn giảm một nửa watt nhưng cũng giảm một nửa dung lượng, W/bit không đổi và bạn chẳng cải thiện gì. Luôn so ở mẫu số chung.
+
+</Callout>
+
+Ví dụ số nhanh để thấy ba chỉ số phân kỳ thế nào:
+
+| Giải pháp | Dung lượng | Cự ly | Giá card | Công suất | \$/bit (nUSD·s) | \$/bit/km | W/bit |
+|---|---|---|---|---|---|---|---|
+| Card thế hệ cũ 100G | 100 Gb/s | 1000 km | 20.000 USD | 18 W | 200 | 0,20 | 180 pW·s |
+| Card coherent 400G | 400 Gb/s | 1000 km | 40.000 USD | 28 W | 100 | 0,10 | 70 pW·s |
+| Card coherent 400G (metro) | 400 Gb/s | 80 km | 40.000 USD | 24 W | 100 | 1,25 | 60 pW·s |
+
+Đọc bảng: card 400G thắng về \$/bit và W/bit ở mọi kịch bản. Nhưng \$/bit/km của nó ở metro *cao gấp 12 lần* long-haul — không phải vì nó tệ, mà vì km ngắn. Nếu một RFP metro chấm điểm theo \$/bit/km, chỉ số đó đang gửi tín hiệu sai. Nhiệm vụ của SE là chỉ ra điều đó, không phải chơi theo luật hỏng.
+
+## TCO: capex là phần nổi của tảng băng
+
+Total Cost of Ownership là tổng chi phí qua toàn vòng đời (thường 5–7 năm cho hạ tầng quang), gồm hai khối:
+
+**Capex** — thiết bị và lắp đặt: transponder/card, shelf/chassis, common equipment (power, fan, controller), amplifier (EDFA/Raman), ROADM/WSS, patch, khảo sát và công lắp.
+
+**Opex** — chi phí vận hành hàng năm: điện (thiết bị + làm mát), thuê không gian rack và colocation, nhân lực vận hành, hợp đồng bảo trì/phần mềm, và chi phí sự cố. Với thiết bị quang, **điện + làm mát thường là hạng mục opex lớn nhất** và tích luỹ vượt capex sau vài năm.
+
+Công thức khung:
+
+$$
+\text{TCO} = \text{Capex} + \sum_{y=1}^{N} \frac{\text{Opex}_y}{(1+r)^y}
+$$
+
+với $N$ là số năm vòng đời và $r$ là suất chiết khấu (discount rate) đưa dòng tiền tương lai về hiện tại. Bỏ chiết khấu là sai lệch phổ biến — 100 USD điện năm thứ 6 không bằng 100 USD hôm nay.
+
+Một ước lượng điện đơn giản mà SE nên làm nhẩm được:
+
+$$
+E_{\text{year}} = P_{\text{IT}} \times \text{PUE} \times 8760 \times C_{\text{kWh}}
+$$
+
+trong đó $E_{\text{year}}$ là chi phí điện mỗi năm (USD), $P_{\text{IT}}$ là công suất thiết bị (kW), $8760$ là số giờ trong năm và $C_{\text{kWh}}$ là giá một kWh. PUE (Power Usage Effectiveness) gộp phần làm mát: một card 28 W trong DC có PUE 1,5 thực tế rút $28 \times 1{,}5 = 42$ W từ lưới. Ở 0,12 USD/kWh, một card đó tốn $42 \times 8760 \times 0{,}12 / 1000 \approx 44$ USD điện/năm — nhân với hàng nghìn card thì đây là con số nghiêm túc, và nó tỉ lệ thẳng với W/bit.
+
+<div style={{overflowX:'auto'}}>
+<svg viewBox="0 0 620 240" role="img" aria-label="Sơ đồ tích luỹ TCO capex và opex theo thời gian" style={{maxWidth:'620px',width:'100%',height:'auto',background:'#0d1117',borderRadius:'8px'}}>
+  <line x1="60" y1="200" x2="590" y2="200" stroke="#8b949e" strokeWidth="1.5"/>
+  <line x1="60" y1="200" x2="60" y2="30" stroke="#8b949e" strokeWidth="1.5"/>
+  <text x="30" y="35" fill="#8b949e" fontSize="12">$</text>
+  <text x="560" y="220" fill="#8b949e" fontSize="12">Năm</text>
+  <rect x="70" y="150" width="70" height="50" fill="#58a6ff" opacity="0.85"/>
+  <text x="105" y="140" fill="#58a6ff" fontSize="11" textAnchor="middle">Capex</text>
+  <rect x="70" y="130" width="70" height="20" fill="#3fb950" opacity="0.8"/>
+  <rect x="160" y="130" width="70" height="70" fill="#58a6ff" opacity="0.5"/>
+  <rect x="160" y="100" width="70" height="30" fill="#3fb950" opacity="0.8"/>
+  <rect x="250" y="130" width="70" height="70" fill="#58a6ff" opacity="0.5"/>
+  <rect x="250" y="80" width="70" height="50" fill="#3fb950" opacity="0.8"/>
+  <rect x="340" y="130" width="70" height="70" fill="#58a6ff" opacity="0.5"/>
+  <rect x="340" y="55" width="70" height="75" fill="#3fb950" opacity="0.8"/>
+  <rect x="430" y="130" width="70" height="70" fill="#58a6ff" opacity="0.5"/>
+  <rect x="430" y="35" width="70" height="95" fill="#3fb950" opacity="0.8"/>
+  <text x="105" y="215" fill="#8b949e" fontSize="11" textAnchor="middle">0</text>
+  <text x="195" y="215" fill="#8b949e" fontSize="11" textAnchor="middle">2</text>
+  <text x="285" y="215" fill="#8b949e" fontSize="11" textAnchor="middle">3</text>
+  <text x="375" y="215" fill="#8b949e" fontSize="11" textAnchor="middle">4</text>
+  <text x="465" y="215" fill="#8b949e" fontSize="11" textAnchor="middle">5</text>
+  <rect x="520" y="40" width="12" height="12" fill="#58a6ff" opacity="0.7"/>
+  <text x="537" y="50" fill="#c9d1d9" fontSize="11">Capex</text>
+  <rect x="520" y="60" width="12" height="12" fill="#3fb950" opacity="0.8"/>
+  <text x="537" y="70" fill="#c9d1d9" fontSize="11">Opex luỹ kế</text>
+</svg>
+</div>
+
+Sơ đồ minh hoạ điểm cốt lõi: capex là cột một lần, nhưng opex tích luỹ tuyến tính và ở cuối vòng đời có thể vượt capex. Một giải pháp rẻ hơn khi mua nhưng ngốn điện có thể đắt hơn tổng thể — đó là lý do W/bit không chỉ là chuyện môi trường mà là chuyện tiền.
+
+## Đánh đổi IPoDWDM vs transponder về TCO
+
+Đây là quyết định kiến trúc có ảnh hưởng TCO lớn nhất trong nhiều dự án hiện đại.
+
+**Kiến trúc transponder truyền thống** — router phát tín hiệu client "xám" (grey, thường 100G/400G qua giao diện short-reach) vào một transponder DWDM riêng; transponder này gắn coherent optics và đưa lambda lên line system. Có hai lớp thiết bị: router + transponder shelf.
+
+**IPoDWDM (IP over DWDM)** — cắm thẳng coherent pluggable (dạng ZR/ZR+ trong khe QSFP-DD của chính router) vào cổng router. Bỏ hẳn lớp transponder ngoài. Tín hiệu coherent đi thẳng từ router lên ROADM.
+
+So sánh trung thực:
+
+| Yếu tố | Transponder rời | IPoDWDM (ZR/ZR+ pluggable) |
+|---|---|---|
+| Số lớp thiết bị | 2 (router + transponder) | 1 (router) |
+| Capex/port | Cao hơn (thêm shelf) | Thấp hơn |
+| W/bit | Cao hơn (2 lớp SerDes + optics) | Thấp hơn (ít chuyển đổi) |
+| Không gian rack | Nhiều hơn | Ít hơn |
+| Reach / hiệu năng | Cao (card long-haul mạnh) | Giới hạn hơn (ZR ngắn, ZR+ khá hơn) |
+| Ranh giới vận hành | Rõ: IP team tách optical team | Mờ: một cổng, hai kỹ năng |
+| Khả năng nâng dung lượng | Linh hoạt (đổi card DWDM riêng) | Ràng buộc theo router/pluggable |
+
+**Khi IPoDWDM thắng TCO:** metro và DCI cự ly ngắn–trung, dung lượng cần khớp đúng bước router, và tổ chức chấp nhận hợp nhất vận hành IP+optical. Bỏ một lớp thiết bị cắt cả capex, W/bit lẫn không gian — cả ba mẫu số của các chỉ số ở trên cùng giảm.
+
+**Khi transponder rời vẫn thắng:** long-haul/subsea cần coherent hiệu năng cao vượt tầm pluggable ZR/ZR+; khi cần tách bạch domain IP và optical vì lý do tổ chức, bảo trì hay đa nhà cung cấp; hoặc khi line system đã có sẵn và chỉ cần thêm dung lượng transponder mà không đụng router.
+
+<Callout type="note" title="Cạm bẫy TCO của IPoDWDM">
+
+Đừng chỉ so giá pluggable với giá transponder. IPoDWDM dịch chi phí quang *vào* router: một cổng router coherent thường đắt hơn cổng grey, và pluggable ZR+ tiêu tốn công suất/nhiệt cao trong khe QSFP-DD, có thể giới hạn số cổng dùng được trên một line card (oversubscription nhiệt). TCO thật phải tính cả ràng buộc nhiệt và số port khả dụng thực tế, không phải port danh nghĩa.
+
+</Callout>
+
+## Đọc RFP: map yêu cầu → cấu hình, không over-spec
+
+Một RFP (Request for Proposal) là danh sách ràng buộc. Công việc SE là dịch từng ràng buộc thành một quyết định cấu hình — và *chỉ* những gì ràng buộc đòi hỏi.
+
+Quy trình đọc kỷ luật:
+
+1. **Trích ràng buộc cứng.** Cự ly từng tuyến (km, loại sợi, số span), dung lượng cần *hôm nay* và lộ trình mở rộng, độ khả dụng mục tiêu (ví dụ 99,99%), yêu cầu bảo vệ, băng tần (C hay C+L), và các ràng buộc phi kỹ thuật (nguồn 48 VDC, chiều sâu rack, môi trường).
+2. **Tách "nhu cầu thật" khỏi "mong muốn".** RFP hay viết "hỗ trợ tối đa 96 kênh" trong khi khách chỉ dùng 8 kênh trong 3 năm. Over-spec ở đây là tiền chết. Ghi rõ giả định trong đề xuất.
+3. **Map từng dòng.** Mỗi ràng buộc → một lựa chọn: cự ly + dung lượng → modulation/baud và có cần Raman không; số kênh → cỡ WSS và mux/demux; bảo vệ → sơ đồ 1+1 hay restoration; growth → chừa slot chứ không lắp sẵn.
+4. **Kiểm tra chéo với vật lý.** Cấu hình trên giấy phải qua được GSNR/margin của các bài trước. Một BoM đẹp mà không đạt required GSNR là BoM vô dụng.
+
+<Callout type="note" title="Over-spec là một dạng thất bại kỹ thuật">
+
+Nhồi thêm amplifier "cho chắc", chọn card long-haul cho tuyến 60 km, hay lắp đầy 96 kênh khi khách dùng 8 — tất cả đều làm đề xuất đắt và khó thắng. Over-spec không phải "an toàn"; nó là chưa hiểu bài toán. Margin đúng đã nằm trong thiết kế GSNR, không nằm ở việc mua dư thiết bị.
+
+</Callout>
+
+## Xây BoM chuẩn kỹ thuật: mỗi dòng map 1:1 requirement
+
+Bill of Materials (BoM) là bằng chứng bạn đã hiểu RFP. Một BoM tốt tự nó là một luận cứ: đọc từng dòng thấy ngay nó phục vụ ràng buộc nào.
+
+Nguyên tắc:
+
+- **Mỗi dòng ứng một lý do.** Mọi phần tử phải truy nguồn về một requirement hoặc một ràng buộc vật lý (ví dụ EDFA vì span 22 dB vượt khả năng thu). Dòng nào không giải thích được thì bỏ.
+- **Verify Part Number (PN).** Chỉ dùng PN có trong datasheet/price list chính thức, đúng biến thể (băng tần, giao diện, dải nhiệt). Không dựng PN theo trí nhớ. PN sai làm hỏng cả báo giá và niềm tin.
+- **Đừng quên common equipment.** Chassis, nguồn, quạt, controller, license phần mềm, patch cord, mux/demux, common amplifier — thiếu chúng thì báo giá thấp giả tạo và bạn sẽ bù lỗ hoặc mất uy tín khi lộ ra.
+- **Không nhồi margin kỹ thuật vào BoM.** Margin thiết kế (dB) thuộc về tính toán GSNR; margin thương mại (%) thuộc về khâu giá, do bộ phận thương mại quyết. Trộn hai thứ này vào số lượng thiết bị làm cả hai đều mờ và không kiểm toán được.
+
+Mẫu BoM tối giản với cột "ánh xạ requirement" — cột này là thứ phân biệt SE với người điền form:
+
+| # | Hạng mục (loại) | SL | Map tới requirement |
+|---|---|---|---|
+| 1 | Chassis/shelf DWDM | 2 | Hai đầu tuyến A–B |
+| 2 | Common (nguồn kép, quạt, controller) | 2 | Yêu cầu khả dụng 99,99% → nguồn dự phòng |
+| 3 | Coherent card 400G | 4 | 2×400G hoạt động + growth 2×400G (đã lắp theo yêu cầu RFP) |
+| 4 | EDFA line amp | 2 | Span 88 km, ~22 dB loss vượt ngân sách thu |
+| 5 | Mux/Demux + WSS | 2 | 8 kênh hôm nay, cấu trúc mở tới 40 |
+| 6 | OSC / patch / phụ kiện | lô | Giám sát tuyến + đấu nối |
+
+Lưu ý dòng 3: nếu khách *cần* growth trong RFP thì lắp; nếu chỉ "có thể", chừa slot và ghi rõ là tuỳ chọn — đừng âm thầm tính tiền cho tương lai chưa chắc.
+
+## Chọn giải pháp theo ràng buộc khách
+
+Cuối cùng, mọi thứ hội tụ về việc khớp bốn ràng buộc: **cự ly, dung lượng, ngân sách, sợi sẵn có**. Ràng buộc chặt nhất quyết định kiến trúc.
+
+- **Sợi khan hiếm, cần nhiều dung lượng:** đẩy spectral efficiency (QAM bậc cao, PCS) để nhồi nhiều bit/lambda; cân nhắc C+L nếu C-band đầy — quyết định này là bài toán kinh tế của bài 3.6.
+- **Long-haul, ngân sách vừa:** coherent với modulation bền (QPSK/8QAM), có thể Raman; transponder rời để đạt reach.
+- **Metro/DCI ngắn, tối ưu chi phí và điện:** IPoDWDM với ZR/ZR+ nếu tổ chức chấp nhận hợp nhất vận hành — thắng \$/bit và W/bit.
+- **Ngân sách là ràng buộc cứng:** cắt về đúng nhu cầu hôm nay, thiết kế để mở rộng, và trình bày minh bạch chỗ nào là "hôm nay" và chỗ nào là "khi cần". Khách tin SE cắt đúng hơn SE bán dư.
+
+Không có "giải pháp tốt nhất" tuyệt đối — chỉ có giải pháp khớp nhất với ràng buộc *của khách này*. Đó là toàn bộ tư duy SE.
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+Kỹ sư giỏi vật lý nhưng mù kinh tế sẽ thiết kế những tuyến đúng về OSNR mà thua thầu, hoặc thắng thầu rồi làm tổ chức lỗ opex trong im lặng. Ngược lại, người bán giỏi mà không hiểu vật lý sẽ over-spec để "an toàn" và đẩy giá lên mất tính cạnh tranh — hoặc under-spec và để tuyến sập margin sau 18 tháng.
+
+Ba con số \$/bit, \$/bit/km, W/bit và khung TCO là ngôn ngữ chung để nói chuyện với người ký ngân sách. Khi bạn có thể chỉ ra một dòng BoM ứng với một dòng RFP, giải thích tại sao IPoDWDM tiết kiệm ở tuyến này nhưng không ở tuyến kia, và chứng minh giải pháp qua được GSNR — bạn không còn là người báo giá, bạn là cố vấn kỹ thuật mà khách tin. Đó là khác biệt giữa một BoM được duyệt và một BoM bị mổ xẻ dòng-theo-dòng cho tới khi rã.
+
+<Quiz question="Một RFP metro (tuyến 70 km) chấm điểm nhà thầu theo \$/bit/km, càng thấp càng tốt. Card 400G của bạn cho \$/bit/km cao vì mẫu số km nhỏ. Phản ứng đúng của một SE là gì?" hint="Chỉ số nào đang nói dối vì bối cảnh?" options={[{text:'Chỉ ra rằng \$/bit/km thưởng cho cự ly và không phù hợp để chấm metro; đề xuất so bằng \$/bit hoặc TCO tổng thể', correct:true, explain:'Đúng. \$/bit/km chuẩn hoá theo km nên tự động phạt tuyến ngắn dù giải pháp tốt. SE trung thực chỉ ra chỉ số hỏng và đề nghị mẫu số chung hợp lý hơn.'},{text:'Kéo dài tuyến logic để tăng km trong công thức', explain:'Bóp méo bài toán vật lý để đẹp chỉ số — vừa sai kỹ thuật vừa mất uy tín.'},{text:'Chọn card long-haul đắt hơn để "xứng" với tuyến', explain:'Over-spec cho metro 70 km làm giá tăng, không giải quyết vấn đề mẫu số km.'},{text:'Bỏ thầu vì chỉ số không thể thắng', explain:'Chỉ số hỏng không có nghĩa giải pháp hỏng; nhiệm vụ SE là làm rõ, không bỏ cuộc.'}]} />
+
+<Quiz question="Khách so hai đề xuất DCI 40 km: (A) transponder rời, capex thấp hơn 8%; (B) IPoDWDM với ZR+, capex cao hơn nhưng W/bit thấp hơn khoảng 35% và bớt một lớp thiết bị. Vòng đời 6 năm, điện đắt. Bạn tư vấn thế nào?" hint="Capex là cột một lần; opex tích luỹ." options={[{text:'Dựng TCO 6 năm có chiết khấu: phần điện tiết kiệm của B tích luỹ có thể vượt 8% capex chênh; nếu tổ chức chấp nhận hợp nhất IP+optical thì B thường thắng TCO', correct:true, explain:'Đúng. Ở DCI ngắn, điện đắt và vòng đời dài, opex thấp của IPoDWDM tích luỹ vượt chênh capex. Quyết định vẫn kèm điều kiện tổ chức chấp nhận ranh giới vận hành mờ.'},{text:'Chọn A vì capex thấp hơn là bằng chứng TCO thấp hơn', explain:'Capex chỉ là phần nổi; bỏ qua opex điện luỹ kế 6 năm là sai lầm TCO kinh điển.'},{text:'Chọn B vô điều kiện vì W/bit thấp luôn tốt hơn', explain:'W/bit thấp là điểm cộng lớn nhưng phải kiểm ràng buộc nhiệt/số port của ZR+ và năng lực vận hành hợp nhất.'},{text:'Không đủ dữ liệu để nói gì', explain:'Có đủ để dựng mô hình TCO có điều kiện — đó chính là giá trị SE mang lại.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+- OIF — Implementation Agreements cho coherent pluggables (400ZR) và các dự án ZR+ liên quan.
+- ITU-T G.698.2 (giao diện DWDM ứng dụng đa nhà cung cấp), G.872/G.709 (kiến trúc & khung OTN) làm nền cho ánh xạ dịch vụ.
+- Khung TCO/PUE: The Green Grid (định nghĩa PUE) và thực hành tài chính chuẩn về discounted cash flow.
+- Các con số \$/bit, W/bit, giá kWh trong bài là *điển hình để minh hoạ phương pháp*, không phải thông số của bất kỳ hãng cụ thể nào — luôn thay bằng datasheet và price list chính thức khi báo giá thật.
+
+</Callout>
+
+➡️ Tiếp theo: 4.7 — Xu hướng công nghệ & tương lai truyền dẫn quang.

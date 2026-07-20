@@ -1,10 +1,191 @@
 ---
 sidebar_position: 8
-title: "★ Capstone Cấp 4 — Backbone quốc gia"
+title: "★ Capstone Cấp 4 — Kiến trúc backbone quốc gia"
+description: "Bài tổng hợp Cấp 4: thiết kế backbone mesh quốc gia — OLS + IPoDWDM vs transponder, lớp OTN, bảo vệ/restoration, tự động hoá và lập luận kinh tế TCO."
+concepts: [ipodwdm, otn, protection, sdn]
 ---
 
-import LessonStub from '@site/src/components/LessonStub';
+# ★ Capstone Cấp 4 — Kiến trúc backbone quốc gia
 
-# ★ Capstone Cấp 4 — Backbone quốc gia
+<Callout type="goal">
 
-<LessonStub objective={"Đề xuất kiến trúc backbone: OLS + IPoDWDM + bảo vệ + tự động hoá, kèm lập luận kinh tế."} />
+Sau bài này bạn sẽ:
+
+- Đề xuất được một kiến trúc backbone mesh cấp quốc gia với các quyết định lớn: Open Line System + IPoDWDM hay dùng transponder, có cần lớp OTN không, sơ đồ bảo vệ/restoration nào.
+- Lập luận được các đánh đổi bằng ngôn ngữ kỹ thuật + kinh tế (TCO, $/bit), thay vì "hãng A tốt hơn hãng B".
+- Ráp lại toàn bộ kiến thức Cấp 4 thành một hồ sơ thiết kế mạch lạc có thể bảo vệ trước hội đồng.
+
+</Callout>
+
+Đây là bài capstone: không có một đáp án đúng duy nhất. Mục tiêu là bạn ra quyết định, nêu giả định, và bảo vệ được lựa chọn. Phần cuối có "khung lời giải" mẫu để bạn tự đối chiếu.
+
+## Đề bài: backbone quốc gia của nhà mạng "VNet"
+
+Nhà mạng VNet cần nâng cấp backbone quang trong 5 năm tới. Ràng buộc cho trước:
+
+| Hạng mục | Giả định đề bài |
+|---|---|
+| Số node lõi | 8 node đặt tại các thành phố lớn |
+| Cấu trúc | Mesh, mỗi node có bậc (degree) 2–4 |
+| Cự ly span | 60–110 km/span, tuyến dài nhất khoảng 900 km |
+| Nhu cầu lưu lượng | 2 Tbps/tuyến trục hiện tại, dự báo x3 trong 5 năm |
+| Client | Chủ yếu 100GbE và 400GbE từ router lõi |
+| SLA | Trục vàng: khôi phục dưới 50 ms; trục thường: dưới vài giây chấp nhận được |
+| Ngân sách | CAPEX hạn chế, ưu tiên giảm $/bit và điện năng (W/bit) |
+
+Sơ đồ mesh rút gọn (8 node, degree 2–4):
+
+<svg viewBox="0 0 420 260" width="100%" role="img" aria-label="Sơ đồ mesh 8 node backbone">
+  <rect x="0" y="0" width="420" height="260" fill="#0b1020" />
+  <g stroke="#3b82f6" stroke-width="2">
+    <line x1="60" y1="50" x2="200" y2="30" />
+    <line x1="200" y1="30" x2="360" y2="60" />
+    <line x1="60" y1="50" x2="90" y2="140" />
+    <line x1="200" y1="30" x2="210" y2="130" />
+    <line x1="360" y1="60" x2="350" y2="150" />
+    <line x1="90" y1="140" x2="210" y2="130" />
+    <line x1="210" y1="130" x2="350" y2="150" />
+    <line x1="90" y1="140" x2="130" y2="220" />
+    <line x1="210" y1="130" x2="250" y2="220" />
+    <line x1="350" y1="150" x2="250" y2="220" />
+    <line x1="130" y1="220" x2="250" y2="220" />
+  </g>
+  <g fill="#f8fafc" font-size="11" font-family="sans-serif">
+    <circle cx="60" cy="50" r="10" fill="#1d4ed8" /><text x="48" y="35">N1</text>
+    <circle cx="200" cy="30" r="10" fill="#1d4ed8" /><text x="192" y="18">N2</text>
+    <circle cx="360" cy="60" r="10" fill="#1d4ed8" /><text x="352" y="45">N3</text>
+    <circle cx="90" cy="140" r="10" fill="#1d4ed8" /><text x="66" y="145">N4</text>
+    <circle cx="210" cy="130" r="10" fill="#1d4ed8" /><text x="216" y="125">N5</text>
+    <circle cx="350" cy="150" r="10" fill="#1d4ed8" /><text x="360" y="150">N6</text>
+    <circle cx="130" cy="220" r="10" fill="#1d4ed8" /><text x="108" y="245">N7</text>
+    <circle cx="250" cy="220" r="10" fill="#1d4ed8" /><text x="242" y="245">N8</text>
+  </g>
+</svg>
+
+Nhiệm vụ của bạn: điền ra bốn quyết định lớn dưới đây và bảo vệ chúng.
+
+## Quyết định 1 — OLS + IPoDWDM hay giữ transponder?
+
+Đây là trục quyết định trọng tâm của Cấp 4. Hai mô hình:
+
+- **Transponder rời (transponder/muxponder):** router phát client (100GbE/400GbE grey), transponder chuyển sang bước sóng coherent DWDM. Có điểm bàn giao rõ ràng giữa lớp IP và lớp quang.
+- **IPoDWDM (coherent pluggable trong router):** cắm thẳng module coherent (dòng 400ZR / ZR+ theo OIF) vào cổng router, bỏ transponder, bơm thẳng vào Open Line System. Giảm một lớp thiết bị, giảm số cổng grey, giảm điện năng và $/bit.
+
+Đánh đổi cốt lõi:
+
+| Tiêu chí | Transponder rời | IPoDWDM (ZR/ZR+) |
+|---|---|---|
+| $/bit & W/bit | Cao hơn (thêm lớp) | Thấp hơn (bỏ lớp) |
+| Reach & công suất kênh | Cao (bộ phát công suất lớn, baud/QAM linh hoạt) | Hạn chế hơn theo lớp module; ZR ngắn, ZR+ mở rộng reach |
+| Ranh giới vận hành IP/quang | Rõ ràng, dễ phân định lỗi | Nhoè — một đội phải nắm cả IP lẫn quang |
+| Open Line System | Không bắt buộc | Gần như bắt buộc (alien wavelength trên OLS mở) |
+| Telemetry/quản lý | Tập trung ở lớp quang | Phân tán ở router + OLS |
+
+Gợi ý phân tầng theo cự ly: tuyến metro/regional ngắn (dưới ~120 km, trong ngân sách OSNR của ZR) rất hợp IPoDWDM; tuyến trục dài 600–900 km cần transponder công suất cao hoặc ZR+ reach mở rộng, cân nhắc kỹ margin và số span EDFA.
+
+## Quyết định 2 — Có cần lớp OTN không?
+
+OTN (G.709) cho bạn: đóng khung chuẩn hoá, FEC mạnh, giám sát đoạn (TCM), grooming các luồng con dưới bước sóng, và định thời/OAM. Nhưng OTN switching là một lớp thiết bị và licence tốn kém.
+
+Khung ra quyết định:
+
+- **Client thuần 100G/400G, đầy bước sóng, muốn $/bit thấp:** thường bỏ OTN switching, chỉ giữ chức năng khung/FEC trong coherent. Grooming đẩy lên lớp IP/segment routing.
+- **Nhiều luồng con tốc độ thấp cần gộp (1G/10G, dịch vụ thuê kênh, khách hàng doanh nghiệp):** OTN muxponder/switch vẫn hợp lý để lấp đầy bước sóng và cách ly dịch vụ.
+- **Yêu cầu giám sát đầu-cuối nghiêm ngặt qua nhiều miền:** TCM của OTN có giá trị thật.
+
+Với VNet (client chủ yếu 100/400G), khuyến nghị: giữ khung/FEC ở coherent, dùng OTN muxponder chọn lọc chỉ ở vài node có nhiều dịch vụ tốc độ thấp; không phủ OTN switching toàn mạng.
+
+## Quyết định 3 — Bảo vệ và restoration
+
+Phân biệt hai cơ chế:
+
+- **Protection (bảo vệ):** tài nguyên dự phòng dành sẵn, chuyển mạch nhanh (mục tiêu dưới 50 ms). Ví dụ 1+1 optical/OTN, hoặc bảo vệ ở lớp IP (FRR).
+- **Restoration (khôi phục):** tính lại đường qua control plane khi có sự cố, dùng dung lượng dùng chung; chậm hơn (giây) nhưng rẻ hơn vì không giữ tài nguyên nhàn rỗi.
+
+Chiến lược phân lớp SLA cho VNet:
+
+| Lớp dịch vụ | Cơ chế | Mục tiêu thời gian |
+|---|---|---|
+| Trục vàng (SLA khắt khe) | 1+1 hoặc IP FRR có đường dự phòng nóng | Dưới 50 ms |
+| Trục thường | Restoration mesh qua control plane/SDN | Vài giây |
+| Best-effort | Restoration, chấp nhận degrade | Chậm nhất |
+
+Trong mesh degree 2–4, restoration động tận dụng đa đường là công cụ hạ CAPEX chính: thay vì nhân đôi mọi tuyến (1+1 toàn mạng, hiệu suất khoảng 50%), chỉ giữ 1+1 cho phần vàng và dùng shared-mesh restoration cho phần còn lại. Lưu ý: sau restoration, đường mới có thể dài hơn, cần kiểm tra GSNR/margin của các đường dự phòng ngay từ khâu thiết kế.
+
+## Quyết định 4 — Tự động hoá (SDN & telemetry)
+
+Backbone mesh 8 node với nhiều lớp bảo vệ không thể vận hành thủ công. Kiến trúc điều khiển đề xuất:
+
+- **SDN controller** (mặt phẳng điều khiển tập trung/phân tán) tính đường, đặt restoration policy, quản lý vòng đời bước sóng qua ROADM.
+- **Streaming telemetry** (ví dụ gNMI/model YANG) thay cho SNMP polling: thu OSNR, pre-FEC BER, công suất kênh, nhiệt độ module theo thời gian gần thực.
+- **Ngưỡng cảnh báo sớm:** pre-FEC BER tăng dần trước khi post-FEC lỗi — dùng để dự đoán suy giảm sợi/mối hàn, lên lịch bảo trì trước khi rớt dịch vụ.
+- **Đóng vòng:** telemetry → phát hiện suy giảm margin → controller định tuyến lại/điều chỉnh công suất. Đây là nền tảng cho vận hành theo margin thực thay vì thiết kế thủ công dư thừa.
+
+Với IPoDWDM, telemetry phải hợp nhất dữ liệu từ router (module ZR) và OLS — đây chính là cái giá vận hành của việc bỏ lớp transponder.
+
+## Lập luận kinh tế: TCO và $/bit
+
+Quyết định cuối cùng phải quy về tiền. Khung so sánh (điền số theo báo giá thực của bạn, đây là khung chứ không phải số hãng):
+
+$$
+\text{TCO} = \text{CAPEX}_{\text{thiết bị + lắp đặt}} + \sum_{t=1}^{N}\frac{\text{OPEX}_t}{(1+r)^t}
+$$
+
+trong đó OPEX gồm điện năng, làm mát, nhân lực vận hành, thuê chỗ/sợi. Chỉ số dẫn dắt:
+
+$$
+\text{Chi phí đơn vị} = \frac{\text{TCO}}{\text{tổng bit-km phục vụ trong vòng đời}}
+$$
+
+Các đòn bẩy chính lên $/bit trong đề bài này:
+
+- **Bỏ lớp (IPoDWDM):** cắt CAPEX transponder + cổng grey và cắt W/bit — đòn bẩy lớn nhất ở metro/regional.
+- **Baud/QAM cao hơn (coherent hiện đại + PCS):** nhiều bit hơn trên mỗi bước sóng, hạ $/bit — nhưng đổi lại reach ngắn hơn, cần cân với margin.
+- **Restoration thay cho 1+1 toàn mạng:** giảm dung lượng nhàn rỗi phải mua.
+- **Open Line System:** tách mua line system và transceiver, tăng đòn bẩy đàm phán, tránh khoá nhà cung cấp — nhưng tăng gánh nặng tích hợp/vận hành và trách nhiệm interop.
+
+Đánh đổi trung thực: IPoDWDM + OLS + restoration hạ $/bit rõ rệt nhưng chuyển rủi ro sang đội vận hành (interop, phân định lỗi liên miền, telemetry hợp nhất). Con số $/bit thấp chỉ có giá trị nếu tổ chức đủ năng lực vận hành mô hình mở.
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+Ở dự án thật, hội đồng đầu tư không hỏi "công nghệ nào mới nhất" mà hỏi "tại sao phương án này rẻ hơn và an toàn hơn trong 5–7 năm". Một kỹ sư truyền dẫn giỏi phải:
+
+- Gắn mỗi lựa chọn kỹ thuật (bỏ OTN, chọn ZR+, shared-mesh restoration) với một con số CAPEX/OPEX cụ thể.
+- Nêu rõ giả định và điều kiện phá vỡ giả định đó (ví dụ: "IPoDWDM chỉ tối ưu nếu dưới 120 km và đội vận hành xử lý được interop").
+- Không giấu rủi ro: mô hình mở rẻ hơn nhưng đắt về năng lực tổ chức; tính luôn chi phí đào tạo và công cụ.
+
+Đây chính là ranh giới giữa một người "chọn thiết bị" và một người "thiết kế mạng".
+
+## Khung lời giải mẫu (một phương án khả dĩ, không phải đáp án duy nhất)
+
+Một hồ sơ hợp lý cho VNet có thể là:
+
+- **Line layer:** Open Line System với ROADM CDC tại các node degree cao, EDFA + (Raman nếu span dài) trên tuyến trục; thiết kế theo GSNR/margin, chừa margin lão hoá.
+- **Transport:** IPoDWDM (ZR/ZR+) cho metro/regional dưới ~120 km; transponder coherent công suất cao cho trục dài 600–900 km. Không phủ OTN switching; chỉ đặt OTN muxponder ở 1–2 node nhiều dịch vụ tốc độ thấp.
+- **Bảo vệ:** 1+1/IP FRR cho trục vàng (dưới 50 ms); shared-mesh restoration qua SDN cho phần còn lại.
+- **Tự động hoá:** SDN controller + streaming telemetry (gNMI/YANG), cảnh báo theo pre-FEC BER, đóng vòng điều chỉnh công suất/định tuyến.
+- **Kinh tế:** biện minh bằng $/bit và TCO chiết khấu; đòn bẩy chính là bỏ lớp + restoration + OLS; rủi ro chính là năng lực vận hành interop.
+
+Bạn hoàn toàn có thể chọn khác (ví dụ giữ transponder toàn mạng để phân định lỗi rõ ràng, hoặc phủ OTN để giám sát liên miền) — miễn là lập luận đánh đổi vững.
+
+## Kiểm tra hiểu
+
+<Quiz question="Trong đề bài VNet, lý do kỹ thuật nào khiến IPoDWDM (ZR/ZR+) phù hợp cho tuyến metro/regional ngắn hơn là cho trục dài 900 km?" hint="Nghĩ về ngân sách OSNR/reach của module pluggable so với bộ phát transponder công suất cao." options={[{text:'Module coherent pluggable bị giới hạn reach/công suất theo lớp, phù hợp cự ly ngắn; trục dài cần bộ phát công suất cao hoặc ZR+ reach mở rộng với margin kỹ.', correct:true, explain:'Đúng — đây là đánh đổi reach vs tích hợp; bỏ lớp có lợi nhất nơi cự ly nằm trong ngân sách OSNR của module.'},{text:'Vì OTN bắt buộc phải có trên trục dài nên không thể dùng IPoDWDM.', explain:'Sai — OTN không bắt buộc theo cự ly; giới hạn ở đây là reach/công suất quang của module, không phải OTN.'},{text:'Vì Open Line System chỉ hoạt động trên tuyến ngắn.', explain:'Sai — OLS chạy được cả tuyến dài (nhiều span EDFA/Raman); giới hạn nằm ở module pluggable.'}]} />
+
+<Quiz question="Vì sao dùng shared-mesh restoration thay cho 1+1 protection trên toàn mạng lại hạ được CAPEX, và cái giá phải trả là gì?" options={[{text:'Restoration dùng chung dung lượng dự phòng nên mua ít capacity nhàn rỗi hơn; cái giá là thời gian khôi phục chậm hơn (giây) và phải kiểm tra margin của các đường dự phòng dài hơn.', correct:true, explain:'Đúng — đổi tốc độ khôi phục và độ phức tạp control plane/thiết kế margin lấy hiệu suất dung lượng.'},{text:'Restoration nhanh hơn 1+1 và không cần control plane nên vừa rẻ vừa nhanh, không có nhược điểm.', explain:'Sai — restoration chậm hơn 1+1 và phụ thuộc control plane/SDN; luôn có đánh đổi.'},{text:'Vì restoration loại bỏ hoàn toàn nhu cầu telemetry.', explain:'Sai — ngược lại, restoration động phụ thuộc mạnh vào telemetry và control plane để tính đường mới.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+- ITU-T G.709 (OTN), G.798, G.872 — kiến trúc/khung OTN.
+- ITU-T G.808.x, G.873.x — nguyên lý protection/restoration.
+- OIF 400ZR Implementation Agreement; các dự án OpenZR+ / ZR+ (coherent pluggable cho IPoDWDM).
+- ITU-T G.694.1 (DWDM grid), G.680 (impairments hệ thống nhiều span) — nền cho thiết kế GSNR/margin.
+- gNMI / mô hình YANG (OpenConfig) cho streaming telemetry.
+
+Các con số trong bài là "điển hình/khung tính toán", không phải thông số của bất kỳ hãng cụ thể nào.
+
+</Callout>
+
+Chúc mừng — bạn đã đi trọn hành trình Fresher đến Veteran của DWDM Academy. Từ bản chất của ánh sáng và sợi quang, qua lưới ITU và WDM, các impairment và link budget, coherent/DSP hiện đại, cho tới OTN, bảo vệ, tự động hoá và kinh tế mạng. Giờ bạn không chỉ đọc được một thiết kế backbone — bạn thiết kế và bảo vệ được nó.
+
+➡️ Tiếp theo: quay lại các bài Cấp 4 để tinh chỉnh hồ sơ thiết kế của bạn, hoặc áp khung này vào một RFP thật để luyện phản xạ kỹ sư hệ thống.

@@ -1,10 +1,144 @@
 ---
 sidebar_position: 4
 title: "3.4 — OSNR/GSNR engineering"
+description: Từ OSNR (chỉ ASE) đến GSNR gộp ASE + phi tuyến + penalties; required GSNR, margin design và margin harvesting.
+concepts: [gsnr, osnr, margin, nonlinear]
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 3.4 — OSNR/GSNR engineering
 
-<LessonStub objective={"Penalty (filtering, phi tuyến, PMD); Generalized SNR; required OSNR & margin design."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ:
+
+- Hiểu vì sao **OSNR đơn thuần (chỉ ASE) không còn đủ** để nghiệm thu tuyến coherent, và **GSNR** thay thế nó như chỉ số thiết kế thật sự.
+- Ghép được các thành phần vào GSNR: **ASE + nhiễu phi tuyến (NLI) + penalties** (filtering, PMD, PDL), rồi tính **margin = GSNR − required GSNR**.
+- Nắm khái niệm **margin design** (system margin, aging, unallocated) và **margin harvesting** — đọc SNR thời gian thực từ transponder để mở đường tăng dung lượng.
+
+</Callout>
+
+## Từ OSNR đến GSNR: vì sao phải đổi
+
+Ở Cấp 2 ta thiết kế tuyến bằng **OSNR** — tỷ số công suất tín hiệu trên **ASE** (nhiễu tự phát khuếch đại của chuỗi EDFA), quy chiếu về băng thông 0.1 nm. OSNR là mô hình **tuyến tính**: nó chỉ đếm nhiễu từ khuếch đại. Với hệ IMDD 10G, ASE gần như là tất cả những gì đáng lo, nên OSNR đủ dùng.
+
+Hệ coherent 100G+ phá vỡ giả định đó. Ở công suất phóng (launch power) cần thiết để giữ OSNR cao, sợi bắt đầu tạo **nhiễu phi tuyến (NLI — NonLinear Interference)** qua SPM/XPM/FWM (bài 3.3). NLI hành xử **gần như nhiễu Gauss cộng thêm** vào ASE, nhưng nó **tăng theo công suất phóng**, trong khi ASE **giảm** khi tăng công suất. Kết quả là đường cong hình chuông ngược quen thuộc: có một **công suất tối ưu** làm tổng nhiễu nhỏ nhất.
+
+OSNR không nhìn thấy NLI. Một máy đo OSA đo phổ có thể báo OSNR "đẹp" trong khi BER vẫn tệ vì NLI đã ăn mòn chất lượng tín hiệu. Vì thế ngành chuyển sang một đại lượng gộp mọi nguồn suy giảm SNR mà DSP máy thu thực sự "cảm nhận": **GSNR**.
+
+## GSNR là gì: gộp mọi nguồn nhiễu
+
+**GSNR (Generalized SNR)** là tỷ số công suất tín hiệu trên **tổng** công suất mọi thành phần làm hỏng tín hiệu, quy về cùng băng thông tham chiếu. Ở dạng nghịch đảo (cộng phương sai nhiễu), nó cộng tuyến tính:
+
+$$
+\frac{1}{\text{GSNR}} = \frac{1}{\text{SNR}_{\text{ASE}}} + \frac{1}{\text{SNR}_{\text{NLI}}} + \frac{1}{\text{SNR}_{\text{TRx}}}
+$$
+
+Trong đó:
+
+- $\text{SNR}_{\text{ASE}}$ — chính là OSNR (đã quy về băng thông ký hiệu), phần nhiễu từ chuỗi EDFA.
+- $\text{SNR}_{\text{NLI}}$ — phần từ nhiễu phi tuyến, ước lượng bằng mô hình **GN/EGN** (bài 3.3).
+- $\text{SNR}_{\text{TRx}}$ — nhiễu nội tại của transponder (implementation noise: ADC/DAC hữu hạn bit, laser linewidth, phi tuyến điện...), thường được nhà sản xuất gộp thành một **back-to-back SNR** cố định.
+
+Quy tắc "nghịch đảo cộng" giống điện trở song song: **nguồn nhiễu tệ nhất chi phối GSNR**. Nếu một thành phần rất nhỏ so với các thành phần khác, nó gần như không ảnh hưởng.
+
+Điểm mấu chốt: **GSNR là bất biến trên trục tần số ở mức bậc một** — với một cấu hình tuyến cho trước, mọi bước sóng thấy GSNR gần bằng nhau (sai khác nhỏ theo vị trí trong băng do độ dốc gain và mật độ NLI). Điều này cho phép **tách bạch**: nhà thiết kế tuyến chỉ cần đưa ra **một con số GSNR** cho mỗi kênh, còn transponder tự biết định dạng điều chế nào chạy được với GSNR đó.
+
+## Penalties: những thứ GN không mô hình hoá
+
+ASE và NLI là hai nguồn "nhiễu Gauss" chính. Nhưng thực tế còn các suy giảm khác thường được gộp vào GSNR dưới dạng **penalty** (trừ thẳng bằng dB):
+
+- **Filtering penalty** — mỗi lần đi qua WSS của ROADM, phổ kênh bị cắt xén ở rìa; nhiều node cascade lại làm băng thông hiệu dụng hẹp dần (xem `CascadedFilterPenalty` ở Cấp 2). Điển hình vài phần mười dB mỗi node, cộng dồn.
+- **PMD penalty** — tán sắc mode phân cực còn dư sau khi DSP bù; nhỏ với sợi hiện đại nhưng đáng kể trên sợi cũ G.652 lắp trước 2000.
+- **PDL penalty** — Polarization Dependent Loss tích luỹ qua các phần tử (WSS, coupler) làm mất cân bằng hai phân cực X/Y, gây phạt SNR và làm SNR **dao động theo thời gian** (do SOP trôi). Đây là một nguồn phạt "động" cần dự phòng bằng margin.
+- **Nhiễu pha / cross-phase từ kênh lân cận**, ripple gain phẳng không hoàn hảo...
+
+GSNR "thực dụng" mà kỹ sư dùng để nghiệm thu là:
+
+$$
+\text{GSNR}_{\text{eff}} = \text{GSNR}_{\text{ASE+NLI+TRx}} - \sum \text{penalties (dB)}
+$$
+
+## Required GSNR: transponder cần bao nhiêu
+
+Mỗi cặp **(định dạng điều chế, FEC)** có một **required GSNR** — mức GSNR tối thiểu để đạt BER mục tiêu sau FEC (thường post-FEC BER nhỏ hơn $10^{-15}$). Đây là bảng tra do nhà sản xuất transponder cung cấp; giá trị dưới đây là **tham khảo bậc độ lớn** (điển hình, phụ thuộc mạnh baud, FEC, thế hệ DSP):
+
+| Định dạng | bits/symbol (DP) | Required GSNR điển hình |
+|---|---|---|
+| DP-QPSK | 4 | ~ 9–11 dB |
+| DP-8QAM | 6 | ~ 12–14 dB |
+| DP-16QAM | 8 | ~ 15–17 dB |
+| DP-32QAM | 10 | ~ 18–20 dB |
+| DP-64QAM | 12 | ~ 21–23 dB |
+
+Cứ mỗi bậc nhồi thêm ~2 bits/symbol thì required GSNR tăng khoảng 3 dB — đúng trực giác "format càng dày càng cần SNR cao, đi càng ngắn". **Probabilistic constellation shaping (PCS)** (bài 3.2) làm mịn bảng này thành đường liên tục: transponder chọn được entropy phân số để khớp **vừa khít** GSNR có sẵn, thay vì nhảy bậc và bỏ phí margin.
+
+**Margin** của tuyến là hiệu số trực tiếp:
+
+$$
+\text{Margin (dB)} = \text{GSNR}_{\text{eff}} - \text{Required GSNR}
+$$
+
+Margin dương nghĩa là tuyến chạy được và còn dư; margin âm nghĩa là không đạt BER — phải hạ format, thêm khuếch đại, hoặc rút ngắn tuyến.
+
+## Margin design: chia margin cho ai
+
+Margin dương lúc turn-up **không** phải là "phần thừa để mừng" — nó được phân bổ có chủ đích:
+
+- **System margin (design margin)** — dự phòng cho sai số mô hình, biến động chế tạo, ripple, PDL động. Điển hình **1–2 dB**.
+- **Aging margin (repair margin)** — dự phòng cho suy hao tăng theo thời gian: mối hàn sửa chữa sau đứt cáp (mỗi lần sửa thêm suy hao), lão hoá connector, suy giảm bơm EDFA. Tuyến đường dài chôn cáp thường để **2–3 dB** cho hàng chục lần sửa trong 25 năm vòng đời.
+- **Unallocated margin (harvestable margin)** — phần còn lại sau khi trừ hai loại trên. Đây chính là phần **có thể "thu hoạch"** để nâng dung lượng.
+
+Quy tắc nghiệm thu điển hình: yêu cầu **tổng margin lúc turn-up ≥ 3 dB** (một số vận hành đặt cao hơn cho tuyến long-haul). Nếu GSNR_eff = 18.5 dB, required (DP-16QAM) = 16 dB, thì margin = 2.5 dB — có thể **chưa đủ** cho một tuyến long-haul cần cả aging lẫn system margin, dù thừa cho một tuyến metro ngắn.
+
+## Margin harvesting: biến margin dư thành dung lượng
+
+Transponder coherent đo và **báo cáo GSNR/Q thời gian thực** (qua telemetry / streaming). Điều này thay đổi cuộc chơi so với thời IMDD chỉ có margin "trên giấy":
+
+1. **Đo thật thay vì ước lượng bi quan.** Mô hình thiết kế luôn thận trọng (worst-case). Tuyến chạy thật thường có GSNR cao hơn dự toán 1–3 dB. Đọc số thật cho thấy margin "ẩn".
+2. **Thu hoạch để nâng cấp không cần chạm sợi.** Nếu một tuyến DP-QPSK 200G báo margin dư 4 dB ổn định qua nhiều tháng, có thể **nâng lên 8QAM/16QAM** (hoặc tăng entropy PCS) để tăng dung lượng trên **chính bước sóng đó** — chỉ đổi cấu hình transponder, không thêm phần cứng đường truyền.
+3. **SDN + telemetry khép vòng.** Bộ điều khiển liên tục so GSNR đo được với required của từng format khả dụng, và có thể tự động đề xuất/áp dụng format cao nhất còn giữ đủ margin an toàn (bài 3.5 và cơ chế SDN ở Cấp 4).
+
+Cảnh báo kỹ thuật: **đừng thu hoạch hết margin**. Phải chừa aging + system margin, và phải xét **biến động** (PDL, SOP, nhiệt độ theo mùa) — GSNR đo trong một tuần nắng đẹp có thể tụt vào mùa đông hoặc sau một lần sửa cáp. Thu hoạch an toàn = margin trung bình dài hạn **trừ** biên độ dao động **trừ** aging dự phóng.
+
+## Thực hành: đọc GSNR đỉnh và bảng margin
+
+Kéo **công suất phóng** để thấy đường cong GSNR hình chuông ngược (ASE giảm, NLI tăng). Tìm **đỉnh GSNR** — đó là công suất tối ưu. Rồi đối chiếu **bảng margin** cho từng định dạng điều chế: format nào có margin dương và dư bao nhiêu để harvest.
+
+<NonlinearOptimizer />
+
+Quan sát: đỉnh GSNR **không** nằm ở công suất cao nhất — vượt đỉnh, NLI tăng nhanh hơn phần OSNR bạn thu được. Và với cùng một GSNR đỉnh, một format dày (16QAM) có thể margin mỏng trong khi format thưa (QPSK) margin dày — đó là biên độ để đánh đổi.
+
+<Quiz
+  question="Một OSA đo OSNR của kênh coherent = 20 dB (rất tốt), nhưng transponder báo BER cao và không đạt. Nguyên nhân hợp lý nhất?"
+  hint="OSA chỉ 'nhìn thấy' loại nhiễu nào?"
+  options={[
+    {text: 'Nhiễu phi tuyến (NLI) và penalties (PDL/filtering) làm GSNR thấp dù OSNR-ASE tốt', correct: true, explain: 'Đúng — OSA chỉ đo ASE. NLI và các penalty không hiện trên phổ nhưng vẫn kéo GSNR (thứ DSP thật sự cảm nhận) xuống dưới required.'},
+    {text: 'OSA bị hỏng, phải đo lại', explain: 'OSNR-ASE cao là thật; vấn đề là nó không phản ánh NLI/penalties. Đây chính là lý do ngành chuyển sang GSNR.'},
+    {text: 'Required GSNR của mọi format đều dưới 10 dB nên 20 dB thừa sức', explain: 'Sai — OSNR 20 dB không có nghĩa GSNR là 20 dB; NLI + penalties có thể kéo GSNR xuống dưới required của format đang dùng.'},
+  ]}
+/>
+
+<Quiz
+  question="Tuyến metro DP-16QAM báo GSNR_eff = 18.5 dB ổn định 6 tháng, required = 16 dB. Nên làm gì để harvest an toàn?"
+  hint="Margin = 18.5 − 16 = 2.5 dB. Cần chừa gì?"
+  options={[
+    {text: 'Chỉ 2.5 dB margin — không đủ để lên 32QAM (cần thêm ~3 dB); giữ nguyên hoặc dùng PCS tăng nhẹ entropy, vẫn chừa aging/system margin', correct: true, explain: 'Đúng — 32QAM cần ~+3 dB nữa mà chỉ có 2.5 dB, lại phải trừ aging/system margin và biến động. PCS cho phép nhích entropy vừa khít thay vì nhảy bậc.'},
+    {text: 'Nâng thẳng lên 64QAM vì GSNR 18.5 dB là cao', explain: '64QAM cần ~21–23 dB — vượt xa 18.5 dB. Margin sẽ âm, BER hỏng.'},
+    {text: 'Thu hoạch toàn bộ 2.5 dB bằng cách hạ launch power', explain: 'Hạ launch power làm ASE xấu đi → GSNR giảm, không tăng. Và không được thu hoạch hết margin — phải chừa aging + dao động.'},
+  ]}
+/>
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- **Nghiệm thu (acceptance) đúng chỉ số.** Nếu bạn ký biên bản dựa trên OSNR từ OSA mà bỏ qua GSNR, tuyến có thể "đạt trên giấy" nhưng flap khi PDL/NLI biến động. Yêu cầu số **GSNR/Q từ chính transponder**, không chỉ phổ OSA.
+- **Margin là ngân sách, không phải quà tặng.** Ghi rõ trong hồ sơ thiết kế: bao nhiêu dB cho system, bao nhiêu cho aging, bao nhiêu để trống. Tuyến chôn cáp long-haul cần aging margin lớn vì sẽ bị đứt và sửa nhiều lần trong 25 năm.
+- **Margin harvesting là tiền thật.** Nâng một tuyến 100G lên 200G/400G bằng cách đổi format trên margin dư — không đào cáp, không thêm amp — là cách rẻ nhất để tăng dung lượng. Nhưng phải dựa trên **telemetry dài hạn** và trừ dao động, không phải một lần đo đẹp.
+- **Tách bạch domain giúp scale.** GSNR bất biến theo tần số cho phép nhóm truyền dẫn giao "một con số GSNR/kênh" cho nhóm IP/transponder, và bộ điều khiển SDN tự khớp format. Đây là nền tảng của thiết kế mở (open line system) ở Cấp 4.
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+Khái niệm GSNR như chỉ số thiết kế bất biến, mô hình GN/EGN cho NLI, và required-OSNR/GSNR theo format là kiến thức chuẩn ngành, được trình bày trong tài liệu **OIF**, các tutorial **OFC/ECOC**, và liên quan tới các khuyến nghị **ITU-T G.680/G.692** (hàm truyền của phần tử mạng và hệ thống đa kênh có khuếch đại) cùng **G.698.2** (giao diện DWDM đa kênh khuếch đại kiểu "black link", nền tảng của open line system). Các giá trị required GSNR trong bảng và công cụ là **tham khảo bậc độ lớn**, không phải thông số của một transponder cụ thể — số thật lấy từ datasheet nhà sản xuất. Trung lập hãng.
+
+</Callout>
+
+➡️ Tiếp theo: [3.5 — Thiết kế mesh & phổ](./3-5-thiet-ke-mesh-pho)

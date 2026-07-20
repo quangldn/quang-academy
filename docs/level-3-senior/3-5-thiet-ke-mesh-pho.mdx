@@ -1,10 +1,111 @@
 ---
 sidebar_position: 5
 title: "3.5 — Thiết kế mạng mesh & phổ"
+description: "RWA/RSA, ràng buộc liên tục phổ, flexgrid & guard band, filtering penalty qua ROADM cascade và GSNR theo đường."
+concepts: [roadm, flexgrid, gsnr, osnr]
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 3.5 — Thiết kế mạng mesh & phổ
 
-<LessonStub objective={"Flexible grid, spectrum assignment, RWA/RSA, filtering penalty qua ROADM xếp tầng."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ:
+
+- Phát biểu được bài toán RWA/RSA và hiểu ràng buộc liên tục phổ (spectrum continuity) khi không có regenerator.
+- Biết flexgrid và guard band ảnh hưởng thế nào tới việc gán phổ và tới filtering penalty khi kênh đi qua nhiều ROADM.
+- Đánh giá được một đường (path) bằng GSNR riêng của nó, và hiểu vì sao "hết OSNR" hay "kẹt phổ" đều gây blocking.
+
+</Callout>
+
+## RWA/RSA: chọn đường và gán phổ
+
+Trong mạng mesh, mỗi yêu cầu kết nối (demand) giữa hai node cần hai quyết định gắn liền nhau:
+
+- **Routing** — chọn đường quang qua chuỗi ROADM và span nào.
+- **Wavelength/Spectrum Assignment** — gán tài nguyên phổ cho đường đó.
+
+Trên lưới cố định (fixed grid, ITU-T G.694.1) bài toán là **RWA (Routing and Wavelength Assignment)**: gán một trong các bước sóng rời rạc (ví dụ lưới 50 GHz). Trên **flexible grid** bài toán trở thành **RSA (Routing and Spectrum Assignment)**: thay vì một "màu", ta gán một **khối phổ liên tục** rộng đúng bằng nhu cầu của kênh (một dải các slot 12.5 GHz, biên đặt theo bội số 6.25 GHz). RSA tổng quát hơn vì kênh 100G, 400G và 800G chiếm độ rộng phổ khác nhau.
+
+Điểm khó cốt lõi: **không có O-E-O trên đường thì tần số không đổi được**. Một kênh express đi xuyên qua các ROADM ở nguyên miền quang, nên nó phải giữ cùng một vị trí phổ suốt cả đường.
+
+## Ràng buộc liên tục phổ (spectrum continuity)
+
+Đây là ràng buộc đặc trưng của mạng optical và là thứ làm RWA/RSA khó hơn định tuyến IP thuần.
+
+- **Spectrum continuity:** một đường không có regenerator phải dùng **cùng một khối phổ trên mọi span** của nó. Không thể "đổi màu" giữa chừng như router đổi nhãn.
+- **Spectrum contiguity (chỉ RSA/flexgrid):** khối phổ cấp cho một kênh phải **liền mạch** — các slot phải kề nhau, không được ghép từ những mảnh rời rạc.
+- **Non-overlap:** trên cùng một sợi, hai kênh không được chồng phổ.
+
+Hệ quả thực tế: dù đường vật lý còn trống, một demand vẫn có thể **bị chặn** nếu không tìm được một khối phổ cùng vị trí, đủ rộng, còn rảnh trên **tất cả** span dọc đường. Đây là gốc của **wavelength/spectrum blocking** — sẽ nói ở mục cuối.
+
+Chỉ có hai cách gỡ ràng buộc continuity:
+
+- Chèn **regenerator (O-E-O)** để reset tần số (và luôn tiện reset cả OSNR) — tốn thiết bị.
+- Dùng **wavelength converter** — hiếm trong mạng thương mại; thực tế gần như luôn là O-E-O bằng transponder.
+
+Ví dụ: một demand 400G cần 75 GHz. Đường A đi qua 3 span; khối 75 GHz quanh 193.9 THz còn trống trên span 1 và 3 nhưng đã bị một kênh khác chiếm ở span 2. Dù mỗi span đều còn thừa phổ ở chỗ khác, đường A **không đặt được** kênh này nếu không đổi vị trí phổ ở cả ba span — mà muốn đổi giữa chừng thì phải regenerate.
+
+## Flexgrid & guard band
+
+Flexgrid cho phép cấp phổ vừa vặn, nhưng "vừa vặn" tới đâu bị chặn bởi hai thứ.
+
+**Guard band.** Giữa hai kênh kề nhau cần một khoảng trống bảo vệ để bù cho: sườn dốc hữu hạn của filter WSS, sai số/độ trôi tần số của laser, và linear crosstalk giữa kênh. Vì thế độ rộng slot cấp cho một kênh luôn là **độ rộng tín hiệu cộng guard band**, không phải đúng bằng baud. Ví dụ kênh 64 Gbaud (tín hiệu khoảng 66–70 GHz với roll-off nhỏ) thường được đặt vào slot **75 GHz** để chừa guard band; ép vào 62.5 GHz sẽ thiếu biên và penalty tăng nhanh khi cascade.
+
+**Guard band càng hẹp** thì hiệu suất phổ (spectral efficiency) càng cao nhưng khả năng chịu misalignment và số ROADM đi qua càng giảm. Đây là một đánh đổi thiết kế trực tiếp, không phải chi tiết nhỏ.
+
+**Filtering penalty qua ROADM cascade.** Mỗi WSS là một passband gần chữ nhật nhưng sườn hữu hạn. Kênh express đi qua $N$ ROADM thì các passband **chồng nhau**: passband hiệu dụng hẹp dần, mép phổ tín hiệu bị xén, gây ISI và OSNR penalty. Penalty này phụ thuộc tỉ lệ giữa độ rộng tín hiệu (baud) và độ rộng slot/guard band, cùng số node cascade $N$. Đây chính là lý do RSA không chỉ là bài toán "nhét cho vừa" mà còn phải kiểm tra kênh có sống nổi qua chuỗi filter hay không.
+
+Dùng công cụ dưới để thấy penalty tăng theo số ROADM và độ rộng passband; thử tăng baud hoặc thu hẹp slot để thấy điểm penalty bùng lên:
+
+<CascadedFilterPenalty />
+
+Quy tắc: chọn slot rộng hơn baud một guard band đủ an toàn, giữ **frequency alignment** giữa các WSS, và cộng filtering penalty vào ngân sách ngay từ khâu quy hoạch — đặc biệt cho các đường express dài qua nhiều node.
+
+## GSNR theo đường: mỗi path một giá trị
+
+Ở bài 3.4 ta có GSNR (Generalized SNR) gộp mọi suy giảm — ASE của EDFA, nhiễu phi tuyến (NLI), penalty filtering/PMD — về một con số so được với **required GSNR** của mode điều chế.
+
+Điểm mấu chốt khi thiết kế mesh: **GSNR là thuộc tính của từng đường, không phải của mạng**. Mỗi ứng viên đường có:
+
+- số span và tổng suy hao khác nhau (ASE khác nhau),
+- mật độ kênh và công suất launch khác nhau (NLI khác nhau),
+- số ROADM cascade khác nhau (filtering penalty khác nhau).
+
+Nên hai đường cùng nối một cặp node có thể cho GSNR chênh nhau vài dB. Bộ định tuyến quang không chỉ chọn đường ngắn nhất về khoảng cách mà chọn đường **thoả GSNR** cho mode mong muốn:
+
+$$\mathrm{GSNR}_{\text{path}} \ge \mathrm{GSNR}_{\text{required}}(\text{mode}) + \text{margin}$$
+
+Nếu không đường nào thoả cho mode phổ cao (ví dụ 64QAM), lựa chọn là: hạ mode (16QAM/QPSK — spectral efficiency thấp hơn nhưng required GSNR thấp hơn), hoặc chèn regenerator để chia đường thành các đoạn ngắn hơn, mỗi đoạn có GSNR riêng đủ khoẻ.
+
+Ví dụ: đường ngắn 4 span, 2 ROADM cho $\mathrm{GSNR} \approx 18$ dB, đủ cho 64QAM. Đường vòng 9 span, 6 ROADM cho $\mathrm{GSNR} \approx 12.5$ dB — chỉ đủ QPSK. Cùng một cặp node, hai đường khác hẳn về capacity chở được. Đây là lý do RSA và tính GSNR phải chạy **cùng nhau**, không tách rời.
+
+## Wavelength/spectrum blocking
+
+Một demand bị **blocking** khi không đặt được, và trong mạng optical có **hai nguyên nhân độc lập**, phải kiểm cả hai:
+
+- **Blocking do phổ:** không tìm được khối phổ liên tục, đủ rộng, cùng vị trí, còn rảnh trên mọi span dọc đường (ràng buộc continuity + contiguity). Càng mạng chạy lâu, phổ càng **phân mảnh (fragmentation)** — nhiều mảnh nhỏ rời rạc không ghép được cho một kênh rộng như 800G. Đây là lý do thứ tự cấp phát (spectrum assignment policy, ví dụ first-fit) ảnh hưởng lớn tới blocking dài hạn.
+- **Blocking do GSNR:** tìm được phổ nhưng không đường nào cho GSNR đủ cho mode cần — hết ngân sách vật lý.
+
+Vì thế "còn phổ" không có nghĩa "đặt được", và ngược lại. Một bộ điều khiển optical tốt phải giải **đồng thời** RSA (còn chỗ trong phổ không) và feasibility vật lý (GSNR có đủ không), rồi mới cam kết đường. Bỏ qua một trong hai đều dẫn tới cam kết kênh không chạy được hoặc bỏ phí tài nguyên.
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- **Spectrum continuity khoá quyết định đặt regenerator.** Đây là ràng buộc đắt tiền nhất trong quy hoạch: mỗi lần phải regenerate là thêm một cặp transponder và một site. Hiểu đúng continuity giúp đặt regen đúng chỗ, không thừa không thiếu.
+- **Fragmentation ăn mòn dung lượng theo thời gian.** Mạng mới thì phổ trống thoải mái; sau vài năm cấp/nhả, phổ vỡ vụn và bắt đầu blocking dù tổng phổ còn nhiều. Chính sách gán phổ và defragmentation là việc vận hành thật, không phải lý thuyết.
+- **GSNR-per-path quyết định capacity thật của mạng.** Cùng một topo, chọn đường và mode theo GSNR sẽ ra tổng capacity rất khác so với chỉ đếm bước sóng. Bỏ qua bước này dẫn tới cam kết dịch vụ mà tuyến không gánh nổi.
+- **Filtering penalty là ngân sách ẩn của đường dài.** Các đường express qua 6–10 ROADM dễ bị "penalty bất ngờ". Cộng nó vào từ đầu, và cân nhắc grid rộng hơn cho các mode phổ cao.
+
+<Quiz question="Vì sao một đường quang không có regenerator phải dùng cùng một khối phổ trên mọi span?" hint="Nghĩ xem cái gì đổi được tần số của kênh." options={[{text:'Vì kênh đi express hoàn toàn ở miền quang; không có O-E-O trên đường nên tần số không đổi được — đó là ràng buộc spectrum continuity', correct:true, explain:'Đúng. Chỉ regenerator (O-E-O) hoặc wavelength converter mới đổi được vị trí phổ; thiếu chúng thì continuity là bắt buộc.'},{text:'Vì ITU-T cấm một kênh dùng nhiều bước sóng khác nhau', explain:'Không phải quy định chuẩn; đây là hệ quả vật lý của việc không tái tạo tín hiệu giữa đường.'},{text:'Vì mỗi EDFA chỉ khuếch đại được đúng một bước sóng', explain:'Sai; EDFA khuếch đại cả băng C. Ràng buộc đến từ việc không đổi được tần số khi không có O-E-O.'}]} />
+
+<Quiz question="Một demand 400G tìm được khối phổ trống suốt đường nhưng vẫn bị từ chối. Nguyên nhân hợp lý nhất là gì?" options={[{text:'Không đường nào cho GSNR đủ cho mode cần — blocking do giới hạn vật lý, độc lập với việc còn phổ hay không', correct:true, explain:'Đúng. Blocking có hai nguyên nhân độc lập: hết phổ và hết GSNR. Còn phổ không đảm bảo đường sống được.'},{text:'Chắc chắn do phổ bị phân mảnh', explain:'Mâu thuẫn với giả thiết: đề bài nói đã tìm được khối phổ trống suốt đường.'},{text:'Do guard band bằng 0 nên không cấp được', explain:'Nếu đã tìm được khối phổ đủ rộng gồm guard band thì đây không phải nguyên nhân.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+- ITU-T G.694.1 — DWDM frequency grid và flexible grid (slot 12.5 GHz, biên theo bội số 6.25 GHz).
+- ITU-T G.680 — hiệu ứng lọc (filter concatenation) của các phần tử phụ thuộc bước sóng khi cascade.
+- OIF — tài liệu công khai về flexgrid và coherent interop; khái niệm GSNR theo GNPy/OpenROADM (tài liệu mở).
+- Bài toán RWA/RSA theo tài liệu học thuật/kỹ thuật công khai; số liệu penalty và GSNR mang tính điển hình, cần xác nhận theo thiết bị và tuyến thực tế.
+
+</Callout>
+
+➡️ Tiếp theo: 3.6 — Băng tần mở rộng (C+L, super-C) và mở rộng dung lượng.
