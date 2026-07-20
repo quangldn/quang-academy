@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none" role="img" aria-label="DWDM Academy">
+  <defs>
+    <filter id="fg" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="1.2" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Nen toi bo goc -->
+  <rect x="0" y="0" width="40" height="40" rx="9" fill="#0a0e17"/>
+
+  <!-- Ferrule -->
+  <rect x="4.5" y="16.7" width="8.5" height="6.6" rx="2.2" fill="#33415c"/>
+  <rect x="4.5" y="16.7" width="2.8" height="6.6" rx="1.4" fill="#22d3ee"/>
+
+  <!-- Soi quang -->
+  <path d="M13 20 C 21 20 24 12 31 8.5" stroke="#a855f7" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M13 20 C 23 20 28 20 34 20" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M13 20 C 21 20 24 28 31 31.5" stroke="#22d3ee" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Dau phat sang -->
+  <g filter="url(#fg)">
+    <circle cx="31" cy="8.5" r="2.8" fill="#c084fc"/>
+    <circle cx="34" cy="20" r="2.8" fill="#60a5fa"/>
+    <circle cx="31" cy="31.5" r="2.8" fill="#67e8f9"/>
+  </g>
+  <circle cx="31" cy="8.5" r="1" fill="#ffffff"/>
+  <circle cx="34" cy="20" r="1" fill="#ffffff"/>
+  <circle cx="31" cy="31.5" r="1" fill="#ffffff"/>
+</svg>

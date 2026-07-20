@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none" role="img" aria-label="DWDM Academy logo">
+  <defs>
+    <filter id="lg" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="1.4" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Ferrule / dau noi soi -->
+  <rect x="3.5" y="16.3" width="9.5" height="7.4" rx="2.4" fill="#33415c"/>
+  <rect x="3.5" y="16.3" width="3.1" height="7.4" rx="1.5" fill="#22d3ee" opacity="0.9"/>
+
+  <!-- Ba soi quang toa ra -->
+  <path d="M13 20 C 22 20 25 11.5 33 7.5" stroke="#a855f7" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M13 20 C 24 20 29 20 36.5 20" stroke="#3b82f6" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M13 20 C 22 20 25 28.5 33 32.5" stroke="#22d3ee" stroke-width="2.6" stroke-linecap="round"/>
+
+  <!-- Dau soi phat sang -->
+  <g filter="url(#lg)">
+    <circle cx="33" cy="7.5" r="3" fill="#c084fc"/>
+    <circle cx="36.5" cy="20" r="3" fill="#60a5fa"/>
+    <circle cx="33" cy="32.5" r="3" fill="#67e8f9"/>
+  </g>
+  <circle cx="33" cy="7.5" r="1.05" fill="#ffffff"/>
+  <circle cx="36.5" cy="20" r="1.05" fill="#ffffff"/>
+  <circle cx="33" cy="32.5" r="1.05" fill="#ffffff"/>
+</svg>
