@@ -1,10 +1,152 @@
 ---
 sidebar_position: 11
 title: "1.3.3 — Khuếch đại Raman (giới thiệu)"
+description: "SRS tạo gain phân tán ngay trong sợi, counter-pump ~1450 nm cho C-band, effective noise figure thấp, và hybrid EDFA+Raman cho span dài."
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 1.3.3 — Khuếch đại Raman (giới thiệu)
 
-<LessonStub objective={"Distributed gain trong chính sợi truyền và vì sao nó cải thiện OSNR."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ:
+
+- Hiểu cơ chế SRS (Stimulated Raman Scattering) tạo gain phân tán ngay trong sợi truyền, và vì sao pump ~1450 nm cho gain ở C-band.
+- Giải thích được khái niệm "effective noise figure" âm/thấp và vì sao Raman cải thiện OSNR so với EDFA lumped.
+- So sánh Raman với EDFA, biết khi nào dùng hybrid EDFA+Raman và các lưu ý an toàn với pump công suất cao.
+
+</Callout>
+
+## SRS: gain sinh ra ngay trong sợi
+
+Ở bài EDFA, gain tập trung trong một đoạn sợi pha Erbium ngắn (vài mét) — đó là kiểu khuếch đại **lumped** (tập trung). Raman đi theo hướng khác: nó dùng chính **sợi truyền dẫn** (SMF, thường là span dài 80–100 km) làm môi trường khuếch đại. Không cần sợi đặc biệt pha đất hiếm.
+
+Cơ chế là **Stimulated Raman Scattering (SRS)** — một hiệu ứng phi tuyến bậc ba trong silica. Khi một photon pump công suất cao truyền trong sợi, nó có thể tán xạ trên dao động phân tử (phonon quang học) của thủy tinh và chuyển một phần năng lượng cho một photon tín hiệu có tần số thấp hơn (bước sóng dài hơn). Kết quả: photon tín hiệu được nhân bản có kích thích (stimulated), tức là tín hiệu được khuếch đại.
+
+Điểm mấu chốt: SRS truyền năng lượng từ bước sóng ngắn (pump) sang bước sóng dài (signal), với một **độ dịch tần cố định** đặc trưng cho silica.
+
+## Đỉnh gain lệch pump ~13 THz (~100 nm)
+
+Trong sợi silica, phổ gain Raman có đỉnh ở độ dịch tần khoảng **13.2 THz** so với tần số pump. Quy đổi sang bước sóng ở vùng 1.5 µm, độ dịch này tương đương khoảng **100 nm**.
+
+Vì thế, để có gain ở **C-band** (khoảng 1530–1565 nm), người ta chọn pump quanh **1450 nm**:
+
+$$
+\lambda_{signal} \approx \lambda_{pump} + 100\ \text{nm} \Rightarrow 1450 + 100 = 1550\ \text{nm}
+$$
+
+Kiểm tra nhanh bằng tần số. Với pump 1450 nm:
+
+$$
+f_{pump} = \frac{c}{\lambda} = \frac{3\times10^8}{1450\times10^{-9}} \approx 206.9\ \text{THz}
+$$
+
+Đỉnh gain nằm ở $f_{pump} - 13.2\ \text{THz} \approx 193.7\ \text{THz}$, tương ứng $\lambda \approx 1548$ nm — đúng giữa C-band.
+
+Phổ gain Raman khá rộng nhưng không phẳng, nên hệ thống thực tế thường dùng **nhiều bước sóng pump** (ví dụ vài pump quanh 1425–1455 nm) để "đắp" thành một dải gain phẳng phủ toàn C-band. Đây là một ưu điểm lớn: dải gain do bạn tự thiết kế theo tổ hợp pump, không bị khóa cứng vào phổ Erbium như EDFA.
+
+## Counter-pump: vì sao bơm ngược chiều
+
+Pump Raman có thể bơm cùng chiều (co-pump) hoặc ngược chiều (counter-pump) với tín hiệu. Trong thực tế **counter-pump là mặc định**, tức pump đi vào từ đầu **thu** của span và chạy ngược về phía phát.
+
+<svg width="640" height="150" viewBox="0 0 640 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="So do counter-pumped Raman">
+  <rect x="20" y="60" width="600" height="24" fill="#cfe8ff" stroke="#3a7bd5"/>
+  <text x="300" y="52" font-size="13" text-anchor="middle" fill="#333">Span soi truyen dan (80-100 km)</text>
+  <text x="35" y="77" font-size="12" fill="#0a4">Tx</text>
+  <line x1="70" y1="72" x2="560" y2="72" stroke="#0a7" stroke-width="2" marker-end="url(#ar)"/>
+  <text x="150" y="104" font-size="12" fill="#0a7">tin hieu di xuoi chieu</text>
+  <circle cx="590" cy="72" r="16" fill="#ffd27f" stroke="#d98a00"/>
+  <text x="590" y="76" font-size="11" text-anchor="middle" fill="#333">pump</text>
+  <line x1="574" y1="122" x2="90" y2="122" stroke="#d98a00" stroke-width="2" marker-end="url(#ar)"/>
+  <text x="330" y="142" font-size="12" fill="#d98a00">pump ~1450 nm bom nguoc chieu (counter)</text>
+  <defs>
+    <marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#333"/>
+    </marker>
+  </defs>
+</svg>
+
+Lý do:
+
+- **Nhiễu (RIN transfer) thấp hơn.** Khi co-pump, dao động công suất (Relative Intensity Noise) của laser pump truyền trực tiếp lên tín hiệu vì cả hai đi cùng chiều với cùng tốc độ nhóm. Counter-pump làm hai chiều "lướt" qua nhau, trung bình hóa dao động pump nên RIN transfer nhỏ hơn nhiều.
+- **Gain đặt gần đầu thu**, nơi tín hiệu đã yếu nhất sau khi đi hết span. Khuếch đại tín hiệu yếu ngay trước khi nó vào bộ thu/EDFA giúp cải thiện OSNR tổng.
+
+Nhược điểm của counter-pump là hiệu suất chuyển đổi công suất pump-sang-gain hơi thấp hơn, nhưng đổi lại chất lượng nhiễu tốt hơn nên vẫn là lựa chọn ưu tiên.
+
+## Distributed gain và "effective noise figure" thấp
+
+Đây là lý do kỹ thuật quan trọng nhất để dùng Raman.
+
+Với EDFA lumped, tín hiệu đi hết 100 km span, suy hao xuống mức thấp nhất (OSNR xấu nhất), rồi mới được khuếch đại tại một điểm. Noise figure điển hình của một EDFA tốt là **4–6 dB**. OSNR sau mỗi span suy giảm theo công thức quen thuộc: mỗi lần khuếch đại đều nạp thêm nhiễu ASE.
+
+Với Raman phân tán, gain được **trải dọc theo vài chục km cuối của span**, ngay trong sợi. Tín hiệu được "đỡ" liên tục nên **chưa bao giờ rơi xuống mức thấp như trường hợp lumped**. Mức nhiễu quang tích lũy tương đương với một bộ khuếch đại lý tưởng có noise figure rất thấp — thấp hơn cả giới hạn lượng tử 3 dB của một lumped amplifier.
+
+Người ta mô tả điều này bằng khái niệm **effective noise figure** (hay equivalent noise figure): noise figure của một EDFA lumped giả định mà nếu đặt cuối span sẽ cho **cùng OSNR** như bộ Raman đang xét. Với Raman phân tán, giá trị này thường **âm**, điển hình khoảng $-1$ đến $-3$ dB.
+
+Cần hiểu đúng: effective noise figure âm **không** vi phạm vật lý. Nó không phải noise figure "thật" của một hộp khuếch đại rời; nó chỉ là cách quy đổi để so sánh với EDFA lumped. Ý nghĩa thực tế: một span có Raman cho OSNR tốt hơn 3–5 dB so với chỉ dùng EDFA lumped, và 3–5 dB OSNR đó có thể là ranh giới giữa một span dài chạy được hay không.
+
+## On-off Raman gain
+
+Thông số hay dùng để mô tả một bộ Raman là **on-off gain**: chênh lệch công suất tín hiệu đo tại đầu thu **khi bật pump so với khi tắt pump**.
+
+$$
+G_{on\text{-}off}\ [\text{dB}] = P_{out}(\text{pump on}) - P_{out}(\text{pump off})
+$$
+
+Lưu ý on-off gain **không** phải net gain. Ví dụ span suy hao 22 dB; bật Raman đo được on-off gain 12 dB. Điều đó nghĩa là Raman bù lại 12 dB trong 22 dB suy hao span, còn lại 10 dB span loss "net" sẽ do EDFA lumped ở trạm bù nốt. Raman hiếm khi phải kéo toàn bộ gain của span; nó thường đóng vai trò **pre-amplification phân tán** để giảm OSNR penalty, phần gain còn lại giao cho EDFA.
+
+Giá trị on-off gain điển hình cho counter-pumped Raman trên SMF là khoảng **8–15 dB**, tùy công suất pump và loại sợi.
+
+## Hybrid EDFA + Raman cho span dài
+
+Với các span rất dài hoặc suy hao rất cao (ví dụ span 120 km trở lên, hay tuyến qua vùng không có trạm lặp), một mình EDFA không đủ: OSNR cuối span rơi dưới ngưỡng. Giải pháp phổ biến là **hybrid**: Raman counter-pump đặt tại đầu thu của span để cải thiện OSNR, kết hợp với EDFA lumped để cung cấp phần gain còn lại và bơm công suất cho span kế tiếp.
+
+Bảng dưới minh họa vai trò phân công điển hình trong một trạm hybrid:
+
+| Thành phần | Vị trí | Vai trò chính |
+|---|---|---|
+| Raman pump | Đầu thu span | Gain phân tán ~10 dB, hạ effective NF, cứu OSNR |
+| EDFA pre-amp | Sau Raman | Bù nốt suy hao span còn lại |
+| EDFA booster | Đầu phát span kế | Nâng công suất launch cho span tiếp theo |
+
+Kết quả: một tuyến dùng hybrid có thể kéo span dài hơn 15–25 km so với chỉ EDFA, hoặc chèn thêm được 1–2 span trước khi phải regen — tác động trực tiếp lên chi phí tuyến.
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- **OSNR là ngân sách quyết định reach.** Khi làm link budget cho một tuyến, nếu OSNR cuối tuyến chỉ thiếu vài dB so với ngưỡng của transponder coherent, thêm Raman vào 1–2 span xấu nhất (span dài nhất, suy hao cao nhất) thường rẻ và nhanh hơn là chèn thêm cả một trạm lặp mới. Effective NF âm chính là "3–5 dB OSNR miễn phí" đó.
+
+- **Phụ thuộc vào chất lượng sợi.** Gain Raman phụ thuộc mạnh vào **hiệu suất Raman của sợi** và **suy hao tại bước sóng pump (~1450 nm)**. Sợi cũ, nhiều mối hàn, connector bẩn hoặc suy hao cao ở đầu span (nơi bơm pump vào) sẽ làm tụt gain và tăng nhiễu. Trước khi bật Raman, đầu thu span phải sạch: một connector bẩn tại điểm bơm pump vừa giết gain vừa là nguy cơ an toàn (cháy connector do công suất pump cao).
+
+- **An toàn với công suất pump rất cao.** Pump Raman thường ở mức **vài trăm mW đến hơn 1 W** — cao hơn hẳn tín hiệu. Đây là mức nguy hiểm cho mắt và có thể gây **fiber fuse** hoặc cháy đầu connector nếu có phản xạ hoặc hở. Quy tắc vận hành: không tháo connector khi pump đang bật; hệ thống phải có **APR/ALS (Automatic Power Reduction / Laser Shutdown)** để tự ngắt pump khi phát hiện đứt sợi hoặc mất tín hiệu phản hồi. Luôn tuân thủ trình tự bật/tắt: tín hiệu trước, pump sau; tắt thì ngược lại.
+
+- **Trong RFP/thiết kế.** Khi nhà cung cấp đề xuất Raman cho một span, hãy yêu cầu rõ: **on-off gain cam kết**, **effective noise figure** trên loại sợi thực tế của tuyến (không phải sợi lý tưởng), số lượng và bước sóng pump, và cơ chế an toàn APR. On-off gain đo trên phòng lab sợi mới có thể không đạt trên sợi thực đã lắp đặt nhiều năm.
+
+## So sánh Raman vs EDFA
+
+| Tiêu chí | EDFA (lumped) | Raman (distributed) |
+|---|---|---|
+| Môi trường gain | Sợi pha Erbium (vài m) | Chính sợi truyền dẫn (vài chục km) |
+| Nguồn năng lượng | Pump 980/1480 nm | Pump ~1450 nm cho C-band |
+| Vị trí gain | Tập trung một điểm | Trải dọc cuối span |
+| Noise figure | ~4–6 dB (thật) | Effective NF âm, ~$-1$ đến $-3$ dB |
+| Băng gain | Cố định theo phổ Er | Tự thiết kế theo tổ hợp pump |
+| Công suất pump | Trung bình | Rất cao (vài trăm mW đến hơn 1 W) |
+| An toàn | Tiêu chuẩn | Cần APR/ALS, quy trình chặt |
+| Vai trò điển hình | Bù gain chính | Cải thiện OSNR, cứu span dài |
+
+Hai công nghệ **không thay thế nhau** mà **bổ trợ**: EDFA làm gain chủ lực rẻ và ổn định; Raman thêm vào những span cần cứu OSNR. Đó là lý do hybrid EDFA+Raman là cấu hình chuẩn cho các tuyến long-haul.
+
+<Quiz question="Vì sao pump Raman ~1450 nm lại cho gain ở C-band (~1550 nm)?" hint="Nghĩ về độ dịch tần cố định của SRS trong silica." options={[{text:'Đỉnh gain Raman lệch pump khoảng 13 THz (~100 nm) về phía bước sóng dài, nên 1450 nm cộng thêm ~100 nm rơi vào C-band', correct:true, explain:'SRS chuyển năng lượng từ pump sang bước sóng dài hơn với độ dịch ~13.2 THz đặc trưng của silica, tương đương ~100 nm ở vùng 1.5 µm.'},{text:'Vì 1450 nm là cửa sổ suy hao thấp nhất của sợi', explain:'Cửa sổ suy hao thấp nhất là quanh 1550 nm; 1450 nm được chọn vì độ dịch gain, không phải vì suy hao.'},{text:'Vì Erbium hấp thụ mạnh tại 1450 nm', explain:'Raman không dùng Erbium; gain sinh ra từ SRS trong chính silica của sợi truyền.'}]} />
+
+<Quiz question="Effective noise figure âm của Raman phân tán có ý nghĩa gì?" options={[{text:'Là giá trị quy đổi: một EDFA lumped cuối span sẽ phải có NF âm mới cho cùng OSNR như Raman phân tán — thể hiện Raman cải thiện OSNR, không vi phạm vật lý', correct:true, explain:'Gain trải dọc sợi giữ tín hiệu không rơi xuống mức thấp như lumped, nên OSNR tương đương một amplifier có NF thấp hơn cả giới hạn 3 dB. Đây là con số so sánh, không phải NF vật lý của một hộp rời.'},{text:'Raman tạo ra năng lượng từ hư không nên nhiễu âm', explain:'Không có gì được tạo từ hư không; pump cung cấp năng lượng. NF âm chỉ là cách quy đổi so sánh với EDFA lumped.'},{text:'Nó có nghĩa Raman không tạo nhiễu ASE nào cả', explain:'Raman vẫn tạo nhiễu (ASE, double-Rayleigh, RIN transfer); effective NF âm phản ánh lợi thế phân tán, không phải nhiễu bằng 0.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+- ITU-T G.663 — Application-related aspects of optical amplifier devices and subsystems (bao gồm Raman và các cân nhắc an toàn công suất cao).
+- ITU-T G.665 — Generic characteristics of Raman amplifiers and Raman amplified subsystems.
+- ITU-T G.662 — Generic characteristics of optical amplifier devices and subsystems.
+- IEC 60825-2 — An toàn laser cho hệ thống truyền thông sợi quang (APR/ALS).
+- Độ dịch đỉnh gain Raman ~13.2 THz và các giá trị NF/on-off gain là giá trị kỹ thuật điển hình cho sợi SMF (G.652), có thể khác theo loại sợi thực tế.
+
+</Callout>
+
+➡️ Tiếp theo: [1.3.4 — OSC, VOA và tap monitor](./1-3-4-osc-voa-tap)

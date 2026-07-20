@@ -1,10 +1,178 @@
 ---
 sidebar_position: 10
 title: "1.3.2 — Khuếch đại EDFA"
+description: "Nguyên lý khuếch đại quang bằng sợi pha Erbium, bơm 980/1480 nm, gain, noise figure, ASE và vai trò booster/preamp/ILA trong hệ DWDM C-band."
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 1.3.2 — Khuếch đại EDFA
 
-<LessonStub objective={"Nguyên lý bơm Er³⁺, gain, noise figure, gain flattening — vì sao EDFA làm nên C-band."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ:
+
+- Hiểu cơ chế vật lý của EDFA: sợi pha Erbium, bơm 980/1480 nm và phát xạ kích thích trong C-band.
+- Đọc và giải thích được các thông số then chốt: gain, noise figure, gain flatness (GFF), gain saturation, chế độ AGC/APC.
+- Liên hệ ASE với suy giảm OSNR, và phân biệt ba vai trò triển khai booster / preamp / ILA.
+
+</Callout>
+
+## EDFA là gì và giải quyết bài toán nào
+
+Trong hệ thống truyền dẫn quang, tín hiệu bị suy hao khi đi qua sợi. Sợi single-mode chuẩn có suy hao điển hình khoảng $0.20$–$0.25$ dB/km ở vùng 1550 nm. Với một chặng 100 km, riêng suy hao sợi đã ăn mất khoảng 20–25 dB. Nếu không có cách bù lại công suất, tín hiệu sẽ chìm dưới nền nhiễu chỉ sau vài chục km.
+
+Trước đây, cách bù duy nhất là **regenerator O-E-O**: thu tín hiệu quang thành điện, tái tạo, rồi phát lại thành quang. Cách này đắt, phức tạp, và tệ nhất là nó gắn chặt với **một bước sóng, một tốc độ, một định dạng điều chế**. Muốn nâng cấp tốc độ là phải thay toàn bộ regenerator.
+
+EDFA (Erbium-Doped Fiber Amplifier) thay đổi cuộc chơi: nó khuếch đại **trực tiếp trong miền quang**, không cần chuyển sang điện, và khuếch đại **đồng thời tất cả các kênh DWDM** trong dải C-band chỉ bằng một khối duy nhất. Đây chính là công nghệ đã làm cho DWDM trở nên khả thi về mặt kinh tế.
+
+## Nguyên lý vật lý: ion Er³⁺ và phát xạ kích thích
+
+Trái tim của EDFA là một đoạn sợi silica được pha tạp ion **Erbium (Er³⁺)**, dài điển hình vài mét đến vài chục mét. Ion Er³⁺ có một cấu trúc mức năng lượng đặc biệt phù hợp với vùng 1550 nm.
+
+Cơ chế hoạt động gồm ba bước:
+
+1. **Bơm (pumping):** một laser bơm bơm năng lượng vào sợi để đẩy các ion Er³⁺ từ mức nền lên mức năng lượng cao. Bước sóng bơm là **980 nm** hoặc **1480 nm** (sẽ nói kỹ bên dưới).
+2. **Đảo mật độ tích lũy (population inversion):** khi đủ ion nằm ở mức năng lượng cao (mức siêu bền), ta có trạng thái đảo mật độ — điều kiện bắt buộc để khuếch đại.
+3. **Phát xạ kích thích (stimulated emission):** khi một photon tín hiệu ở vùng 1530–1565 nm đi qua, nó kích thích ion đang ở mức cao rơi xuống mức nền và phát ra **một photon thứ hai giống hệt** (cùng pha, cùng bước sóng, cùng hướng). Một photon vào, hai photon ra — đó là khuếch đại.
+
+Vì mức năng lượng của Er³⁺ khớp tự nhiên với dải bước sóng khoảng 1530–1565 nm, EDFA khuếch đại rất tốt trong **C-band**. Đây không phải lựa chọn thiết kế tuỳ ý — nó là hệ quả của vật lý nguyên tử Erbium. Cũng chính lý do này mà **C-band trở thành dải làm việc chủ đạo của DWDM**: chúng ta có một bộ khuếch đại rẻ, tin cậy, ngay tại dải đó.
+
+## 980 nm hay 1480 nm: chọn bơm nào
+
+Hai bước sóng bơm cho hai đặc tính khác nhau:
+
+| Đặc tính | Bơm 980 nm | Bơm 1480 nm |
+|---|---|---|
+| Cơ chế | Bơm lên mức cao rồi rơi nhanh xuống mức siêu bền (three-level) | Bơm trực tiếp lên mức siêu bền (two-level) |
+| Noise figure | Thấp hơn, gần giới hạn lý thuyết $\approx 3$ dB | Cao hơn một chút |
+| Hiệu suất công suất | Kém hơn ở công suất cao | Tốt hơn, đẩy được công suất ra cao |
+| Vai trò thường dùng | Tầng preamp (ưu tiên nhiễu thấp) | Tầng booster (ưu tiên công suất) |
+
+Trong thực tế, nhiều EDFA hiệu năng cao dùng **kiến trúc hai tầng**: tầng đầu bơm 980 nm để đạt noise figure thấp, tầng sau bơm 1480 nm để đạt công suất ra cao. Giữa hai tầng thường chèn thêm phần tử như GFF hoặc module bù tán sắc (DCM) khi cần.
+
+## Sơ đồ khối một EDFA đơn tầng
+
+<svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="So do khoi EDFA don tang">
+  <rect x="0" y="0" width="720" height="200" fill="#0d1117"/>
+  <line x1="20" y1="90" x2="140" y2="90" stroke="#58a6ff" stroke-width="2"/>
+  <text x="30" y="80" fill="#c9d1d9" font-size="13">Tín hiệu vào</text>
+  <rect x="140" y="72" width="60" height="36" fill="#161b22" stroke="#8b949e"/>
+  <text x="150" y="94" fill="#c9d1d9" font-size="11">Iso</text>
+  <rect x="210" y="72" width="70" height="36" fill="#161b22" stroke="#8b949e"/>
+  <text x="220" y="94" fill="#c9d1d9" font-size="11">WDM</text>
+  <rect x="215" y="140" width="60" height="30" fill="#161b22" stroke="#f0883e"/>
+  <text x="222" y="159" fill="#f0883e" font-size="10">Pump LD</text>
+  <line x1="245" y1="140" x2="245" y2="108" stroke="#f0883e" stroke-width="2"/>
+  <rect x="300" y="66" width="150" height="48" fill="#161b22" stroke="#3fb950"/>
+  <text x="312" y="86" fill="#3fb950" font-size="11">Sợi pha Erbium</text>
+  <text x="330" y="102" fill="#3fb950" font-size="11">(EDF)</text>
+  <line x1="280" y1="90" x2="300" y2="90" stroke="#58a6ff" stroke-width="2"/>
+  <rect x="470" y="72" width="70" height="36" fill="#161b22" stroke="#8b949e"/>
+  <text x="480" y="94" fill="#c9d1d9" font-size="11">GFF</text>
+  <line x1="450" y1="90" x2="470" y2="90" stroke="#58a6ff" stroke-width="2"/>
+  <rect x="560" y="72" width="60" height="36" fill="#161b22" stroke="#8b949e"/>
+  <text x="570" y="94" fill="#c9d1d9" font-size="11">Iso</text>
+  <line x1="540" y1="90" x2="560" y2="90" stroke="#58a6ff" stroke-width="2"/>
+  <line x1="620" y1="90" x2="700" y2="90" stroke="#58a6ff" stroke-width="2"/>
+  <text x="600" y="80" fill="#c9d1d9" font-size="13">Tín hiệu ra</text>
+</svg>
+
+Diễn giải các khối:
+
+- **Isolator (Iso):** cho ánh sáng đi một chiều, chặn phản xạ ngược có thể gây dao động hoặc tự phát laser.
+- **WDM coupler:** ghép công suất laser bơm vào sợi EDF cùng với tín hiệu.
+- **Pump LD:** laser diode bơm 980 hoặc 1480 nm.
+- **EDF:** đoạn sợi pha Erbium — nơi diễn ra khuếch đại.
+- **GFF (Gain-Flattening Filter):** làm phẳng gain theo bước sóng (xem phần gain flatness).
+- **Photodiode tap** (không vẽ) tại đầu vào và đầu ra để đo công suất phục vụ vòng điều khiển AGC/APC.
+
+## Các thông số then chốt cần đọc được
+
+### Gain
+
+Gain là tỉ số công suất ra trên công suất vào, tính bằng dB:
+
+$$G_{\text{dB}} = P_{\text{out,dBm}} - P_{\text{in,dBm}}$$
+
+Gain điển hình của một EDFA nằm khoảng **20–30 dB**. Ví dụ, tín hiệu tổng vào $-10$ dBm, ra $+17$ dBm thì gain là $27$ dB. Lưu ý gain phụ thuộc vào công suất vào, độ dài EDF và công suất bơm.
+
+### Noise figure (NF)
+
+Không có bộ khuếch đại nào là hoàn hảo: quá trình khuếch đại luôn thêm nhiễu. Noise figure đo lường mức độ EDFA làm xấu đi tỉ số tín hiệu trên nhiễu. Giới hạn lý thuyết (quantum limit) của một bộ khuếch đại lý tưởng là **$\approx 3$ dB**. EDFA thực tế đạt NF điển hình khoảng **4–6 dB**.
+
+NF là thông số cực kỳ quan trọng, đặc biệt ở tầng preamp, vì nó ảnh hưởng trực tiếp đến OSNR của cả tuyến (xem phần cuối).
+
+### Gain flatness và GFF
+
+Gain của Er³⁺ **không đều** theo bước sóng: một số kênh trong C-band được khuếch đại mạnh hơn các kênh khác. Sau khi đi qua nhiều EDFA nối tiếp, chênh lệch này tích lũy lại, khiến các kênh có công suất và OSNR chênh nhau đáng kể. Kênh yếu nhất sẽ giới hạn cả hệ.
+
+Giải pháp là **GFF (Gain-Flattening Filter)** — một bộ lọc có đặc tuyến suy hao được thiết kế ngược với hình dạng gain, sao cho gain tổng gần phẳng trên toàn dải. Gain ripple sau khi làm phẳng của EDFA tốt điển hình chỉ khoảng $\pm 0.5$–$1$ dB trên dải C-band.
+
+### Gain saturation
+
+Khi công suất vào tăng, đến một mức nào đó số ion Er³⁺ ở mức cao bị "hút cạn" nhanh hơn tốc độ bơm bù lại. Gain bắt đầu **giảm** — đây là **gain saturation**. Ở vùng bão hoà, công suất ra gần như bị giới hạn ở một mức trần dù tăng công suất vào. Đây là hành vi bình thường và được khai thác có chủ đích trong chế độ giữ công suất ra cố định.
+
+Một hệ quả vận hành quan trọng: vì tổng công suất bơm được chia sẻ cho tất cả kênh, khi **thêm hoặc bớt kênh** thì công suất mỗi kênh còn lại sẽ dao động nếu không có điều khiển. Đó là lý do cần AGC.
+
+### AGC và APC
+
+Hai chế độ điều khiển phổ biến:
+
+- **AGC (Automatic Gain Control):** vòng điều khiển giữ **gain cố định** bất kể số kênh thay đổi. Khi rớt kênh, EDFA tự giảm công suất bơm để mỗi kênh còn lại giữ nguyên mức. Đây là chế độ mặc định trong mạng DWDM nhiều kênh động (có ROADM add/drop), vì nó bảo vệ các kênh đang sống khỏi bị "sốc" công suất.
+- **APC / constant-power (Automatic Power Control):** giữ **tổng công suất ra cố định**. Ít dùng cho tuyến nhiều kênh động vì khi rớt kênh, công suất sẽ dồn sang các kênh còn lại.
+
+## ASE và mối liên hệ với OSNR
+
+Ngay cả khi không có tín hiệu vào, EDFA vẫn phát ra ánh sáng: các ion ở mức cao có thể tự rơi xuống một cách ngẫu nhiên và phát photon không liên quan đến tín hiệu — gọi là **phát xạ tự phát**. Những photon này lại được khuếch đại bởi phần sợi phía sau, tạo thành **ASE (Amplified Spontaneous Emission)** — một nền nhiễu quang trải rộng phổ.
+
+ASE chính là **nguồn nhiễu chi phối** trong tuyến quang khuếch đại. Mỗi EDFA trên tuyến đều thêm ASE, và nhiễu này tích lũy dồn qua từng chặng. Kết quả là **OSNR (Optical Signal-to-Noise Ratio) giảm dần** dọc tuyến. Một quy tắc gần đúng cho tuyến nhiều chặng giống nhau:
+
+$$\text{OSNR}_{\text{dB}} \approx P_{\text{ch,out}} - L_{\text{span}} - \text{NF} - 10\log_{10}(N) + 58$$
+
+trong đó $P_{\text{ch,out}}$ là công suất ra mỗi kênh (dBm), $L_{\text{span}}$ là suy hao mỗi chặng (dB), NF là noise figure của EDFA, $N$ là số chặng, và hằng số $58$ gắn với năng lượng photon và băng thông tham chiếu $0.1$ nm ở 1550 nm.
+
+Hai điều rút ra ngay từ công thức:
+
+- Mỗi khi **nhân đôi số chặng** ($N$), OSNR mất đi $\approx 3$ dB. Tuyến càng dài, OSNR càng ngặt.
+- **Giảm NF đi 1 dB** thì OSNR tăng gần 1 dB. Vì thế NF của tầng preamp là con số đáng để đấu tranh khi chọn thiết bị.
+
+Chi tiết cách tính và ngân sách OSNR sẽ được trình bày ở bài về OSNR.
+
+## Ba vai trò triển khai: booster, preamp, ILA
+
+Cùng một công nghệ EDFA, nhưng tối ưu khác nhau tuỳ vị trí đặt trên tuyến:
+
+| Vai trò | Vị trí | Ưu tiên thiết kế | Đặc điểm |
+|---|---|---|---|
+| **Booster** (post-amp) | Ngay sau bộ ghép kênh, đầu phát | Công suất ra cao | Đẩy công suất mỗi kênh vào sợi ở mức cao nhưng phải tránh phi tuyến |
+| **Preamp** (pre-amp) | Trước bộ tách kênh, đầu thu | Noise figure thấp | Khuếch đại tín hiệu yếu sau chặng dài trước khi tách kênh; NF thấp để bảo vệ OSNR |
+| **ILA** (In-Line Amplifier) | Trạm giữa tuyến | Cân bằng gain và NF | Bù suy hao chặng dọc đường; thường là loại hai tầng, có thể kèm bù tán sắc |
+
+Trên một tuyến điểm-điểm điển hình: booster ở đầu phát, một chuỗi ILA dọc tuyến mỗi 80–100 km, và preamp ở đầu thu. Chuỗi ILA càng dài thì ASE tích lũy càng nhiều, nên OSNR ở đầu thu là chỉ tiêu thiết kế quyết định số chặng tối đa trước khi cần regenerator.
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- **OSNR là tài nguyên hữu hạn — tiêu một lần là hết.** Mỗi EDFA thêm ASE và không thể "lấy lại". Khi thiết kế tuyến, bạn phải lập ngân sách OSNR ngay từ đầu: chọn NF thấp cho preamp, đặt số chặng hợp lý, và biết trước điểm phải regenerate. Sai lầm phổ biến là kéo tuyến quá dài rồi phát hiện OSNR đầu thu không đủ cho định dạng điều chế bậc cao.
+
+- **Công suất mỗi kênh là con dao hai lưỡi.** Đẩy công suất booster cao thì OSNR tốt hơn, nhưng công suất quá cao trong sợi kích hoạt **hiệu ứng phi tuyến** (SPM, XPM, FWM) làm hỏng tín hiệu. Vận hành thật luôn tồn tại một mức công suất tối ưu — không phải cứ cao là tốt.
+
+- **AGC không phải tuỳ chọn, mà là bắt buộc trên mạng động.** Trong mạng có ROADM add/drop kênh liên tục, nếu EDFA không chạy AGC đúng, một sự kiện rớt kênh có thể gây "sốc" công suất làm các kênh còn lại vọt lên, kéo theo lỗi bit hoặc thậm chí hỏng thu. Khi nghiệm thu, hãy kiểm tra transient response của EDFA (phản ứng khi add/drop kênh).
+
+- **Gain flatness quyết định tính đồng đều của mạng.** Nếu GFF kém hoặc EDFA chạy ở gain khác điểm thiết kế của GFF, gain ripple tăng lên và kênh yếu nhất sẽ giới hạn cả hệ. Đây là lý do EDFA nên vận hành gần điểm gain danh định của nó.
+
+- **Điểm cần soi trong RFP/tender.** Khi so sánh thiết bị giữa các hãng, các con số đáng yêu cầu ghi rõ là: dải gain và gain danh định, noise figure ở điểm làm việc, công suất ra tối đa mỗi kênh và tổng, gain flatness/ripple trên C-band, chế độ điều khiển (AGC/APC) và transient control. Đừng chỉ nhìn "gain 27 dB" — hãy hỏi NF tại chính điểm gain đó.
+
+<Quiz question="EDFA khuếch đại tự nhiên tốt nhất ở dải bước sóng nào, và vì sao?" hint="Nghĩ về cấu trúc mức năng lượng của ion Erbium." options={[{text:'C-band (~1530–1565 nm), vì mức năng lượng của ion Er³⁺ khớp tự nhiên với vùng này', correct:true, explain:'Đúng. Phổ khuếch đại của Er³⁺ nằm ở C-band; đây chính là lý do C-band trở thành dải chủ đạo của DWDM.'},{text:'O-band (~1310 nm), vì đó là điểm tán sắc-zero của sợi', explain:'1310 nm liên quan đến tán sắc của sợi G.652, không phải phổ khuếch đại của Erbium. EDFA không làm việc ở O-band.'},{text:'850 nm, vì đó là dải multimode phổ biến', explain:'850 nm là dải multimode cự ly ngắn, hoàn toàn ngoài phổ của Erbium.'},{text:'Mọi bước sóng như nhau vì khuếch đại quang là băng rộng vô hạn', explain:'Gain của EDFA bị giới hạn bởi phổ hấp thụ và phát xạ của Er³⁺, không phải vô hạn.'}]} />
+
+<Quiz question="Trên một tuyến gồm N chặng EDFA giống nhau, khi tăng số chặng từ N lên 2N thì OSNR đầu thu thay đổi ra sao (gần đúng)?" hint="Chú ý số hạng 10·log10(N) trong công thức OSNR." options={[{text:'Giảm khoảng 3 dB', correct:true, explain:'Đúng. Nhân đôi N làm giảm OSNR khoảng 10·log10(2) ≈ 3 dB do ASE tích lũy thêm.'},{text:'Tăng khoảng 3 dB', explain:'ASE tích lũy theo số chặng nên OSNR giảm chứ không tăng khi có thêm chặng.'},{text:'Không đổi, vì mỗi EDFA đã bù đủ suy hao chặng', explain:'EDFA bù được công suất nhưng không bù được nhiễu; ASE mỗi chặng cộng dồn làm OSNR giảm.'},{text:'Giảm khoảng 10 dB', explain:'Mức giảm là 10·log10(2) ≈ 3 dB, không phải 10 dB.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+- ITU-T G.661: định nghĩa và thông số chung của các thiết bị và hệ con khuếch đại quang.
+- ITU-T G.662: đặc tính chung của thiết bị và hệ con khuếch đại quang.
+- ITU-T G.663: khía cạnh liên quan đến thiết bị khuếch đại quang (thiết kế ứng dụng, ASE, transient).
+- ITU-T G.692: giao diện quang cho hệ thống đa kênh có khuếch đại quang.
+- Các giá trị gain (~20–30 dB), noise figure (~4–6 dB, giới hạn lý thuyết ~3 dB), gain ripple (±0.5–1 dB) là giá trị kỹ thuật điển hình từ tài liệu public; số cụ thể tuỳ thiết bị.
+
+</Callout>
+
+➡️ Tiếp theo: [1.3.3 — Khuếch đại Raman](./1-3-3-raman)

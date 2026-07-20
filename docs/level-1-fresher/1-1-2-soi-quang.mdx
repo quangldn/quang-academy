@@ -1,10 +1,154 @@
 ---
 sidebar_position: 2
 title: "1.1.2 — Sợi quang: cấu tạo & chuẩn ITU-T"
+description: "Cấu tạo core/cladding, phản xạ toàn phần, SMF vs MMF, và các chuẩn sợi ITU-T G.652/G.654/G.655/G.657 dùng trong hệ thống DWDM."
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 1.1.2 — Sợi quang: cấu tạo & chuẩn ITU-T
 
-<LessonStub objective={"Phân biệt SMF/MMF; hiểu core/cladding; biết khi nào dùng G.652 / G.654 / G.655 và vì sao."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ:
+
+- Hiểu sợi quang truyền ánh sáng thế nào (core/cladding, chiết suất, phản xạ toàn phần) và vì sao DWDM dùng single-mode chứ không dùng multi-mode.
+- Phân biệt được các chuẩn ITU-T G.652, G.654, G.655, G.657 và biết chọn loại nào cho từng bài toán (metro, long-haul, submarine, FTTH).
+- Nắm khái niệm effective area ($A_{eff}$) và mối liên hệ với hiệu ứng phi tuyến — thứ quyết định công suất bơm được vào sợi.
+
+</Callout>
+
+## Sợi quang là gì và ánh sáng đi trong đó ra sao
+
+Sợi quang là một ống dẫn sóng bằng thủy tinh silica ($SiO_2$) rất tinh khiết. Về mặt vật lý, nó dẫn ánh sáng dựa trên hiện tượng **phản xạ toàn phần** (total internal reflection) tại mặt phân cách giữa hai lớp thủy tinh có chiết suất khác nhau.
+
+Cắt ngang một sợi quang, từ trong ra ngoài có ba lớp chính:
+
+| Lớp | Đường kính điển hình | Vật liệu / vai trò |
+|---|---|---|
+| **Core** (lõi) | 8–10 µm (SMF) | Silica pha tạp (thường là Ge) để nâng chiết suất; là nơi ánh sáng thực sự truyền |
+| **Cladding** (vỏ phản xạ) | 125 µm | Silica chiết suất thấp hơn core một chút; "giam" ánh sáng trong core |
+| **Coating** (lớp phủ) | 245–250 µm (primary) | Nhựa acrylate bảo vệ cơ học; KHÔNG tham gia dẫn quang |
+
+Điểm mấu chốt: core có chiết suất $n_1$ **lớn hơn** cladding $n_2$ (chênh lệch chỉ khoảng $0.3\%$–$0.4\%$). Khi tia sáng trong core đập vào biên core–cladding với góc tới lớn hơn góc tới hạn $\theta_c$, nó bị phản xạ toàn phần trở lại core thay vì khúc xạ ra ngoài. Góc tới hạn cho bởi:
+
+$$
+\theta_c = \arcsin\!\left(\frac{n_2}{n_1}\right)
+$$
+
+Nhờ vậy ánh sáng "nảy" liên tục dọc theo core và truyền đi được hàng chục, hàng trăm km. Lưu ý: đường kính $125\ \mu m$ của cladding là chuẩn công nghiệp gần như tuyệt đối — mọi connector, splice, đầu nối đều thiết kế quanh con số này.
+
+## Single-mode (SMF) và multi-mode (MMF): tại sao DWDM chỉ dùng SMF
+
+"Mode" là các đường lan truyền (mode phân bố trường) mà sợi cho phép. Số mode phụ thuộc chủ yếu vào đường kính core so với bước sóng.
+
+- **MMF (multi-mode)**: core lớn, khoảng $50\ \mu m$ (OM3/OM4) hoặc $62.5\ \mu m$ (OM1). Core lớn cho phép nhiều mode cùng truyền. Mỗi mode đi một quãng đường quang hình học khác nhau nên đến đích ở thời điểm khác nhau, khiến xung bị giãn. Đây là **modal dispersion** (tán sắc mode), và nó rất lớn. Hệ quả: MMF chỉ dùng cho **short reach** — trong trung tâm dữ liệu, khoảng cách vài trăm mét đến khoảng $1$–$2$ km, thường với nguồn $850\ nm$ (VCSEL).
+- **SMF (single-mode)**: core nhỏ, khoảng $8$–$10\ \mu m$ (mode field diameter thực tế $\approx 9$–$10.4\ \mu m$ @1550 nm). Ở dải $1310/1550\ nm$, core này chỉ cho phép **một mode cơ bản** truyền, loại bỏ hoàn toàn modal dispersion.
+
+Vì DWDM ghép hàng chục bước sóng và chạy cự ly dài (metro tới xuyên lục địa), modal dispersion của MMF là không thể chấp nhận. **Toàn bộ hệ thống DWDM dùng SMF.** Từ đây về sau, khi nói "sợi" ta ngầm hiểu là single-mode.
+
+## Cửa sổ suy hao và vì sao ta ở vùng 1550 nm
+
+Suy hao của silica phụ thuộc bước sóng. Đường cong suy hao có hai vùng thấp quan trọng:
+
+| Cửa sổ | Bước sóng | Suy hao điển hình (G.652.D) |
+|---|---|---|
+| O-band | ~1310 nm | ~0.32–0.35 dB/km |
+| C-band | ~1530–1565 nm | ~0.19–0.22 dB/km |
+| L-band | ~1565–1625 nm | ~0.20–0.25 dB/km |
+
+DWDM sống chủ yếu ở **C-band** (và mở rộng sang L-band) vì suy hao thấp nhất ở đây, và vì EDFA khuếch đại tốt đúng dải này. Suy hao thấp nghĩa là span dài hơn, ít trạm khuếch đại hơn — trực tiếp giảm chi phí.
+
+Trước đây giữa O-band và C-band có một "water peak" (đỉnh suy hao do ion $OH^-$) quanh $1383\ nm$. Sợi G.652.D hiện đại là loại **low water peak**, đã triệt tiêu đỉnh này, mở ra cả dải $1360$–$1460\ nm$ (E-band) cho CWDM và các ứng dụng khác.
+
+## Effective area ($A_{eff}$) và hiệu ứng phi tuyến
+
+Công suất quang trong sợi tập trung trong một tiết diện hiệu dụng gọi là **effective area** $A_{eff}$. Với G.652 điển hình, $A_{eff} \approx 80\ \mu m^2$ @1550 nm.
+
+Cường độ (mật độ công suất) tỉ lệ nghịch với $A_{eff}$:
+
+$$
+I = \frac{P}{A_{eff}}
+$$
+
+Các hiệu ứng phi tuyến (SPM, XPM, FWM…) phụ thuộc vào cường độ này. Diễn giải trực tiếp: **$A_{eff}$ càng lớn thì cùng một công suất sẽ cho cường độ càng thấp, phi tuyến càng yếu, và bơm được nhiều công suất hơn vào sợi mà không méo tín hiệu.** Đây chính là lý do sợi long-haul/submarine (G.654) được thiết kế $A_{eff}$ lớn (~$110$–$150\ \mu m^2$): để chịu được công suất cao, kéo dài span, nâng OSNR đầu thu.
+
+Đánh đổi: $A_{eff}$ lớn thường đi kèm khó uốn cong hơn (bend loss cao hơn) — ngược hoàn toàn triết lý của sợi FTTH.
+
+## Các chuẩn sợi ITU-T
+
+ITU-T chuẩn hóa từng họ sợi theo mục đích sử dụng. Bốn họ cần nắm:
+
+### G.652 — SMF chuẩn ("standard single-mode fiber")
+
+Đây là sợi phổ biến nhất trên thế giới cho metro/terrestrial. Đặc trưng:
+
+- Suy hao ~$0.18$–$0.22\ dB/km$ @1550 nm; biến thể **G.652.D** là low water peak (~$0.2\ dB/km$ @1550 điển hình).
+- **Tán sắc sắc thể (chromatic dispersion) ~$16$–$17\ ps/(nm\cdot km)$** @1550 nm — đây là con số bạn phải nhớ, nó chi phối toàn bộ tính toán bù tán sắc.
+- Zero-dispersion wavelength quanh $1310\ nm$.
+- $A_{eff} \approx 80\ \mu m^2$.
+
+Với coherent hiện đại, tán sắc $17\ ps/(nm\cdot km)$ được bù bằng DSP ở đầu thu nên không còn là rào cản như thời hệ thống 10G trực tiếp.
+
+### G.654 — cut-off shifted, $A_{eff}$ lớn, suy hao siêu thấp
+
+Sợi cho **long-haul và submarine**. Đặc trưng:
+
+- Suy hao rất thấp ~$0.16\ dB/km$ (một số loại đạt gần $0.15\ dB/km$).
+- $A_{eff}$ lớn (~$110$–$150\ \mu m^2$), chịu công suất cao, phi tuyến thấp.
+- Cut-off wavelength dịch lên; tối ưu cho vận hành ở C/L-band.
+- Tán sắc thậm chí cao hơn G.652 một chút (~$18$–$21\ ps/(nm\cdot km)$) — không sao với coherent.
+
+Biến thể G.654.E được đẩy mạnh cho terrestrial long-haul 400G/800G những năm gần đây.
+
+### G.655 — NZDSF (non-zero dispersion-shifted fiber)
+
+Sợi **legacy**, thiết kế cho hệ thống DWDM 10G thời chưa có coherent. Ý tưởng: giữ tán sắc **nhỏ nhưng khác 0** (~$2$–$6\ ps/(nm\cdot km)$) ở C-band.
+
+- Vì sao khác 0? Nếu tán sắc bằng đúng 0 (như sợi G.653 dispersion-shifted), các bước sóng DWDM đi cùng tốc độ pha khiến **Four-Wave Mixing (FWM)** bùng nổ, sinh nhiễu xuyên kênh nghiêm trọng. Giữ một chút tán sắc phá vỡ điều kiện phase-matching và dập FWM.
+- Ngày nay ít triển khai mới: coherent DSP xử lý tán sắc dễ dàng nên G.652/G.654 (tán sắc cao, phi tuyến thấp) lại tối ưu hơn. Bạn vẫn gặp G.655 trên các tuyến đã chôn từ trước.
+
+### G.657 — bend-insensitive, cho access/FTTH
+
+Sợi **kháng uốn cong** (bend-insensitive), tương thích ngược với G.652.D nhưng chịu bán kính uốn nhỏ hơn nhiều mà suy hao vẫn thấp.
+
+- Dùng trong **access/FTTH**: đi dây trong nhà, quấn góc, ghim tường, hộp đấu nối chật.
+- G.657.A tương thích G.652.D (metro/access); G.657.B chịu uốn cực nhỏ (bán kính $5$–$7.5\ mm$).
+- Không dùng cho long-haul: $A_{eff}$ nhỏ hơn, không tối ưu cho công suất cao.
+
+## Bảng chọn: khi nào dùng loại nào
+
+| Chuẩn ITU-T | Suy hao @1550 (điển hình) | Tán sắc @1550 | $A_{eff}$ | Kịch bản dùng |
+|---|---|---|---|---|
+| **G.652.D** | ~0.2 dB/km | ~16–17 ps/(nm·km) | ~80 µm² | Metro, terrestrial phổ thông, đa số tuyến mặt đất |
+| **G.654** | ~0.16 dB/km | ~18–21 ps/(nm·km) | ~110–150 µm² | Long-haul, submarine, tuyến công suất cao |
+| **G.655 (NZDSF)** | ~0.20–0.22 dB/km | ~2–6 ps/(nm·km) | ~55–72 µm² | Legacy DWDM 10G; tuyến cũ đã chôn |
+| **G.657** | ~0.20–0.22 dB/km | ~16–17 ps/(nm·km) | ~80 µm² (nhỏ hơn ở biến thể B) | Access/FTTH, đi dây trong nhà, chịu uốn |
+
+Quy tắc nhớ nhanh: **G.652 = mặc định mặt đất; G.654 = đi xa/ngầm biển; G.655 = di sản; G.657 = vào nhà.**
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+Loại sợi không phải chi tiết học thuật — nó quyết định thiết kế và cả nội dung RFP:
+
+- **Link budget và span:** Suy hao dB/km nhân với chiều dài span ra tổng loss. G.654 ~$0.16\ dB/km$ so với G.652 ~$0.20\ dB/km$: trên span $100\ km$ chênh $4\ dB$ — đủ để bỏ bớt một trạm khuếch đại hoặc nâng OSNR đáng kể. Khi tính link budget bạn phải dùng đúng con số dB/km của sợi thực tế trên tuyến.
+- **OSNR và công suất bơm:** $A_{eff}$ lớn cho phép tăng launch power mà không kích phi tuyến, nhờ đó OSNR đầu thu cao hơn. Đây là lý do vật lý khiến tuyến submarine chọn G.654.
+- **Bù tán sắc:** Với hệ thống coherent, tán sắc $17\ ps/(nm\cdot km)$ được DSP bù, nhưng bạn vẫn cần khai báo đúng để tính CD tích lũy. Với hệ thống trực tiếp (không coherent) đời cũ, tán sắc là yếu tố giới hạn cự ly.
+- **Bạn hầu như không được chọn lại sợi:** Sợi đã chôn dưới đất hoặc dưới biển là cái bạn thừa hưởng. Bước đầu tiên của mọi thiết kế là **xác định loại sợi hiện có** (qua hồ sơ tuyến hoặc đo OTDR/CD), rồi thiết kế thiết bị quanh nó. Nhầm G.655 thành G.652 khi tính bù tán sắc là lỗi kinh điển gây fail nghiệm thu.
+- **Vận hành và hàn nối:** Trộn sợi khác $A_{eff}$ (ví dụ nối G.652 vào G.654) gây mismatch mode field diameter, dẫn tới splice loss cao và phản xạ. Trong RFP và hồ sơ tuyến luôn ghi rõ họ sợi để tránh trộn nhầm.
+
+## Kiểm tra nhanh
+
+<Quiz question="Vì sao DWDM dùng single-mode fiber (SMF) chứ không dùng multi-mode fiber (MMF)?" hint="Nghĩ về số mode truyền và hệ quả của nó lên xung tín hiệu khi đi xa." options={[{text:'Vì core nhỏ của SMF chỉ cho một mode truyền, loại bỏ modal dispersion nên chạy được cự ly dài; MMF có modal dispersion lớn nên chỉ dùng short reach', correct:true, explain:'Đúng. Core ~9 µm của SMF chỉ hỗ trợ mode cơ bản ở 1310/1550 nm, triệt tiêu modal dispersion. MMF core 50/62.5 µm cho nhiều mode nên giãn xung, chỉ dùng short reach.'},{text:'Vì MMF không truyền được bước sóng 1550 nm', explain:'Sai. MMF vẫn truyền được các bước sóng đó; vấn đề là modal dispersion chứ không phải bước sóng.'},{text:'Vì SMF có suy hao dB/km cao hơn nên tín hiệu ổn định hơn', explain:'Sai. SMF có suy hao thấp hơn, và suy hao thấp là điều tốt; đây không phải lý do liên quan đến mode.'}]} />
+
+<Quiz question="Một tuyến long-haul cần bơm công suất cao để đạt OSNR đầu thu tốt. Thuộc tính nào của sợi giúp giảm hiệu ứng phi tuyến ở công suất cao, và chuẩn ITU-T nào tối ưu cho việc này?" options={[{text:'Effective area (Aeff) lớn làm giảm mật độ công suất nên phi tuyến yếu đi; chuẩn G.654 được thiết kế Aeff lớn và suy hao thấp cho long-haul/submarine', correct:true, explain:'Đúng. Cường độ I = P/Aeff; Aeff lớn cho cường độ thấp nên phi tuyến yếu. G.654 (~110–150 µm², ~0.16 dB/km) tối ưu đúng cho kịch bản này.'},{text:'Aeff nhỏ giúp tập trung công suất và giảm phi tuyến; chuẩn G.657 phù hợp', explain:'Sai ngược. Aeff nhỏ làm tăng mật độ công suất nên tăng phi tuyến. G.657 là sợi bend-insensitive cho FTTH.'},{text:'Tán sắc bằng 0 giúp giảm phi tuyến; chuẩn G.655 phù hợp', explain:'Sai. Tán sắc bằng 0 lại làm FWM bùng phát. G.655 cố tình giữ tán sắc khác 0 để dập FWM, và đây là sợi legacy.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+- ITU-T G.652: *Characteristics of a single-mode optical fibre and cable* (SMF chuẩn, bao gồm biến thể G.652.D low water peak).
+- ITU-T G.654: *Characteristics of a cut-off shifted single-mode optical fibre and cable* (Aeff lớn, suy hao thấp — long-haul/submarine).
+- ITU-T G.655: *Characteristics of a non-zero dispersion-shifted single-mode optical fibre and cable* (NZDSF).
+- ITU-T G.657: *Characteristics of a bending-loss insensitive single-mode optical fibre and cable for access networks*.
+- Các giá trị suy hao, tán sắc, $A_{eff}$ nêu trên là mức điển hình theo datasheet công khai của các nhà sản xuất sợi và khuyến nghị ITU-T; số thực tế của từng lô hoặc từng tuyến cần lấy theo hồ sơ đo hoặc datasheet cụ thể.
+
+</Callout>
+
+➡️ Tiếp theo: [1.1.3 — Ba kẻ thù của tín hiệu quang (suy hao, tán sắc, phi tuyến)](./1-1-3-ba-ke-thu)

@@ -1,10 +1,140 @@
 ---
 sidebar_position: 9
 title: "1.3.1 — Mux/Demux & bộ lọc"
+description: "Ghép/tách bước sóng trong DWDM bằng AWG, thin-film filter và interleaver — nguyên lý, tham số quang và các đánh đổi khi thiết kế."
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 1.3.1 — Mux/Demux & bộ lọc
 
-<LessonStub objective={"AWG, thin-film filter, interleaver: cách ghép/tách các bước sóng."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ:
+
+- Hiểu nguyên lý ba công nghệ ghép/tách bước sóng chính: AWG, thin-film filter (TFF) và interleaver.
+- Đọc và so sánh được các tham số quang của bộ lọc: insertion loss, passband width, isolation/crosstalk, ripple.
+- Chọn được công nghệ phù hợp cho từng bài toán (ít kênh vs. mật độ cao) và giải thích được đánh đổi.
+
+</Callout>
+
+Trong một hệ DWDM, nhiều kênh bước sóng cùng chạy trên một sợi. Ở đầu phát ta cần **ghép** (multiplex) nhiều laser vào chung một sợi; ở đầu thu ta cần **tách** (demultiplex) sợi đó trở lại từng kênh để đưa vào từng receiver. Thiết bị làm việc này là **Mux/Demux**, và trái tim của nó là các **bộ lọc quang** (optical filter). Chất lượng bộ lọc quyết định trực tiếp bao nhiêu kênh nhồi được vào băng C, mỗi kênh mất bao nhiêu công suất, và các kênh có "nói chuyện lẫn nhau" (crosstalk) hay không.
+
+Bài này đi qua ba họ công nghệ phổ biến và bộ tham số dùng để đánh giá chúng.
+
+## Mux/Demux làm gì, và vì sao "lọc" là bài toán khó
+
+Hình dung lưới ITU-T DWDM 50 GHz: các kênh cách nhau chỉ 50 GHz (khoảng 0.4 nm ở vùng 1550 nm). Một bộ Demux lý tưởng phải "cắt" đúng cửa sổ của kênh mình, cho công suất kênh đó đi qua gần như trọn vẹn, đồng thời chặn thật mạnh công suất của hai kênh lân cận chỉ cách 50 GHz. Đây là yêu cầu rất khắt khe: passband phải đủ rộng và phẳng để không cắt mất phổ tín hiệu (nhất là tín hiệu coherent tốc độ cao có phổ rộng), nhưng sườn dốc phải đủ đứng để cách ly kênh bên cạnh.
+
+Ba cách tiếp cận chủ đạo hiện nay:
+
+- **AWG** (Arrayed Waveguide Grating) — dùng nhiễu xạ trong một mảng ống dẫn sóng, tách/ghép tất cả kênh cùng lúc.
+- **TFF** (Thin-Film Filter) — mỗi bộ lọc màng mỏng chỉ "gắp" một kênh, xếp tầng nhiều bộ để xử lý nhiều kênh.
+- **Interleaver** — tách phổ thành hai nhóm kênh chẵn/lẻ để nới lỏng yêu cầu cho tầng lọc phía sau.
+
+## AWG — Arrayed Waveguide Grating
+
+AWG là một mạch quang tích hợp (thường trên nền silica-on-silicon hoặc InP). Nguyên lý: ánh sáng vào một vùng dẫn sóng phẳng (slab/star coupler), lan ra một **mảng ống dẫn sóng** có chiều dài chênh nhau đều đặn ($\Delta L$ cố định giữa các ống liền kề). Mỗi ống tạo một độ trễ pha khác nhau; khi tất cả gặp lại ở vùng slab thứ hai, chúng **giao thoa** và hội tụ về các vị trí khác nhau tùy bước sóng — giống một cách tử nhiễu xạ (diffraction grating) nhưng làm bằng mảng waveguide. Mỗi bước sóng rơi vào một cổng ra riêng.
+
+Điểm mạnh của AWG là **xử lý song song rất nhiều kênh trong một linh kiện duy nhất**: một con AWG 40 hoặc 96 kênh là chuyện bình thường. Insertion loss gần như không tăng theo số kênh (khác hẳn TFF xếp tầng). Vì vậy AWG là lựa chọn tự nhiên cho các bộ Mux/Demux **mật độ cao** (40/80/96 kênh, spacing 100/50 GHz).
+
+Cái giá phải trả: điều kiện giao thoa phụ thuộc chiết suất của waveguide, mà chiết suất lại **phụ thuộc nhiệt độ**. Khi nhiệt độ đổi, toàn bộ lưới kênh của AWG trôi đi (điển hình khoảng $0.01$ nm/°C với silica, tức cỡ $1.2$ GHz/°C — đủ để lệch khỏi lưới nếu không kiểm soát). Do đó AWG thường cần **ổn định nhiệt**: hoặc dùng bộ gia nhiệt/TEC giữ nhiệt độ cố định, hoặc thiết kế **athermal AWG** bù nhiệt bằng vật liệu có hệ số nhiệt ngược dấu. Đây là điểm cần lưu ý về nguồn nuôi và độ tin cậy khi vận hành ngoài hiện trường.
+
+Đặc trưng passband của AWG thường có dạng **Gaussian** (đỉnh nhọn) — muốn passband **phẳng đỉnh** (flat-top) để chịu được sai số bước sóng laser và ghép tầng nhiều node thì phải thiết kế riêng, và flat-top thường đánh đổi bằng insertion loss cao hơn vài dB.
+
+## TFF — Thin-Film Filter
+
+TFF là bộ lọc giao thoa kiểu **Fabry-Pérot** làm từ nhiều chục lớp màng điện môi mỏng, mỗi lớp dày cỡ một phần tư bước sóng, phủ luân phiên vật liệu chiết suất cao/thấp. Cấu trúc này tạo một khoang cộng hưởng: chỉ bước sóng đúng cộng hưởng mới **truyền qua**, các bước sóng khác bị **phản xạ**. Một bộ TFF vì thế thường có ba cổng: input, cổng transmit (kênh được chọn đi qua) và cổng reflect (phần còn lại phản xạ).
+
+Vì mỗi TFF chỉ lọc **một kênh**, để tách nhiều kênh người ta **xếp tầng** (cascade): cổng reflect của bộ này nối vào input của bộ kế tiếp, cứ thế bóc dần từng kênh ra.
+
+Ưu điểm của TFF:
+
+- **Độ cách ly (isolation) rất tốt** cho từng kênh — sườn passband dốc, đỉnh phẳng tự nhiên (flat-top) nhờ thiết kế nhiều khoang.
+- **Ổn định nhiệt tốt hơn AWG** đáng kể (điển hình cỡ $0.002$ nm/°C), thường không cần điều khiển nhiệt tích cực.
+- Rẻ và đơn giản khi **số kênh ít**.
+
+Nhược điểm: **insertion loss cộng dồn theo tầng**. Mỗi bộ thêm khoảng $0.3$–$0.5$ dB; kênh nằm ở cuối chuỗi 40 tầng phải đi qua 40 bộ lọc, tổn hao tích lũy có thể lên vài dB đến hơn chục dB và **không đồng đều giữa các kênh** (kênh bóc trước ít loss, kênh bóc sau nhiều loss). Vì vậy TFF **không kinh tế cho mật độ cao**, nhưng lại là lựa chọn tốt cho **OADM ít kênh**, add/drop 1–8 bước sóng, hoặc các bộ ghép băng (band mux/demux).
+
+## Interleaver — chia chẵn/lẻ để "dễ thở" cho bộ lọc
+
+Interleaver là một loại bộ lọc chu kỳ đặc biệt: nó nhận toàn bộ dải kênh và tách thành **hai luồng — kênh chẵn và kênh lẻ**. Ví dụ điển hình: lưới đầu vào 50 GHz gồm các kênh xen kẽ; interleaver tách thành hai luồng, mỗi luồng chỉ còn các kênh cách nhau **100 GHz**.
+
+Vì sao điều này quý giá? Vì khoảng cách kênh trong mỗi luồng đã **rộng gấp đôi**, nên bộ Demux đặt sau interleaver chỉ phải phân giải lưới 100 GHz thay vì 50 GHz. Yêu cầu về độ dốc sườn và isolation của tầng lọc phía sau **giảm mạnh** — có thể dùng AWG/TFF 100 GHz rẻ và dễ chế tạo hơn nhiều so với linh kiện 50 GHz. Nói cách khác, interleaver "mua" mật độ kênh cao bằng cách chuyển gánh nặng phân giải sang một linh kiện chu kỳ chuyên dụng.
+
+Sơ đồ ý tưởng:
+
+<svg viewBox="0 0 460 150" width="100%" role="img" aria-label="Interleaver tach luoi 50 GHz thanh hai luong 100 GHz">
+  <rect x="10" y="60" width="120" height="30" fill="#e8f0fe" stroke="#3366cc"/>
+  <text x="70" y="80" font-size="11" text-anchor="middle">50 GHz (moi kenh)</text>
+  <rect x="180" y="55" width="90" height="40" fill="#fff2cc" stroke="#d6a400"/>
+  <text x="225" y="79" font-size="11" text-anchor="middle">Interleaver</text>
+  <rect x="330" y="20" width="120" height="28" fill="#e6f4ea" stroke="#188038"/>
+  <text x="390" y="38" font-size="11" text-anchor="middle">Kenh chan (100 GHz)</text>
+  <rect x="330" y="100" width="120" height="28" fill="#e6f4ea" stroke="#188038"/>
+  <text x="390" y="118" font-size="11" text-anchor="middle">Kenh le (100 GHz)</text>
+  <line x1="130" y1="75" x2="180" y2="75" stroke="#333"/>
+  <line x1="270" y1="70" x2="330" y2="34" stroke="#333"/>
+  <line x1="270" y1="80" x2="330" y2="114" stroke="#333"/>
+</svg>
+
+Interleaver thường được xây bằng cấu trúc Mach-Zehnder xếp tầng hoặc Gires-Tournois etalon. Đặc trưng quan trọng của nó là **passband phẳng và chu kỳ** trên toàn băng C. Nó cũng có insertion loss (điển hình $1$–$3$ dB) và bản thân cũng cần quan tâm ổn định nhiệt.
+
+## Các tham số quang phải đọc được
+
+Dù là AWG, TFF hay interleaver, khi đọc datasheet bạn nhìn cùng một bộ tham số:
+
+| Tham số | Ý nghĩa | Vì sao quan trọng |
+|---|---|---|
+| **Insertion loss (IL)** | Công suất mất khi kênh đi qua bộ lọc (dB) | Trừ thẳng vào link budget; TFF xếp tầng cộng dồn IL theo kênh |
+| **Passband width** | Bề rộng cửa sổ truyền qua tại một mức (vd $-0.5$ dB hoặc $-3$ dB) | Phải đủ rộng để chứa phổ tín hiệu và dung sai lệch tần laser |
+| **Isolation / Crosstalk** | Mức chặn công suất kênh lân cận (dB) | Crosstalk làm giảm OSNR hiệu dụng; càng nhiều node ghép tầng càng phải cách ly tốt |
+| **Ripple** | Độ gợn (không phẳng) trong passband (dB) | Ripple lớn gây méo và biến thiên công suất giữa các kênh |
+| **PDL** | Polarization Dependent Loss — IL đổi theo phân cực | Ảnh hưởng ổn định công suất, đặc biệt với hệ coherent |
+| **Cascade behavior** | IL/passband tích lũy khi kênh đi qua nhiều Mux/Demux nối tiếp | Quyết định "filter narrowing" — hiệu ứng thu hẹp passband khi qua N bộ lọc |
+
+Hai khái niệm cần phân biệt rõ:
+
+- **Adjacent channel isolation**: chặn kênh ngay sát bên (cách 50/100 GHz) — khó nhất, quyết định bởi độ dốc sườn.
+- **Non-adjacent isolation**: chặn các kênh xa hơn — thường dễ đạt cao hơn.
+
+Một ví dụ số điển hình cho một Demux 50 GHz chất lượng tốt: IL khoảng $3$–$5$ dB, passband tại $-0.5$ dB rộng chừng $\pm 12.5$ GHz quanh tâm kênh, adjacent isolation tốt hơn $25$ dB, ripple nhỏ hơn $0.5$ dB. Các con số này là **điển hình** và thay đổi theo công nghệ, hãng và cấp sản phẩm — luôn lấy theo datasheet thực tế.
+
+## Bảng đánh đổi giữa ba công nghệ
+
+| Tiêu chí | AWG | TFF | Interleaver |
+|---|---|---|---|
+| Nguyên lý | Nhiễu xạ mảng waveguide | Cộng hưởng màng mỏng (Fabry-Pérot) | Bộ lọc chu kỳ (MZ/etalon) |
+| Số kênh mỗi linh kiện | Nhiều (40/96) | Một kênh, phải xếp tầng | Tách 2 nhóm |
+| IL theo số kênh | Gần như không đổi | Cộng dồn, không đều | Cố định (1 tầng) |
+| Passband | Gaussian (flat-top phải đánh đổi) | Flat-top tốt tự nhiên | Flat-top, chu kỳ |
+| Isolation kênh sát | Khá | Rất tốt | Tốt |
+| Nhạy nhiệt | Cao — cần ổn định nhiệt | Thấp | Trung bình |
+| Hợp với | Mật độ cao | Ít kênh, OADM | Nới spacing (50 lên 100 GHz) |
+
+Trong thực tế ba công nghệ **không loại trừ nhau** mà thường phối hợp: một kiến trúc mật độ cao phổ biến là đặt **interleaver** ở đầu để tách 50 GHz thành hai luồng 100 GHz, rồi mỗi luồng dùng một **AWG 100 GHz**. Cách này đạt mật độ 50 GHz nhưng chỉ cần linh kiện 100 GHz dễ chế tạo hơn.
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+**Link budget và OSNR.** Insertion loss của Mux + Demux là khoản mất công suất "cứng" bạn phải cộng vào budget. Với TFF xếp tầng, IL còn **không đồng đều giữa các kênh** — kênh bóc cuối chuỗi yếu hơn kênh bóc đầu vài dB, dẫn tới **channel power tilt** mà EDFA/attenuator phải bù. Isolation kém thì công suất kênh lân cận rò vào receiver, làm **giảm OSNR hiệu dụng** và tăng lỗi — đây là lý do adjacent isolation là con số bạn soi kỹ nhất trong datasheet.
+
+**Filter narrowing qua nhiều node.** Trong mạng có ROADM, một bước sóng có thể đi qua chục bộ lọc nối tiếp (mux, demux, WSS ở từng node). Mỗi bộ lọc cắt một chút hai mép phổ; qua N bộ, passband tổng **hẹp lại** (filter narrowing/cascading). Nếu passband đơn lẻ đã hẹp, tín hiệu coherent 400G phổ rộng sẽ bị xén méo. Vì vậy khi thiết kế đường dài đa node, bạn cần passband **flat-top và đủ rộng**, không chỉ nhìn một bộ lọc đơn.
+
+**Vận hành và độ tin cậy.** AWG cần ổn định nhiệt nghĩa là có **bộ gia nhiệt/TEC tiêu thụ điện** và một điểm hỏng tiềm năng; mất nguồn sưởi thì lưới kênh trôi và cả band lệch. TFF thụ động về nhiệt nên vận hành "yên tâm" hơn nhưng đổi lại giới hạn về mật độ. Đây là loại đánh đổi cần cân nhắc cho các site khó tiếp cận hoặc nguồn điện không ổn định.
+
+**Trong RFP/so sánh nhà cung cấp.** Khi đọc hồ sơ thầu, hãy yêu cầu rõ: IL **worst-case theo kênh** (không phải trung bình), adjacent channel isolation, passband tại mức $-0.5$ dB (không chỉ $-3$ dB — mức $-3$ dB luôn "đẹp" hơn), ripple, PDL, và **hành vi khi cascade N node** nếu là mạng ROADM. Con số passband tại $-3$ dB của một bộ lọc đơn dễ gây hiểu nhầm là dư dả, trong khi thực tế qua nhiều node và ở mức $-0.5$ dB mới lộ ra vấn đề.
+
+## Tự kiểm tra
+
+<Quiz question="Vì sao AWG được ưa dùng cho Mux/Demux mật độ cao (40/96 kênh) hơn so với TFF xếp tầng?" hint="Nghĩ về cách insertion loss thay đổi theo số kênh." options={[{text:'Vì AWG xử lý mọi kênh song song trong một linh kiện, insertion loss gần như không tăng theo số kênh, trong khi TFF xếp tầng cộng dồn IL không đều theo từng kênh', correct:true, explain:'Đúng. TFF phải xếp tầng, kênh bóc cuối chuỗi chịu IL của tất cả các bộ trước đó nên tổn hao lớn và không đồng đều; AWG tách song song nên IL ổn định theo số kênh.'},{text:'Vì AWG hoàn toàn không nhạy nhiệt nên không cần bất kỳ điều khiển nào', explain:'Ngược lại — AWG khá nhạy nhiệt (điển hình cỡ 0.01 nm/°C) và thường cần ổn định nhiệt hoặc thiết kế athermal.'},{text:'Vì AWG luôn có isolation kênh sát tốt hơn TFF trong mọi trường hợp', explain:'Không đúng. TFF thường có isolation từng kênh và flat-top rất tốt; ưu thế của AWG là mật độ và IL đồng đều, không phải luôn thắng về isolation.'}]} />
+
+<Quiz question="Một interleaver 50/100 GHz mang lại lợi ích chính nào cho thiết kế Demux?" options={[{text:'Nó tách lưới 50 GHz thành hai luồng chẵn/lẻ cách nhau 100 GHz, giúp tầng lọc phía sau chỉ cần phân giải 100 GHz — nới lỏng yêu cầu độ dốc và isolation', correct:true, explain:'Đúng. Nhờ nới spacing gấp đôi, bộ Demux sau interleaver dùng được linh kiện 100 GHz dễ chế tạo và rẻ hơn nhiều so với linh kiện 50 GHz.'},{text:'Nó khuếch đại công suất mỗi kênh nên có thể thay thế EDFA', explain:'Sai. Interleaver là bộ lọc thụ động, bản thân có insertion loss (điển hình 1–3 dB), không khuếch đại gì cả.'},{text:'Nó loại bỏ hoàn toàn crosstalk nên tầng lọc sau không cần isolation', explain:'Sai. Interleaver giảm nhẹ yêu cầu chứ không xóa bỏ; tầng lọc sau vẫn phải đảm bảo isolation cho lưới 100 GHz.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+- ITU-T G.694.1 — *Spectral grids for WDM applications: DWDM frequency grid* (định nghĩa lưới tần số 12.5/25/50/100 GHz mà bộ lọc phải bám theo).
+- ITU-T G.671 — *Transmission characteristics of optical components and subsystems* (định nghĩa các tham số như insertion loss, isolation, PDL, ripple cho linh kiện thụ động).
+- ITU-T G.698.x — tham số ứng dụng DWDM, liên quan passband và channel spacing trong hệ thống.
+- Các giá trị số (IL, isolation, hệ số nhiệt) nêu trong bài là **điển hình** minh họa vật lý; luôn dùng datasheet thực tế của linh kiện cụ thể khi thiết kế.
+
+</Callout>
+
+➡️ Tiếp theo: [1.3.2 — EDFA](./1-3-2-edfa) — khuếch đại quang bù lại phần công suất đã mất qua sợi và các bộ Mux/Demux ở trên.

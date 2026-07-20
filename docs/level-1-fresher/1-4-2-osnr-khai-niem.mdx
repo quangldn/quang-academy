@@ -1,10 +1,184 @@
 ---
 sidebar_position: 14
 title: "1.4.2 — OSNR: khái niệm nền tảng"
+description: "OSNR là gì, vì sao dùng dải tham chiếu 0.1 nm, ASE tích luỹ dọc tuyến EDFA, đo trên OSA và phân biệt với SNR điện sau DSP."
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 1.4.2 — OSNR: khái niệm nền tảng
 
-<LessonStub objective={"Định nghĩa OSNR, dải tham chiếu 0.1 nm, và vì sao nó quyết định mọi thứ."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ:
+
+- Định nghĩa được OSNR và hiểu vì sao nó dùng dải tham chiếu 0.1 nm.
+- Biết nguồn nhiễu chính (ASE từ chuỗi EDFA) và vì sao OSNR tích luỹ giảm dọc tuyến.
+- Phân biệt OSNR quang (đo trên OSA) với SNR điện sau DSP, và biết OSNR liên hệ thế nào tới BER/Q và link budget.
+
+</Callout>
+
+## OSNR là gì
+
+OSNR (Optical Signal-to-Noise Ratio) là tỉ số giữa công suất tín hiệu quang và công suất nhiễu quang nền, đo trong một dải bước sóng tham chiếu cố định. Công thức cơ bản:
+
+$$
+\mathrm{OSNR} = 10 \log_{10}\!\left(\frac{P_{\text{signal}}}{P_{\text{noise},\,0.1\,\text{nm}}}\right) \quad [\text{dB}]
+$$
+
+Trong đó $P_{\text{signal}}$ là công suất kênh (tích phân toàn bộ phổ kênh), còn $P_{\text{noise}}$ là công suất nhiễu quy về **dải tham chiếu 0.1 nm**. Điểm mấu chốt: OSNR luôn gắn với một băng thông tham chiếu (Reference Bandwidth, RBW). Không nêu RBW thì con số OSNR không có ý nghĩa so sánh.
+
+Nhiễu nền ở đây chủ yếu là **ASE** (Amplified Spontaneous Emission) — bức xạ tự phát được khuếch đại, sinh ra bởi mỗi tầng khuếch đại quang trên tuyến. ASE trải gần như phẳng theo bước sóng, nên có thể xem là một "sàn nhiễu" mà đỉnh phổ kênh nhô lên trên.
+
+## Vì sao lại là 0.1 nm
+
+Con số 0.1 nm là một **quy ước lịch sử** trong đo lường quang, không phải một hằng số vật lý. Nó bắt nguồn từ độ phân giải điển hình của các OSA (Optical Spectrum Analyzer) thế hệ đầu và được ITU-T chuẩn hoá làm dải tham chiếu chung để mọi phép đo OSNR có thể so sánh được với nhau.
+
+Tại vùng band C quanh 1550 nm, có thể đổi 0.1 nm sang miền tần số bằng quan hệ:
+
+$$
+\Delta f = \frac{c}{\lambda^2}\,\Delta\lambda
+$$
+
+Thay $\lambda = 1550$ nm, $\Delta\lambda = 0.1$ nm:
+
+$$
+\Delta f \approx \frac{3\times10^8}{(1550\times10^{-9})^2}\times(0.1\times10^{-9}) \approx 12.5\ \text{GHz}
+$$
+
+Vậy 0.1 nm $\approx$ 12.5 GHz tại 1550 nm. Lưu ý: quan hệ này phụ thuộc $\lambda$, nên ở band L (bước sóng dài hơn) thì 0.1 nm tương ứng số GHz hơi khác. Vì lý do đó, chuẩn định nghĩa OSNR theo **dải bước sóng** (0.1 nm) chứ không theo GHz — để nhất quán trên toàn dải.
+
+<Callout type="tip">
+
+Vì OSNR gắn với RBW, khi so sánh hai hệ thống bạn phải quy về cùng một RBW. Một số hãng báo OSNR theo băng thông khác (ví dụ 0.5 nm). Quy đổi gần đúng khi nền ASE phẳng: cứ tăng RBW lên gấp $k$ lần thì công suất nhiễu tăng $k$ lần, nên OSNR giảm $10\log_{10}(k)$ dB. Chuyển từ 0.1 nm sang 0.5 nm ($k=5$) làm OSNR "báo cáo" giảm khoảng $10\log_{10}5 \approx 7$ dB — cùng một tuyến, chỉ khác cách đo.
+
+</Callout>
+
+## ASE tích luỹ: vì sao OSNR chỉ giảm dọc tuyến
+
+Mỗi EDFA vừa khuếch đại tín hiệu vừa cộng thêm ASE của chính nó. Tín hiệu đi qua sợi bị suy hao rồi lại được khuếch đại; nhưng ASE thì được cộng dồn và khuếch đại tiếp ở mỗi tầng. Kết quả: tỉ số tín hiệu trên nhiễu **chỉ có thể xấu đi** khi đi qua thêm span. OSNR là đại lượng **đơn điệu giảm** dọc theo tuyến đa span.
+
+Với chuỗi $N$ span giống nhau (mỗi span suy hao $L$ dB, EDFA bù đúng bằng suy hao, cùng noise figure $NF$), OSNR cuối tuyến xấp xỉ:
+
+$$
+\mathrm{OSNR}_{\text{dB}} \approx 58 + P_{\text{ch}} - L - NF - 10\log_{10}(N)
+$$
+
+trong đó $P_{\text{ch}}$ là công suất phóng vào sợi mỗi kênh (dBm), $L$ là suy hao span (dB), $NF$ là noise figure EDFA (dB), hằng số 58 gộp năng lượng photon và RBW 0.1 nm tại band C. Đây là công thức **điển hình để ước lượng nhanh**, giả định EDFA-only và bỏ qua phi tuyến.
+
+Điểm quan trọng của thừa số $10\log_{10}(N)$: **gấp đôi số span thì OSNR giảm khoảng 3 dB**. Ví dụ số:
+
+| Số span $N$ | $10\log_{10}(N)$ | OSNR tương đối |
+|---|---|---|
+| 1 | 0 dB | mốc |
+| 2 | 3.0 dB | $-3$ dB |
+| 4 | 6.0 dB | $-6$ dB |
+| 8 | 9.0 dB | $-9$ dB |
+| 10 | 10.0 dB | $-10$ dB |
+
+Ví dụ cụ thể: $P_{\text{ch}} = 0$ dBm, $L = 22$ dB, $NF = 5$ dB, $N = 10$ span. Khi đó:
+
+$$
+\mathrm{OSNR} \approx 58 + 0 - 22 - 5 - 10 = 21\ \text{dB}
+$$
+
+Con số 21 dB@0.1 nm này là mức "vào" mà bộ thu coherent phải làm việc. Bài 1.4.4 sẽ dùng chính khung tư duy này để tính link budget; ở đây chỉ cần nắm: **mọi thứ làm ASE tăng hoặc tín hiệu giảm đều ăn vào OSNR, và không lấy lại được**.
+
+<Callout type="caution">
+
+Đừng nghĩ "cứ tăng $P_{\text{ch}}$ là OSNR tăng mãi". Công thức trên chỉ đúng ở vùng công suất thấp/trung bình. Khi phóng công suất cao, hiệu ứng **phi tuyến** trong sợi (SPM, XPM, FWM) sinh ra méo tín hiệu, làm chất lượng xấu đi dù OSNR quang "trên giấy" vẫn cao. Tồn tại một mức công suất tối ưu — chi tiết ở các bài về phi tuyến.
+
+</Callout>
+
+## Đo OSNR bằng OSA
+
+OSNR được đo trực tiếp trên **OSA** (Optical Spectrum Analyzer). OSA quét phổ, hiển thị công suất theo bước sóng. Với mỗi kênh, kỹ thuật viên đọc:
+
+- **Đỉnh kênh**: công suất tín hiệu (cộng ASE tại đỉnh).
+- **Sàn nhiễu**: nội suy mức ASE ở hai bên khe giữa các kênh, rồi ước lượng mức nhiễu ngay dưới đỉnh kênh.
+
+OSA tự quy công suất nhiễu về RBW 0.1 nm và tính OSNR. Phương pháp "nội suy khe giữa kênh" này gọi là **out-of-band OSNR** (OSNR ngoài băng), và nó có một hạn chế quan trọng với hệ thống hiện đại.
+
+<Callout type="info">
+
+Với các kênh coherent tốc độ cao (ví dụ 100G/400G) đặt sát nhau trên lưới chặt (spacing hẹp, ví dụ 50 GHz hoặc flexgrid), phổ kênh có thể **lấp gần kín khe giữa** — không còn "đáy sạch" để đọc ASE. Khi đó phương pháp nội suy ngoài băng cho kết quả sai. Người ta chuyển sang các phương pháp **in-band OSNR** (ví dụ dựa trên phân cực, hoặc lấy chỉ số trực tiếp từ DSP của bộ thu). Đây là lý do OSNR "đọc trên OSA" và OSNR "hệ thống thấy" không phải lúc nào cũng trùng.
+
+</Callout>
+
+## OSNR quang vs SNR điện sau DSP
+
+Đây là chỗ dễ nhầm nhất với người mới. Hai đại lượng khác nhau:
+
+| | OSNR (quang) | SNR điện / eSNR sau DSP |
+|---|---|---|
+| Đo ở đâu | Trên đường quang, bằng OSA | Bên trong bộ thu coherent, sau ADC + DSP |
+| Băng tham chiếu | 0.1 nm (quy ước) | Băng tín hiệu điện của kênh |
+| Nhiễu tính đến | Chủ yếu ASE | ASE + nhiễu bộ thu + méo phi tuyến + lỗi bù DSP còn dư |
+| Dùng để | Đánh giá tuyến, nghiệm thu, RFP | Suy ra trực tiếp BER/Q của kênh đó |
+
+OSNR quang là điều kiện **đầu vào** của bộ thu. Bên trong bộ thu coherent, tín hiệu được số hoá và DSP bù tán sắc, bù PMD, cân bằng... Chất lượng cuối cùng thể hiện qua SNR điện, và từ đó ra Q-factor và BER. Có thể quy đổi gần đúng OSNR sang SNR điện qua tỉ số giữa băng tín hiệu (baud rate) và RBW 0.1 nm, nhưng hai con số **không bằng nhau** và không nên dùng thay cho nhau.
+
+Ý nghĩa vận hành: một liên kết có OSNR quang tốt vẫn có thể lỗi nếu méo phi tuyến hoặc PMD lớn — vì những thứ đó không hiện trong phép đo OSNR trên OSA nhưng lại làm hỏng SNR điện. Ngược lại, FEC mạnh có thể "cứu" một kênh có OSNR quang thấp hơn.
+
+## Required OSNR: mỗi cấu hình một ngưỡng
+
+Mỗi tổ hợp **modulation format + baud rate + FEC** có một mức OSNR tối thiểu để đạt BER mục tiêu — gọi là **Required OSNR** (ROSNR) hay OSNR tolerance. Giá trị này **lấy từ datasheet của transponder**, đo trong điều kiện back-to-back (không có phạt tuyến), thường quy về 0.1 nm.
+
+Bảng dưới là các giá trị **điển hình mang tính minh hoạ** cho cảm nhận độ lớn (không phải số của hãng cụ thể):
+
+| Cấu hình | ROSNR điển hình @0.1 nm |
+|---|---|
+| 100G QPSK, FEC mạnh | khoảng 12–15 dB |
+| 200G 16QAM | khoảng 16–19 dB |
+| 400G 16QAM, baud cao | khoảng 20–24 dB |
+
+Xu hướng đọc từ bảng: **bậc điều chế càng cao (nhiều bit/symbol) thì càng cần OSNR cao hơn**, vì các điểm trong chòm sao (constellation) nằm sát nhau hơn, dễ bị nhiễu đẩy sang ô quyết định sai. FEC mạnh hơn kéo ROSNR **xuống** — đó chính là "coding gain".
+
+Quy tắc thiết kế: phải có **OSNR margin**:
+
+$$
+\text{Margin} = \mathrm{OSNR}_{\text{tuyến}} - \mathrm{OSNR}_{\text{required}}
+$$
+
+Margin phải dương và đủ lớn (điển hình 2–3 dB trở lên) để dự phòng lão hoá sợi, sửa chữa hàn nối, dao động nhiệt. Nếu tuyến cho 21 dB mà ROSNR là 18 dB thì margin 3 dB — chấp nhận được. Nếu ROSNR là 20 dB thì margin chỉ 1 dB — quá mỏng.
+
+## Thử cảm nhận: OSNR thay đổi thế nào
+
+Dùng công cụ dưới đây để chỉnh các tham số tuyến (công suất kênh, suy hao span, số span, NF) và quan sát OSNR đầu ra thay đổi. Hãy thử: gấp đôi số span và xem OSNR tụt khoảng 3 dB; hoặc giảm NF của EDFA và xem margin cải thiện.
+
+<LinkBudgetCalculator />
+
+Khi thao tác, để ý ba đòn bẩy chính đối với OSNR: **công suất phóng $P_{\text{ch}}$** (tăng thì OSNR tăng, nhưng coi chừng phi tuyến), **noise figure EDFA** (thấp thì tốt), và **số span** (càng nhiều càng tệ theo $10\log_{10}N$).
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+OSNR là con số **trung tâm** khi thiết kế và nghiệm thu một tuyến DWDM. Vài lý do thực tế:
+
+- **Nghiệm thu (commissioning)**: sau khi bật tuyến, kỹ sư đo OSNR từng kênh trên OSA và so với required OSNR trong datasheet. OSNR đạt và có margin thì kênh mới được đưa vào dịch vụ.
+- **RFP / thiết kế**: khi đấu thầu, bên thiết kế phải chứng minh mỗi kênh có OSNR margin dương ở **cuối đời** thiết bị (end-of-life), tính cả suy hao dự phòng sửa chữa (repair margin cho các mối hàn thêm khi đứt cáp). Một tuyến "đủ margin ngày đầu" nhưng âm margin sau 5 năm là thiết kế sai.
+- **Chọn số span và vị trí trạm khuếch đại**: vì OSNR giảm theo $10\log_{10}N$ và theo suy hao span, việc chia tuyến thành nhiều span ngắn (mỗi span NF và suy hao thấp) cho OSNR tốt hơn ít span dài — đánh đổi với chi phí trạm.
+- **Vận hành (troubleshooting)**: khi một kênh bắt đầu lỗi, OSNR tụt là dấu hiệu sớm — có thể do một mối hàn xuống cấp, EDFA suy giảm, hay sợi bị uốn. So OSNR hiện tại với giá trị baseline lúc nghiệm thu giúp khoanh vùng sự cố nhanh.
+- **Nhất quán với link budget (bài 1.4.4)**: link budget cân bằng công suất (dBm) để đảm bảo tín hiệu tới bộ thu đủ mạnh; OSNR budget cân bằng **tỉ số tín hiệu trên ASE**. Hai thứ này song song và phải **cùng đạt**. Một tuyến có thể đủ công suất nhưng thiếu OSNR (quá nhiều span, NF cao) — hoặc ngược lại. Đừng lẫn hai budget.
+
+<Callout type="tip">
+
+Quy tắc ngón tay khi vận hành: nếu OSNR margin của một kênh rơi xuống dưới khoảng 2 dB, hãy coi đó là cảnh báo cần điều tra, kể cả khi BER hiện tại vẫn tốt nhờ FEC. FEC che được lỗi cho đến sát ngưỡng, rồi hỏng rất nhanh (cliff) — chủ đề của bài kế.
+
+</Callout>
+
+## Tự kiểm tra
+
+<Quiz question="Vì sao OSNR được định nghĩa trong dải tham chiếu 0.1 nm?" hint="Nghĩ về mục đích so sánh giữa các phép đo." options={[{text:'Đó là quy ước lịch sử (gắn với độ phân giải OSA đời đầu) để mọi phép đo OSNR quy về cùng một băng thông và so sánh được với nhau', correct:true, explain:'Đúng. 0.1 nm không phải hằng số vật lý mà là RBW chuẩn hoá; tại 1550 nm nó tương ứng khoảng 12.5 GHz.'},{text:'Vì 0.1 nm chính xác bằng băng thông của một kênh 100G', explain:'Không. Băng kênh phụ thuộc baud rate và không cố định bằng 0.1 nm; đây chỉ là dải tham chiếu để đo nhiễu.'},{text:'Vì ASE chỉ xuất hiện trong đúng dải 0.1 nm', explain:'Không. ASE trải rộng và gần như phẳng theo bước sóng; 0.1 nm chỉ là cửa sổ quy chuẩn để đo công suất nhiễu.'}]} />
+
+<Quiz question="Một tuyến 4 span EDFA-only được mở rộng thành 8 span giống hệt (cùng suy hao, cùng NF, cùng công suất phóng). OSNR cuối tuyến thay đổi ra sao?" options={[{text:'Giảm khoảng 3 dB, vì gấp đôi số span làm ASE tích luỹ tăng theo 10·log10(2)', correct:true, explain:'Đúng. OSNR đơn điệu giảm theo 10·log10(N); N từ 4 lên 8 là gấp đôi, tức khoảng 3 dB xấu đi.'},{text:'Không đổi, vì mỗi EDFA đã bù đủ suy hao của span nên tín hiệu về mức cũ', explain:'EDFA bù công suất tín hiệu, nhưng ASE vẫn cộng dồn qua mỗi tầng nên OSNR vẫn xấu đi.'},{text:'Tăng khoảng 3 dB, vì có thêm khuếch đại trên tuyến', explain:'Thêm EDFA nghĩa là thêm nguồn ASE, không phải cải thiện OSNR. OSNR chỉ có thể giảm dọc tuyến.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+- ITU-T G.697 — *Optical monitoring for dense wavelength division multiplexing systems*: định nghĩa OSNR và dải tham chiếu 0.1 nm, các phương pháp giám sát.
+- ITU-T G.680 — *Physical transfer functions of optical network elements*: mô hình tích luỹ ASE và OSNR qua chuỗi phần tử quang.
+- ITU-T G.694.1 — lưới bước sóng DWDM (liên hệ đổi $\Delta\lambda \leftrightarrow \Delta f$).
+- IEC 61280-2-9 — quy trình đo OSNR (phương pháp nội suy ngoài băng) trên OSA.
+
+Các giá trị required OSNR trong bài là mức điển hình mang tính minh hoạ; khi thiết kế phải lấy đúng số từ datasheet transponder cụ thể.
+
+</Callout>
+
+➡️ Tiếp theo: [1.4.3 — BER và Q-factor](./1-4-3-ber-qfactor) — cách OSNR chuyển thành Q, BER, và vì sao FEC có "cliff".

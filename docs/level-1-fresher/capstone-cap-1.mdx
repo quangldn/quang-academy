@@ -1,10 +1,174 @@
 ---
 sidebar_position: 17
-title: "★ Capstone Cấp 1 — Tuyến điểm–điểm"
+title: "★ Capstone Cấp 1 — Thiết kế tuyến điểm–điểm"
+description: Bài thực hành tổng hợp Module 1.1–1.4 — tính suy hao, OSNR và margin cho một tuyến DWDM 4 kênh, 2 span.
 ---
 
-import LessonStub from '@site/src/components/LessonStub';
+# ★ Capstone Cấp 1 — Thiết kế tuyến điểm–điểm
 
-# ★ Capstone Cấp 1 — Tuyến điểm–điểm
+<Callout type="goal">
 
-<LessonStub objective={"Thiết kế tuyến DWDM 4 bước sóng, 2 span: tính công suất và OSNR đến máy thu, kiểm tra margin."} />
+Sau bài này bạn sẽ:
+
+- Ghép được toàn bộ Module 1.1–1.4 thành **một quy trình thiết kế** liền mạch: suy hao sợi → link budget → OSNR → margin.
+- Tự tay giải một đề tuyến điểm–điểm thật (4 kênh, 2 span) và **kết luận đạt/không đạt** cho DP-QPSK.
+- Biết cách kiểm chứng lại tính toán bằng công cụ và đánh giá một biến thể khó hơn.
+
+</Callout>
+
+Đây là bài **đóng Cấp 1**. Không có khái niệm mới — chỉ có một đề bài, và bạn dùng mọi thứ đã học để giải. Hãy tự làm bằng giấy bút trước, rồi mới đọc lời giải.
+
+## Đề bài
+
+Một nhà mạng cần thẩm định tuyến DWDM điểm–điểm sau trước khi đưa vào RFP:
+
+| Thông số | Giá trị |
+|---|---|
+| Số kênh (bước sóng) | $N_{ch} = 4$ |
+| Số span | $N = 2$ |
+| Chiều dài mỗi span | 80 km, sợi G.652 |
+| Suy hao sợi | 0.22 dB/km |
+| Suy hao thêm mỗi span (đầu nối + dự phòng) | ~2 dB |
+| Noise figure EDFA | $NF = 5$ dB |
+| Launch power mỗi kênh | $P_{launch} = +1$ dBm |
+| Điều chế mục tiêu | DP-QPSK |
+| Required OSNR (tham chiếu) | ~12.5 dB @ 0.1 nm |
+
+Cấu hình là chuỗi 2 span giống nhau, mỗi span có một EDFA khôi phục đúng bằng suy hao vừa mất (mô hình "flat span" của bài 1.4.4).
+
+**Câu hỏi:** Tuyến này có đủ OSNR để chạy DP-QPSK không, và còn dư bao nhiêu margin?
+
+## Bước 1 — Suy hao mỗi span
+
+Suy hao một span gồm suy hao sợi (chiều dài × dB/km) cộng phần loss thêm:
+
+$$
+L_{span} = 80 \times 0.22 + 2 = 17.6 + 2 = 19.6\ \text{dB}
+$$
+
+Ghi nhớ: 2 dB "thêm" ở đây là con số **điển hình** gộp đầu nối hai đầu, vài mối hàn và một chút dự phòng theo chính sách nội bộ — không phải hằng số vật lý. Đề khác có thể cho 1 dB hoặc 3 dB.
+
+## Bước 2 — Tổng suy hao và tổng chiều dài
+
+$$
+L_{total} = N \times L_{span} = 2 \times 19.6 = 39.2\ \text{dB}
+$$
+
+$$
+\text{Tổng chiều dài} = 2 \times 80 = 160\ \text{km}
+$$
+
+Đây là con số bạn dùng cho **link budget công suất** (bài 1.4.1/1.4.4): mỗi EDFA phải bù đúng 19.6 dB để giữ mức công suất ổn định qua từng span. Nhưng như đã học, đủ công suất chưa đủ — phải kiểm tra OSNR.
+
+## Bước 3 — OSNR đến máy thu
+
+Dùng công thức chuỗi span (tham chiếu 0.1 nm) của bài 1.4.4:
+
+$$
+\text{OSNR} \approx 58 + P_{launch} - L_{span} - NF - 10\log_{10}(N)
+$$
+
+Thay số:
+
+$$
+\text{OSNR} \approx 58 + 1 - 19.6 - 5 - 10\log_{10}(2)
+$$
+
+Với $10\log_{10}(2) \approx 3.01$ dB:
+
+$$
+\text{OSNR} \approx 58 + 1 - 19.6 - 5 - 3.01 = 31.4\ \text{dB}
+$$
+
+Lưu ý quan trọng: công thức dùng $P_{launch}$ **mỗi kênh** ($+1$ dBm), không phải tổng công suất 4 kênh. Số kênh $N_{ch}=4$ không vào công thức OSNR trực tiếp — nó ảnh hưởng gián tiếp qua tổng công suất bơm vào EDFA và ngưỡng phi tuyến (chuyện của Cấp 3), còn OSNR mỗi kênh chỉ phụ thuộc launch **của kênh đó**.
+
+## Bước 4 — Margin và kết luận
+
+$$
+\text{Margin} = \text{OSNR} - \text{Required OSNR} = 31.4 - 12.5 = 18.9\ \text{dB}
+$$
+
+**Kết luận: tuyến ĐẠT, và đạt rất thoải mái.** Margin gần 19 dB nghĩa là tuyến này còn dư địa rất lớn: có thể kéo dài thêm nhiều span, hoặc nâng lên điều chế bậc cao hơn (DP-16QAM, DP-64QAM) mà vẫn sống. Với một tuyến ngắn 160 km, EDFA NF thấp và chỉ 2 span, kết quả này hoàn toàn hợp lý.
+
+Đừng để margin 19 dB làm bạn chủ quan: đó là dấu hiệu tuyến **quá ngắn so với năng lực hệ thống**, chứ không phải bạn thiết kế giỏi. Ngoài đời, phần thú vị bắt đầu khi tuyến dài ra và margin cạn dần.
+
+## Tự kiểm chứng bằng công cụ
+
+Nhập lại đúng bộ số trên vào công cụ dưới đây và đối chiếu: OSNR ≈ 31.4 dB, margin ≈ 18.9 dB cho DP-QPSK. Nếu lệch vài phần mười dB là do làm tròn $10\log_{10}(2)$ — chấp nhận được.
+
+<LinkBudgetCalculator />
+
+Sau khi khớp số, hãy kéo thử ba thanh trượt để cảm nhận đánh đổi (giống bài 1.4.4): tăng $N$, đổi $P_{launch}$, đổi modulation. Chú ý số hạng $10\log_{10}(N)$ — gấp đôi span mất ~3 dB.
+
+## Thử thách — biến thể khó hơn
+
+Bây giờ tự làm, không nhìn lời giải trước. Giữ nguyên mọi thông số ($L_{span}=19.6$ dB, $NF=5$ dB, $P_{launch}=+1$ dBm), nhưng đổi hai thứ:
+
+- **Biến thể A:** kéo tuyến lên **6 span** (vẫn DP-QPSK, required 12.5 dB). Còn đủ margin không?
+- **Biến thể B:** giữ 6 span nhưng nâng lên **DP-16QAM**, required OSNR ~20 dB. Còn sống không?
+
+Hãy tính rồi mới mở lời giải.
+
+<Callout type="tip" title="Lời giải thử thách (mở sau khi tự làm)">
+
+**Biến thể A — 6 span, DP-QPSK:**
+
+$10\log_{10}(6) \approx 7.78$ dB, nên
+
+$$
+\text{OSNR} \approx 58 + 1 - 19.6 - 5 - 7.78 = 26.6\ \text{dB}
+$$
+
+Margin $= 26.6 - 12.5 = 14.1$ dB → **vẫn đạt thoải mái.** Đi từ 2 lên 6 span (gấp 3) chỉ mất $10\log_{10}(3) \approx 4.8$ dB OSNR.
+
+**Biến thể B — 6 span, DP-16QAM:**
+
+OSNR vẫn 26.6 dB (điều chế không đổi OSNR có được), nhưng required tăng lên 20 dB:
+
+$$
+\text{Margin} = 26.6 - 20 = 6.6\ \text{dB}
+$$
+
+→ **vẫn dương, tuyến sống**, nhưng margin đã co lại đáng kể. Đây là bài học cốt lõi: **điều chế bậc cao trả giá bằng margin.** Cùng một tuyến vật lý, chuyển QPSK sang 16QAM ngốn mất ~7.5 dB margin chỉ vì required OSNR nhảy từ 12.5 lên 20 dB.
+
+**Đẩy tới giới hạn:** với DP-16QAM (required 20 dB), margin về 0 khi $10\log_{10}(N) = 34.4 - 20 = 14.4$, tức $N \approx 27$ span — khoảng 2 200 km trên giấy. Ngoài đời con số nhỏ hơn nhiều vì phi tuyến và các phạt khác (Cấp 3), nhưng phép tính cho thấy vì sao coherent cộng điều chế thấp lại "khỏe" đến vậy.
+
+</Callout>
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- Đây **chính xác** là phép thẩm định bạn làm khi đọc một RFP: khách yêu cầu điều chế X trên khoảng cách Y km — tuyến có đủ OSNR không, margin bao nhiêu? Bốn bước ở trên là quy trình thật, không phải bài tập cho vui.
+- Khi tuyến chạy chập chờn ngoài hiện trường, nghi phạm số một là **OSNR cạn (margin âm)**, không phải thiếu công suất. Đo OSNR bằng OSA và so với required của transponder là bước chẩn đoán đầu tiên.
+- Con số **required OSNR** trong bài (12.5 dB cho DP-QPSK, 20 dB cho DP-16QAM) là **giá trị tham khảo bậc độ lớn**. Trong thiết kế thật bạn lấy nó từ **datasheet của transponder cụ thể**, kèm điều kiện đo — đừng bịa và đừng dùng số của hãng này cho hãng khác.
+- Margin không bao giờ được thiết kế bằng 0. Chính sách phổ biến giữ $\geq$ 2–3 dB để lo cho lão hóa sợi, mối hàn sửa chữa thêm, trôi nhiệt độ và sai số đo. "Đạt sát ngưỡng trên giấy" bằng "rớt trong vận hành".
+
+<Quiz
+  question="Với đề gốc (2 span, L_span = 19.6 dB, NF = 5 dB, launch +1 dBm), OSNR đến máy thu xấp xỉ bao nhiêu?"
+  hint="OSNR ≈ 58 + P_launch − L_span − NF − 10·log10(N), với 10·log10(2) ≈ 3."
+  options={[
+    {text: '≈ 31.4 dB', correct: true, explain: 'Đúng: 58 + 1 − 19.6 − 5 − 3.01 ≈ 31.4 dB.'},
+    {text: '≈ 12.5 dB', explain: 'Đó là required OSNR của DP-QPSK, không phải OSNR có được.'},
+    {text: '≈ 18.9 dB', explain: 'Đó là margin (OSNR − required), không phải OSNR.'},
+    {text: '≈ 39.2 dB', explain: 'Đó là tổng suy hao công suất của 2 span, không phải OSNR.'},
+  ]}
+/>
+
+<Quiz
+  question="Vẫn tuyến vật lý đó (OSNR có được không đổi), bạn chuyển từ DP-QPSK sang DP-16QAM. Vì sao margin tụt mạnh?"
+  options={[
+    {text: 'Vì DP-16QAM cần required OSNR cao hơn nhiều (~20 dB so với ~12.5 dB), trong khi OSNR có được không đổi', correct: true, explain: 'Đúng — margin = OSNR − required; required nhảy ~7.5 dB nên margin co lại đúng ngần đó.'},
+    {text: 'Vì đổi điều chế làm OSNR có được giảm', explain: 'OSNR có được do span/EDFA/launch quyết định, không phụ thuộc điều chế bạn chọn.'},
+    {text: 'Vì DP-16QAM làm suy hao sợi tăng', explain: 'Suy hao sợi là thuộc tính vật lý của tuyến, không đổi theo điều chế.'},
+    {text: 'Vì số kênh tăng lên', explain: 'Số kênh không đổi trong tình huống này; thứ thay đổi là required OSNR.'},
+  ]}
+/>
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+Công thức OSNR chuỗi span và hằng số ~58 dB (tham chiếu dải 0.1 nm ≈ 12.5 GHz tại 193.1 THz) là kiến thức kỹ thuật chuẩn ngành truyền dẫn quang; hệ số suy hao G.652 và định nghĩa OSNR theo ITU-T G.692 / G.680. Các giá trị required-OSNR theo điều chế (DP-QPSK ~12.5 dB, DP-16QAM ~20 dB) là **số tham khảo bậc độ lớn** — thiết kế thật lấy từ datasheet transponder cụ thể kèm điều kiện đo.
+
+</Callout>
+
+🎉 Chúc mừng — bạn đã hoàn thành **Cấp 1 (Fresher)**! Bạn đã đi từ bản chất ánh sáng, sợi quang và ba kẻ thù, qua kiến trúc DWDM và các khối chức năng, tới EDFA/Raman và cuối cùng tự thiết kế một tuyến điểm–điểm hoàn chỉnh với OSNR và margin. Đó là nền tảng vững để bước tiếp.
+
+➡️ Tiếp theo: [Cấp 2 — Junior](/hoc/level-2-junior) — chúng ta sẽ mổ sâu ROADM, coherent detection và cách OSNR thật sự được đo và bảo vệ trên tuyến dài.

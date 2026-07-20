@@ -1,10 +1,186 @@
 ---
 sidebar_position: 15
 title: "1.4.3 — BER, Q-factor, pre/post-FEC"
+description: "Hiểu BER, Q-factor và chuỗi OSNR → Q → BER; vì sao pre-FEC BER là đồng hồ sức khoẻ của tuyến DWDM."
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 1.4.3 — BER, Q-factor, pre/post-FEC
 
-<LessonStub objective={"Chất lượng tín hiệu đo bằng gì; vì sao pre-FEC BER là chỉ số vận hành quan trọng."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ:
+
+- Định nghĩa được BER, phân biệt **pre-FEC BER** và **post-FEC BER**, hiểu khái niệm **FEC threshold**.
+- Tính và đọc được **Q-factor** (cả dạng tuyến tính và dB) qua công thức $BER = \tfrac{1}{2}\,\mathrm{erfc}(Q/\sqrt{2})$.
+- Giải thích được chuỗi liên hệ **OSNR → Q → BER** và vì sao giám sát pre-FEC BER chính là đọc **margin** thực của tuyến.
+
+</Callout>
+
+## BER là gì
+
+**BER (Bit Error Rate)** là tỉ số giữa số bit bị lỗi và tổng số bit truyền đi trong một khoảng thời gian đo:
+
+$$
+BER = \frac{\text{số bit lỗi}}{\text{tổng số bit truyền}}
+$$
+
+BER là một đại lượng không thứ nguyên, thường rất nhỏ. Ví dụ $BER = 10^{-12}$ nghĩa là trung bình cứ $10^{12}$ bit thì có 1 bit sai. Trên một kênh 100G thực tế, tốc độ dòng bit vào khoảng $1.1 \times 10^{11}$ bit/s, nên ở mức $BER = 10^{-12}$ ta gặp trung bình khoảng 1 bit lỗi mỗi 9 giây — đủ hiếm để coi là "sạch" ở lớp client.
+
+Điểm quan trọng: BER là đại lượng thống kê. Muốn đo tin cậy $BER = 10^{-12}$ bạn phải quan sát đủ nhiều bit (cỡ vài $\times 10^{12}$ trở lên) mới có ý nghĩa. Đây là lý do đo BER "đáy" (rất thấp) trực tiếp trên tuyến production gần như bất khả thi — và cũng là một lý do nữa khiến pre-FEC BER trở nên hữu ích (xem bên dưới).
+
+## Pre-FEC BER và post-FEC BER
+
+Hệ thống coherent hiện đại luôn dùng **FEC (Forward Error Correction)**: bên phát chèn thêm bit dư (overhead, điển hình 15–25%), bên thu dùng phần dư này để phát hiện và **sửa** bit lỗi mà không cần truyền lại.
+
+Vì thế trên một tuyến có hai điểm đo BER khác nhau:
+
+- **Pre-FEC BER**: BER đo *trước* khối giải mã FEC, tức chất lượng "thô" của tín hiệu ngay khi ra khỏi bộ tách sóng coherent. Đây là con số phản ánh trực tiếp chất lượng vật lý của tuyến (OSNR, tán sắc, phi tuyến, lọc...).
+- **Post-FEC BER**: BER đo *sau* khi FEC đã sửa lỗi. Đây là con số mà lớp client/service thực sự nhìn thấy.
+
+Với SD-FEC hiện đại, pre-FEC BER có thể cao tới cỡ $2 \times 10^{-2}$ (2% bit thô bị sai!) — sát ngưỡng sửa lỗi — mà sau FEC, post-FEC BER vẫn được kéo xuống dưới $10^{-15}$, coi như không lỗi (error-free) ở lớp dịch vụ. (Một tuyến còn nhiều margin thường chạy pre-FEC BER thấp hơn thế nhiều, cỡ $10^{-3}$; xem bảng mốc cuối bài.)
+
+## FEC threshold (ngưỡng FEC)
+
+Mỗi loại FEC có một **giới hạn sửa lỗi**: nếu pre-FEC BER *thấp hơn* ngưỡng, FEC sửa hết và post-FEC BER về mức rất thấp; nếu pre-FEC BER *vượt* ngưỡng, FEC "vỡ trận" (decoder không hội tụ), post-FEC BER tăng vọt và dịch vụ rớt.
+
+Ngưỡng này gọi là **FEC threshold** (còn gọi là FEC limit hay pre-FEC BER threshold).
+
+| Thế hệ FEC | Overhead điển hình | Pre-FEC BER threshold điển hình |
+|---|---|---|
+| G.709 "classic" RS(255,239) (HD-FEC cổ điển) | ~7% | $\approx 8 \times 10^{-5}$ ... $1 \times 10^{-4}$ |
+| Enhanced FEC / EFEC (HD-FEC mạnh) | ~7% | $\approx 2 \times 10^{-3}$ |
+| SD-FEC hiện đại (soft-decision, coherent) | ~15–25% | $\approx 1 \times 10^{-2}$ ... $2 \times 10^{-2}$ |
+
+SD-FEC (soft-decision FEC) dùng thông tin "mềm" — mức tin cậy của từng symbol, không chỉ quyết định cứng 0/1 — nên chịu được pre-FEC BER cao hơn nhiều so với HD-FEC. Đó là lý do coherent 100G/400G có thể chạy ở OSNR thấp mà vẫn error-free ở lớp dịch vụ.
+
+<Callout type="caution">
+
+FEC threshold là một **vách đứng**, không phải dốc thoải. Khi pre-FEC BER tiến gần ngưỡng, post-FEC BER vẫn ~0; nhưng chỉ cần vượt ngưỡng một chút, post-FEC BER nhảy từ $10^{-15}$ lên $10^{-4}$ chỉ trong tích tắc. Vì thế đừng vận hành tuyến ở sát ngưỡng: khoảng cách từ pre-FEC BER hiện tại tới ngưỡng chính là **margin** của bạn.
+
+</Callout>
+
+## Q-factor
+
+**Q-factor** là thước đo chất lượng tín hiệu số theo góc nhìn thống kê của bộ quyết định (decision). Với giả định nhiễu Gaussian và hai mức tín hiệu (mức "1" và mức "0"):
+
+$$
+Q = \frac{\mu_1 - \mu_0}{\sigma_1 + \sigma_0}
+$$
+
+trong đó $\mu_1, \mu_0$ là giá trị trung bình của mức 1 và mức 0; $\sigma_1, \sigma_0$ là độ lệch chuẩn nhiễu tương ứng. Q càng lớn thì hai mức càng tách xa so với nhiễu, xác suất quyết định sai càng nhỏ.
+
+Quan hệ giữa Q và BER (nhiễu Gaussian):
+
+$$
+BER = \frac{1}{2}\,\mathrm{erfc}\!\left(\frac{Q}{\sqrt{2}}\right)
+$$
+
+với $\mathrm{erfc}$ là hàm bù lỗi (complementary error function).
+
+Trong thực tế Q hay được biểu diễn bằng **dB**:
+
+$$
+Q_{dB} = 20 \log_{10}(Q)
+$$
+
+Chú ý hệ số **20** (không phải 10), vì Q là tỉ số biên độ (amplitude ratio), không phải công suất.
+
+### Bảng quy đổi Q ↔ BER
+
+| Q (tuyến tính) | $Q_{dB}$ | BER xấp xỉ |
+|---|---|---|
+| 3.0 | 9.5 dB | $1.3 \times 10^{-3}$ |
+| 4.0 | 12.0 dB | $3.2 \times 10^{-5}$ |
+| 5.0 | 14.0 dB | $2.9 \times 10^{-7}$ |
+| 6.0 | 15.6 dB | $1.0 \times 10^{-9}$ |
+| 7.0 | 16.9 dB | $1.3 \times 10^{-12}$ |
+| 7.94 | 18.0 dB | $1.0 \times 10^{-15}$ |
+
+Một mốc kinh điển: $BER = 10^{-12}$ tương ứng $Q \approx 7.0$, tức $Q_{dB} \approx 16.9$ dB. Đây là con số mà kỹ sư truyền dẫn thế hệ OOK 10G thuộc lòng.
+
+<Callout type="info">
+
+Với hệ coherent nhiều mức (QPSK, 16QAM...) và SD-FEC, mô hình 2 mức Gaussian không còn mô tả chính xác vật lý. Nhiều nền tảng vẫn báo một đại lượng gọi là **"Q-factor"** hoặc **"Q-margin"** được suy ngược từ pre-FEC BER đo được qua chính công thức $BER = \tfrac{1}{2}\mathrm{erfc}(Q/\sqrt{2})$. Nó là chỉ số theo dõi xu hướng rất tốt, nhưng hãy hiểu đó là "Q quy đổi từ BER", không phải Q đo trực tiếp từ biểu đồ mắt.
+
+</Callout>
+
+## Chuỗi liên hệ OSNR → Q → BER
+
+Ba đại lượng này gắn với nhau thành một chuỗi nhân quả trên tuyến quang:
+
+1. **OSNR** (Optical Signal-to-Noise Ratio) mô tả tỉ số công suất tín hiệu trên nhiễu ASE do chuỗi EDFA cộng dồn. OSNR càng cao, tín hiệu càng "sạch".
+2. OSNR quyết định **Q**: với một định dạng điều chế cho trước, Q tăng theo OSNR. Xấp xỉ bậc nhất (back-to-back, nhiễu ASE chi phối), Q (dB) tăng gần như 1:1 với OSNR (dB).
+3. Q quyết định **BER** qua công thức erfc ở trên.
+
+Nói cách khác: tuyến mất OSNR (do thêm span, do suy hao mối hàn, do lão hoá EDFA) → Q giảm → pre-FEC BER tăng. Chuỗi này là nền tảng để đọc "sức khoẻ" tuyến.
+
+Ví dụ số minh hoạ (định dạng DP-QPSK 100G, giá trị điển hình):
+
+| OSNR (0.1nm) | Q quy đổi | Pre-FEC BER | Trạng thái |
+|---|---|---|---|
+| 16 dB | ~9.8 dB | $\sim 1 \times 10^{-3}$ | Dư margin lớn |
+| 13 dB | ~8.0 dB | $\sim 5 \times 10^{-3}$ | Bình thường |
+| 11 dB | ~6.8 dB | $\sim 1.5 \times 10^{-2}$ | Sát ngưỡng SD-FEC |
+| 10 dB | ~6.3 dB | $\sim 2.5 \times 10^{-2}$ | Vượt ngưỡng → post-FEC lỗi |
+
+(Con số OSNR-required cụ thể phụ thuộc định dạng điều chế, baud rate và loại FEC của từng transponder; bảng trên chỉ minh hoạ xu hướng.)
+
+## Pre-FEC BER — "đồng hồ sức khoẻ" của tuyến
+
+Đây là ý tưởng vận hành quan trọng nhất của bài.
+
+Post-FEC BER trên tuyến khoẻ luôn bằng 0 (không lỗi) — nó là một con số "phẳng lì", không cho biết tuyến còn *bao nhiêu* margin. Đến khi post-FEC BER khác 0 thì đã quá muộn: dịch vụ đang rớt.
+
+Ngược lại, **pre-FEC BER luôn có giá trị đo được** và biến thiên liên tục theo chất lượng vật lý. Vì thế nó là chỉ số cảnh báo sớm lý tưởng:
+
+- Pre-FEC BER **ổn định** ở mức thấp → tuyến khoẻ, margin dồi dào.
+- Pre-FEC BER **tăng dần theo thời gian** → tuyến đang suy giảm (connector bẩn dần, mối hàn xuống cấp, EDFA lão hoá, tilt/công suất trôi, sợi bị bẻ cong tăng suy hao...). Bạn có thời gian để lên kế hoạch xử lý *trước khi* dịch vụ bị ảnh hưởng.
+- Pre-FEC BER **nhảy bậc đột ngột** → sự kiện vật lý (thay card, di dời patchcord, span mới thêm, sự cố đứt-nối sợi).
+
+Khoảng cách từ pre-FEC BER hiện tại tới FEC threshold chính là **FEC margin** — đơn vị đo trực tiếp "còn bao nhiêu dự phòng" của tuyến. Nhiều NMS/EMS quy đổi khoảng cách này thành **Q-margin (dB)** để dễ đọc: ví dụ tuyến cần $Q = 6.4$ dB để đạt ngưỡng FEC, hiện đo được $Q = 9.0$ dB, thì Q-margin $= 2.6$ dB.
+
+<Callout type="tip">
+
+Thói quen vận hành tốt: ghi log **pre-FEC BER (hoặc Q-margin) theo thời gian** cho mọi kênh và đặt ngưỡng cảnh báo *trước* FEC threshold. Một xu hướng pre-FEC BER tăng đều đặn trong nhiều tuần thường là dấu hiệu suy giảm cơ khí/quang học mà chưa hề chạm tới alarm dịch vụ. Đây là bảo trì dự phòng (predictive maintenance) đúng nghĩa.
+
+</Callout>
+
+## Bảng mốc BER điển hình cần nhớ
+
+| Mức BER | Ý nghĩa vận hành |
+|---|---|
+| $10^{-2}$ | Cỡ pre-FEC BER khi chạy sát ngưỡng SD-FEC |
+| $10^{-3}$ | Pre-FEC BER "khoẻ" điển hình của tuyến coherent còn nhiều margin |
+| $10^{-4}$ ... $10^{-3}$ | Vùng ngưỡng của HD-FEC / EFEC cổ điển |
+| $10^{-9}$ | "Error-free" quy ước cổ điển cho hệ OOK không FEC ($Q \approx 6$) |
+| $10^{-12}$ | Yêu cầu BER kinh điển lớp client ($Q \approx 7$, $Q_{dB} \approx 16.9$) |
+| $10^{-15}$ | Post-FEC BER mục tiêu điển hình của coherent hiện đại |
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- **Nghiệm thu (commissioning)**: Khi bật một kênh mới, bạn không chỉ kiểm tra "có link hay không" mà phải đo pre-FEC BER và so với FEC threshold để xác nhận có đủ **margin** (thường yêu cầu tối thiểu 2–3 dB Q-margin) trước khi bàn giao. Một tuyến chạy được nhưng sát ngưỡng sẽ rớt ngay khi thời tiết đổi, sợi giãn nhiệt, hay EDFA già đi.
+
+- **Ràng buộc OSNR trong thiết kế**: Bài budget OSNR (bài kế) cho ra OSNR dự kiến cuối tuyến. Chuỗi OSNR → Q → BER cho phép bạn *dịch* con số OSNR đó thành pre-FEC BER dự kiến và kiểm tra nó nằm dưới ngưỡng FEC với đủ margin. Không có bước dịch này, con số OSNR chỉ là số trừu tượng.
+
+- **RFP / so sánh vendor**: Khi đánh giá transponder, hãy đọc kỹ hai thông số đi cặp: **OSNR required @ FEC threshold** (OSNR tối thiểu để đạt ngưỡng FEC) và **loại FEC + pre-FEC BER threshold**. Hai vendor cùng "100G" nhưng khác FEC gain sẽ cho khoảng cách (reach) rất khác nhau. Đừng so sánh reach mà bỏ qua FEC.
+
+- **Vận hành & xử lý sự cố**: Pre-FEC BER là công cụ chẩn đoán số một. Pre-FEC BER tăng trên *một* kênh → nghi lỗi transponder/định tuyến kênh đó; tăng trên *toàn bộ* kênh của một span → nghi lỗi span vật lý (suy hao sợi, EDFA, connector chung). Đọc đúng pattern giúp khoanh vùng sự cố nhanh mà chưa cần ra hiện trường.
+
+- **SLA & báo cáo**: Post-FEC "errored seconds" là con số vào SLA, nhưng pre-FEC BER là con số giúp bạn *tránh* vi phạm SLA từ trước. Đội vận hành giỏi theo dõi cái thứ hai để không bao giờ phải giải thích cái thứ nhất.
+
+<Quiz question="Trên một tuyến coherent khoẻ mạnh dùng SD-FEC, pre-FEC BER đo được là 8e-3 còn post-FEC BER là dưới 1e-15. Điều này có nghĩa gì?" hint="Nhớ FEC làm gì với bit lỗi thô, và ngưỡng SD-FEC nằm ở đâu." options={[{text:'Tín hiệu thô có khoảng 0.8% bit sai, nhưng vẫn nằm dưới FEC threshold nên FEC sửa hết và lớp dịch vụ coi như không lỗi.', correct:true, explain:'Đúng. Pre-FEC BER 8e-3 vẫn thấp hơn ngưỡng SD-FEC (cỡ 1e-2...2e-2) nên decoder hội tụ, kéo post-FEC BER xuống rất thấp.'},{text:'Tuyến đang lỗi nặng vì pre-FEC BER quá cao, cần thay sợi ngay.', explain:'Sai. Pre-FEC BER cỡ 1e-2 là hoàn toàn bình thường với SD-FEC; chính vì thế mới cần FEC. Post-FEC dưới 1e-15 cho thấy dịch vụ sạch.'},{text:'Chắc chắn có lỗi cấu hình vì post-FEC BER không thể nhỏ hơn pre-FEC BER.', explain:'Sai. Mục đích của FEC chính là làm post-FEC BER nhỏ hơn pre-FEC BER rất nhiều lần.'}]} />
+
+<Quiz question="Vì sao đội vận hành giám sát pre-FEC BER thay vì chỉ nhìn post-FEC BER để theo dõi sức khoẻ tuyến?" hint="Con số nào thay đổi liên tục trước khi dịch vụ bị ảnh hưởng?" options={[{text:'Vì post-FEC BER trên tuyến khoẻ luôn bằng 0 (không cho biết còn bao nhiêu margin), còn pre-FEC BER biến thiên liên tục nên phát hiện sớm xu hướng suy giảm trước khi dịch vụ rớt.', correct:true, explain:'Đúng. Khoảng cách từ pre-FEC BER tới FEC threshold chính là margin; pre-FEC BER tăng dần là cảnh báo sớm.'},{text:'Vì post-FEC BER khó đo hơn pre-FEC BER về mặt kỹ thuật.', explain:'Không phải lý do chính. Cả hai đều đo được; vấn đề là post-FEC BER phẳng ở 0 nên không mang thông tin về margin.'},{text:'Vì pre-FEC BER luôn thấp hơn post-FEC BER nên chính xác hơn.', explain:'Sai về bản chất. Pre-FEC BER thường cao hơn post-FEC BER; giá trị của nó nằm ở chỗ nó nhạy và cảnh báo sớm, không phải vì chính xác hơn.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+- ITU-T Rec. **G.709/Y.1331** — Interfaces for the Optical Transport Network (OTN): cấu trúc khung và vị trí byte FEC (RS(255,239)).
+- ITU-T Rec. **G.975** và **G.975.1** — Forward error correction cho hệ thống DWDM submarine (mô tả các sơ đồ FEC nâng cao và coding gain).
+- ITU-T Rec. **G.959.1**, **G.698.2** — tham số ứng dụng quang, khái niệm OSNR required tại BER tham chiếu.
+- Quan hệ $BER = \tfrac{1}{2}\mathrm{erfc}(Q/\sqrt{2})$ và $Q_{dB} = 20\log_{10}(Q)$ là kết quả chuẩn của lý thuyết tách sóng nhiễu Gaussian (xem Agrawal, *Fiber-Optic Communication Systems*).
+
+Các giá trị pre-FEC BER threshold, OSNR-required và Q-margin nêu trên là **giá trị điển hình** để minh hoạ; con số chính xác phụ thuộc định dạng điều chế, baud rate và loại FEC của từng transponder.
+
+</Callout>
+
+➡️ Tiếp theo: [1.4.4 — Link budget (budget suy hao & OSNR)](./1-4-4-link-budget)

@@ -1,10 +1,122 @@
 ---
 sidebar_position: 3
 title: "1.1.3 — Ba \"kẻ thù\": suy hao, tán sắc, phi tuyến"
+description: "Tổng quan ba cơ chế làm suy giảm tín hiệu quang trong sợi đơn mode: attenuation, dispersion (CD + PMD) và nonlinearity (Kerr + scattering)."
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 1.1.3 — Ba "kẻ thù": suy hao, tán sắc, phi tuyến
 
-<LessonStub objective={"Tổng quan ba cơ chế làm hỏng tín hiệu và mỗi cái sẽ được giải quyết ở đâu trong khoá học."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ:
+
+- Gọi tên được ba cơ chế cơ bản làm hỏng tín hiệu quang trên sợi: attenuation, dispersion, nonlinearity — và biết mỗi cái gây ra hệ quả gì.
+- Nắm các con số điển hình cần nhớ: suy hao ~0.2 dB/km @1550 nm, chromatic dispersion ~17 ps/nm/km cho G.652, PMD tính theo ps/√km.
+- Biết mỗi "kẻ thù" được xử lý ở đâu trong hệ thống DWDM: khuếch đại, tán sắc/PMD bù bằng DSP coherent, phi tuyến quản lý bằng công suất.
+
+</Callout>
+
+Một tín hiệu quang đi từ transmitter tới receiver qua hàng chục, thậm chí hàng nghìn km sợi. Trên đường đi nó bị làm yếu, bị giãn ra theo thời gian, và bị méo do chính công suất của nó. Ba nhóm hiệu ứng này quyết định link đi được bao xa trước khi receiver không còn giải mã đúng. Bài này cho bạn bức tranh tổng quan; mỗi cơ chế sẽ được đào sâu ở các bài sau.
+
+## Kẻ thù 1 — Suy hao (Attenuation)
+
+Suy hao là việc công suất quang giảm dần khi truyền trong sợi. Nó là cơ chế đơn giản nhất về mặt khái niệm: photon "mất đi" trên đường đi, biên độ tín hiệu tại đầu thu nhỏ hơn đầu phát.
+
+Suy hao đo bằng **dB/km**. Với sợi silica tiêu chuẩn G.652 tại bước sóng 1550 nm, con số điển hình là khoảng **0.2 dB/km**. Tại 1310 nm suy hao cao hơn, khoảng 0.32–0.35 dB/km — đó là một lý do các hệ thống đường dài chọn cửa sổ 1550 nm (băng C).
+
+Hai nguyên nhân vật lý chính:
+
+- **Hấp thụ (absorption):** vật liệu silica và các tạp chất (đặc biệt là ion OH⁻ gây "water peak" quanh 1383 nm) hấp thụ năng lượng photon và chuyển thành nhiệt.
+- **Tán xạ Rayleigh (Rayleigh scattering):** các thăng giáng mật độ ở cấp phân tử trong thủy tinh làm một phần ánh sáng bị tán xạ lệch hướng. Tán xạ Rayleigh tỉ lệ với $1/\lambda^4$, nên suy hao giảm nhanh khi bước sóng dài ra — đây là thành phần chi phối suy hao ở vùng 1550 nm.
+
+Ví dụ số: một span 100 km sợi G.652 ở 1550 nm gây suy hao sợi khoảng $100 \times 0.2 = 20$ dB. Cộng thêm suy hao mối hàn, connector và margin, tổng ngân sách một span dễ đạt 22–25 dB. Nếu công suất phóng vào sợi là $+3$ dBm thì tới cuối span chỉ còn khoảng $-20$ dBm — đó là lúc cần khuếch đại.
+
+Suy hao **không** méo dạng xung; nó chỉ làm tín hiệu yếu đi. Vì vậy cách xử lý là **khuếch đại quang** (EDFA, Raman) — chủ đề của Module 1.3.
+
+## Kẻ thù 2 — Tán sắc (Dispersion)
+
+Tán sắc làm một xung ánh sáng bị **giãn ra theo thời gian** khi truyền. Xung giãn quá mức sẽ chồng lấn sang khe bit lân cận (inter-symbol interference), khiến receiver không phân biệt được bit. Có hai loại chính.
+
+### Chromatic Dispersion (CD)
+
+Một xung quang không phải một tần số duy nhất mà chứa một dải bước sóng. Trong sợi, các bước sóng khác nhau truyền với vận tốc nhóm khác nhau, nên tới đầu thu ở các thời điểm khác nhau và xung bị giãn. CD có hai thành phần cộng lại:
+
+- **Material dispersion:** chiết suất silica phụ thuộc bước sóng.
+- **Waveguide dispersion:** phân bố năng lượng giữa lõi và vỏ phụ thuộc bước sóng, làm vận tốc nhóm hiệu dụng thay đổi.
+
+CD đo bằng **ps/(nm·km)**. Với G.652 tại 1550 nm, giá trị điển hình là **~17 ps/nm/km**. Độ giãn xung tổng cộng:
+
+$$
+\Delta \tau = D \cdot L \cdot \Delta\lambda
+$$
+
+trong đó $D$ là hệ số tán sắc, $L$ là chiều dài sợi, $\Delta\lambda$ là độ rộng phổ của tín hiệu. Ví dụ: link 80 km, $D = 17$ ps/nm/km, tín hiệu có độ rộng phổ hiệu dụng $\Delta\lambda = 0.1$ nm thì $\Delta\tau = 17 \times 80 \times 0.1 = 136$ ps. So với chu kỳ bit ~100 ps của tín hiệu 10 Gbit/s NRZ, đó là mức giãn đáng kể cần xử lý.
+
+CD là hiệu ứng **tuyến tính và tất định** — cùng một sợi, cùng bước sóng thì luôn cho cùng lượng tán sắc. Điều này rất quan trọng: vì tất định nên nó **bù được**.
+
+### Polarization Mode Dispersion (PMD)
+
+Sợi thực tế không tròn tuyệt đối và chịu ứng suất, nên hai trạng thái phân cực vuông góc truyền với vận tốc hơi khác nhau — hiện tượng **birefringence**. Chênh lệch thời gian giữa hai mode phân cực (differential group delay) làm xung giãn thêm.
+
+PMD đo bằng **ps/√km** (không phải ps/km) vì nó tích lũy theo căn bậc hai của chiều dài, do bản chất ngẫu nhiên. Sợi mới điển hình có hệ số PMD khoảng $0.04$–$0.1$ ps/√km. Ví dụ với $0.1$ ps/√km trên 400 km: $\text{PMD} = 0.1 \times \sqrt{400} = 2$ ps.
+
+Khác với CD, PMD **thay đổi theo thời gian** (nhiệt độ, rung động, ứng suất cơ học), nên khó bù bằng phần tử quang cố định. Đây là lý do PMD từng giới hạn nặng các hệ thống 10G/40G trực tiếp điều chế.
+
+## Kẻ thù 3 — Phi tuyến (Nonlinearity)
+
+Hai kẻ thù trên là tuyến tính: hệ quả không phụ thuộc công suất tín hiệu. Phi tuyến thì ngược lại — nó **mạnh lên khi công suất cao** và khi diện tích lõi hiệu dụng $A_{\text{eff}}$ nhỏ (mật độ công suất cao). Đây là lý do "cứ tăng công suất phóng để đi xa hơn" không phải lúc nào cũng đúng: đẩy công suất quá mức lại đánh thức phi tuyến.
+
+Phi tuyến chia hai nhóm:
+
+**Hiệu ứng Kerr** — chiết suất sợi thay đổi theo cường độ ánh sáng ($n = n_0 + n_2 I$):
+
+- **SPM (Self-Phase Modulation):** tín hiệu tự làm méo pha của chính nó, giãn phổ.
+- **XPM (Cross-Phase Modulation):** công suất của kênh này làm méo pha kênh lân cận — vấn đề của hệ đa kênh DWDM.
+- **FWM (Four-Wave Mixing):** ba bước sóng trộn nhau sinh ra bước sóng thứ tư; nếu rơi đúng vào một kênh đang dùng thì gây nhiễu. FWM đặc biệt nặng khi tán sắc thấp và khoảng cách kênh đều — một nghịch lý thú vị: CD thấp tốt cho tán sắc nhưng lại làm FWM tệ hơn.
+
+**Tán xạ (Scattering):**
+
+- **SBS (Stimulated Brillouin Scattering):** tán xạ ngược do sóng âm, giới hạn công suất phóng của một kênh phổ hẹp.
+- **SRS (Stimulated Raman Scattering):** năng lượng bị chuyển từ kênh bước sóng ngắn sang kênh bước sóng dài, gây nghiêng công suất (tilt) trên băng C/L.
+
+Phi tuyến khó xử lý nhất vì nó là hệ quả của chính việc muốn có công suất cao để chống suy hao. Cách "xử lý" chủ yếu là **quản lý công suất phóng** (mỗi kênh thường vài dBm) và thiết kế bản đồ tán sắc hợp lý, chứ không có bộ bù đơn giản như CD.
+
+## Bảng tổng hợp ba kẻ thù
+
+| Kẻ thù | Nguyên nhân vật lý | Đơn vị / con số điển hình | Hệ quả | Xử lý ở đâu |
+|---|---|---|---|---|
+| Attenuation | Absorption + Rayleigh scattering | dB/km; ~0.2 @1550, ~0.35 @1310 | Tín hiệu yếu dần, OSNR giảm | Khuếch đại quang (EDFA/Raman) — Module 1.3 |
+| Chromatic Dispersion (CD) | Material + waveguide dispersion | ps/(nm·km); ~17 cho G.652 | Xung giãn, ISI | Bù tán sắc; coherent DSP — Cấp 2 |
+| PMD | Birefringence (sợi không tròn, ứng suất) | ps/√km; ~0.04–0.1 | Xung giãn ngẫu nhiên theo thời gian | DSP coherent thích nghi — Cấp 2 |
+| Nonlinearity (Kerr: SPM/XPM/FWM; SBS/SRS) | Chiết suất/tán xạ phụ thuộc công suất, $A_{\text{eff}}$ | phụ thuộc công suất & $A_{\text{eff}}$ | Méo pha, nhiễu xuyên kênh, tilt | Quản lý công suất phóng, dispersion map — Cấp 3 |
+
+Điểm mấu chốt cần nhớ: **CD và PMD trong hệ coherent hiện đại được bù bằng số (digital signal processing)**. Bộ thu coherent lấy mẫu cả biên độ và pha của trường quang, nên DSP có thể áp một bộ lọc nghịch đảo để "quay ngược" CD (tất định) và một bộ cân bằng thích nghi bám theo PMD (thay đổi chậm). Đây là lý do các link 100G/400G coherent không cần module bù tán sắc quang (DCM) rời như thế hệ 10G trực tiếp điều chế.
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+Ba kẻ thù không tác động độc lập — chúng đánh đổi lẫn nhau, và người thiết kế link phải cân bằng cả ba cùng lúc:
+
+- **OSNR là thước đo tổng kết của suy hao và khuếch đại.** Mỗi lần khuếch đại để bù suy hao, EDFA thêm nhiễu ASE, làm OSNR giảm. Suy hao span càng lớn thì công suất tới amplifier càng thấp, noise figure càng "cắn" mạnh vào OSNR. Vì thế trong một RFP, người ta không chỉ hỏi "đi được bao xa" mà hỏi "OSNR cuối tuyến còn bao nhiêu dB so với ngưỡng yêu cầu (OSNR margin)".
+
+- **Nghịch lý công suất phóng.** Muốn OSNR tốt thì tăng công suất phóng để vượt lên trên sàn nhiễu. Nhưng công suất cao lại kích hoạt phi tuyến (SPM/XPM/FWM). Có một mức tối ưu — thường gọi là "nonlinear threshold" — mà vượt qua nó thì OSNR hiệu dụng lại tệ đi. Kỹ sư vận hành phải chọn công suất mỗi kênh nằm ngay dưới ngưỡng đó.
+
+- **Loại sợi thực địa quyết định margin.** Cùng một tuyến, sợi G.652 cũ có thể có PMD cao (sợi sản xuất trước ~2000), mối hàn nhiều làm suy hao cao hơn danh định, và $A_{\text{eff}}$ ảnh hưởng ngưỡng phi tuyến. Trước khi cam kết dung lượng, cần đo thực tế: OTDR cho suy hao và vị trí mối hàn, đo CD và PMD của tuyến. Đừng tin thông số datasheet của sợi mới khi tuyến đã chôn 15 năm.
+
+- **Coherent DSP đổi luật chơi vận hành.** Vì CD/PMD được bù bằng số, việc kéo dài span hay đổi cấu hình tuyến không còn đòi thay DCM quang, giảm chi phí và rủi ro vận hành. Nhưng phi tuyến thì DSP không "gỡ" được hoàn toàn — nó vẫn là trần cứng của công suất. Đó là lý do bài toán thiết kế đường dài ngày nay xoay quanh OSNR và phi tuyến nhiều hơn là tán sắc.
+
+## Kiểm tra nhanh
+
+<Quiz question="Vì sao PMD được đo bằng ps/√km chứ không phải ps/km như chromatic dispersion?" hint="Nghĩ về bản chất ngẫu nhiên của birefringence dọc theo sợi." options={[{text:'Vì PMD tích lũy theo căn bậc hai của chiều dài do bản chất ngẫu nhiên của birefringence dọc sợi', correct:true, explain:'Đúng. Birefringence biến đổi ngẫu nhiên dọc sợi nên differential group delay tích lũy theo kiểu random walk, tỉ lệ với căn bậc hai chiều dài.'},{text:'Vì PMD chỉ xuất hiện trên sợi ngắn hơn 1 km', explain:'Sai. PMD tích lũy trên mọi chiều dài, và càng dài giá trị tuyệt đối càng lớn.'},{text:'Vì đơn vị ps/√km giúp tính suy hao dễ hơn', explain:'Sai. PMD không liên quan tới suy hao; đơn vị phản ánh cách tích lũy thống kê.'}]} />
+
+<Quiz question="Trong một hệ DWDM coherent 400G hiện đại, cơ chế nào KHÔNG thể loại bỏ hoàn toàn bằng DSP ở receiver?" options={[{text:'Nonlinearity (hiệu ứng Kerr như SPM/XPM/FWM)', correct:true, explain:'Đúng. Phi tuyến phụ thuộc công suất và tương tác dọc tuyến; DSP giảm nhẹ được phần nào nhưng không "quay ngược" hoàn toàn, nên nó vẫn là trần công suất.'},{text:'Chromatic Dispersion', explain:'CD là tuyến tính và tất định nên DSP coherent bù được gần như hoàn toàn bằng bộ lọc nghịch đảo.'},{text:'PMD', explain:'PMD biến đổi chậm và tuyến tính; bộ cân bằng thích nghi trong DSP bám và bù được.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+- ITU-T G.652: đặc tính sợi và cáp quang đơn mode — suy hao, tán sắc, PMD.
+- ITU-T G.650.1 / G.650.2: phương pháp đo tham số sợi đơn mode (CD, PMD, suy hao).
+- ITU-T G.663: khía cạnh ứng dụng của thiết bị và hệ thống khuếch đại quang (hiệu ứng phi tuyến).
+- Giá trị "~0.2 dB/km @1550 nm" và "~17 ps/nm/km" là các mức kỹ thuật điển hình cho G.652, không phải thông số của một hãng cụ thể.
+
+</Callout>
+
+➡️ Tiếp theo: [Module 1.2 — WDM là gì?](../level-1-fresher/1-2-1-wdm-la-gi)

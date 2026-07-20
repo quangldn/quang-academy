@@ -11,9 +11,6 @@ function HomepageHeader() {
     <header className={clsx('hero', styles.heroBanner)}>
       <div className={styles.heroGlow} aria-hidden="true" />
       <div className="container">
-        <span className={styles.badge}>
-          <span className={styles.badgeDot} /> Trung lập về hãng · Cập nhật theo chuẩn ITU-T
-        </span>
         <Heading as="h1" className={styles.heroTitle}>
           DWDM <span className={styles.heroTitleAccent}>Academy</span>
         </Heading>

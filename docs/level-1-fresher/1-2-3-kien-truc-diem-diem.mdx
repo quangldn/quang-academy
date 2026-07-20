@@ -1,10 +1,177 @@
 ---
 sidebar_position: 7
 title: "1.2.3 — Kiến trúc tuyến DWDM điểm–điểm"
+description: "Chuỗi tín hiệu client → transponder → mux → booster → span → ILA → preamp → demux → transponder, phân biệt terminal site và line site, vai trò OSC."
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 1.2.3 — Kiến trúc tuyến DWDM điểm–điểm
 
-<LessonStub objective={"Đọc được sơ đồ Tx → mux → booster → span → preamp → demux → Rx và vai trò từng khối."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ:
+
+- Vẽ được chuỗi tín hiệu đầy đủ của một tuyến DWDM điểm–điểm (point-to-point) từ client bên A tới client bên B.
+- Phân biệt terminal site và line/ILA site, hiểu vì sao cần booster, preamp và các ILA.
+- Nắm vai trò của OSC (Optical Supervisory Channel) chạy song song với các bước sóng lưu lượng.
+
+</Callout>
+
+Tuyến điểm–điểm là kiến trúc DWDM đơn giản nhất: hai đầu cuối (terminal) nối nhau bằng một sợi quang, ở giữa có thể chèn thêm các trạm khuếch đại. Đây là "viên gạch" nền tảng — mọi mạng ring hay mesh phức tạp đều là tập hợp của nhiều đoạn điểm–điểm ghép lại. Hiểu chắc kiến trúc này là điều kiện để đọc được sơ đồ tuyến thực tế.
+
+## Chuỗi tín hiệu đầy đủ
+
+Xét một hướng truyền (từ site A sang site B). Tín hiệu đi qua các khối sau, theo đúng thứ tự:
+
+**Client → Transponder (Tx) → Mux → Booster → Span sợi → (ILA) → Span sợi → Preamp → Demux → Transponder (Rx) → Client**
+
+Diễn giải từng bước:
+
+1. **Client**: tín hiệu dịch vụ đầu vào — thường là một giao diện grey (bước sóng 1310 nm hoặc 850 nm, không nằm trên ITU grid), ví dụ 100GbE, OTU4, hoặc luồng SDH.
+2. **Transponder (Tx)**: chuyển tín hiệu client "grey" thành một bước sóng "màu" nằm đúng trên lưới ITU-T (ví dụ 193.1 THz). Đây là bước wavelength conversion. Với hệ thống coherent hiện đại, transponder còn thực hiện điều chế (QPSK, 16QAM...) và mã sửa lỗi FEC.
+3. **Mux (Multiplexer)**: ghép nhiều bước sóng màu khác nhau vào chung một sợi. Ví dụ 80 kênh spacing 50 GHz trong băng C.
+4. **Booster amplifier**: khuếch đại tổng công suất ngay sau mux, trước khi bơm vào sợi. Mux gây suy hao chèn (insertion loss) đáng kể, nên cần nâng mức công suất mỗi kênh lên đủ cao để "gánh" span đầu tiên.
+5. **Span sợi**: đoạn sợi quang giữa hai trạm. Suy hao điển hình khoảng $0.20$–$0.25$ dB/km ở 1550 nm với sợi G.652.
+6. **ILA (In-Line Amplifier)**: nếu tuyến dài, cứ sau mỗi $60$–$100$ km lại chèn một trạm khuếch đại đường dây để bù suy hao span, giữ mức công suất trước khi tín hiệu quá yếu.
+7. **Preamplifier**: khuếch đại ở đầu thu, ngay trước demux, để nâng tín hiệu lên đủ cao trước khi chịu thêm suy hao chèn của demux và trước khi vào bộ thu.
+8. **Demux (Demultiplexer)**: tách sợi tổng hợp trở lại thành từng bước sóng riêng.
+9. **Transponder (Rx)**: thu bước sóng màu, giải điều chế, sửa lỗi FEC, và chuyển ngược về tín hiệu client grey.
+10. **Client**: giao lại dịch vụ cho thiết bị khách ở đầu B.
+
+Lưu ý: tuyến thực tế luôn song công (bidirectional). Chiều B → A là một chuỗi đối xứng đi trên sợi thứ hai (cấu hình unidirectional-per-fiber phổ biến). Trong bài này ta mô tả một chiều để dễ hình dung; nhớ nhân đôi cho chiều còn lại.
+
+## Sơ đồ khối tuyến 2 span
+
+Sơ đồ dưới đây minh hoạ một tuyến A → B đi qua hai span, với một trạm ILA ở giữa. Hàng dưới (nét đứt) là OSC chạy song song.
+
+<svg viewBox="0 0 900 260" width="100%" role="img" aria-label="Sơ đồ tuyến DWDM điểm-điểm 2 span">
+  <rect x="10" y="60" width="66" height="42" fill="#e3f2fd" stroke="#1565c0"/>
+  <text x="43" y="85" font-size="11" text-anchor="middle">TP Tx</text>
+  <rect x="86" y="60" width="58" height="42" fill="#e8f5e9" stroke="#2e7d32"/>
+  <text x="115" y="85" font-size="11" text-anchor="middle">MUX</text>
+  <rect x="154" y="60" width="66" height="42" fill="#fff3e0" stroke="#e65100"/>
+  <text x="187" y="80" font-size="10" text-anchor="middle">BOOST</text>
+  <text x="187" y="93" font-size="9" text-anchor="middle">EDFA</text>
+  <rect x="360" y="60" width="66" height="42" fill="#fff3e0" stroke="#e65100"/>
+  <text x="393" y="80" font-size="10" text-anchor="middle">ILA</text>
+  <text x="393" y="93" font-size="9" text-anchor="middle">EDFA</text>
+  <rect x="566" y="60" width="60" height="42" fill="#fff3e0" stroke="#e65100"/>
+  <text x="596" y="80" font-size="10" text-anchor="middle">PRE</text>
+  <text x="596" y="93" font-size="9" text-anchor="middle">EDFA</text>
+  <rect x="636" y="60" width="60" height="42" fill="#e8f5e9" stroke="#2e7d32"/>
+  <text x="666" y="85" font-size="10" text-anchor="middle">DEMUX</text>
+  <rect x="706" y="60" width="66" height="42" fill="#e3f2fd" stroke="#1565c0"/>
+  <text x="739" y="85" font-size="11" text-anchor="middle">TP Rx</text>
+
+  <line x1="76" y1="81" x2="86" y2="81" stroke="#000" marker-end="url(#arr)"/>
+  <line x1="144" y1="81" x2="154" y2="81" stroke="#000" marker-end="url(#arr)"/>
+  <line x1="220" y1="81" x2="360" y2="81" stroke="#000" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="290" y="72" font-size="10" text-anchor="middle" fill="#555">Span 1</text>
+  <line x1="426" y1="81" x2="566" y2="81" stroke="#000" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="496" y="72" font-size="10" text-anchor="middle" fill="#555">Span 2</text>
+  <line x1="626" y1="81" x2="636" y2="81" stroke="#000" marker-end="url(#arr)"/>
+  <line x1="696" y1="81" x2="706" y2="81" stroke="#000" marker-end="url(#arr)"/>
+
+  <line x1="220" y1="120" x2="360" y2="120" stroke="#777" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arr2)"/>
+  <line x1="426" y1="120" x2="566" y2="120" stroke="#777" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arr2)"/>
+  <text x="393" y="140" font-size="10" text-anchor="middle" fill="#777">OSC (song song, tách/ghép tại mỗi trạm)</text>
+
+  <rect x="150" y="180" width="180" height="32" fill="#f5f5f5" stroke="#999"/>
+  <text x="240" y="200" font-size="11" text-anchor="middle">Terminal site A</text>
+  <rect x="330" y="180" width="130" height="32" fill="#fafafa" stroke="#bbb"/>
+  <text x="395" y="200" font-size="11" text-anchor="middle">Line / ILA site</text>
+  <rect x="540" y="180" width="236" height="32" fill="#f5f5f5" stroke="#999"/>
+  <text x="658" y="200" font-size="11" text-anchor="middle">Terminal site B</text>
+
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#000"/>
+    </marker>
+    <marker id="arr2" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#777"/>
+    </marker>
+  </defs>
+</svg>
+
+Trong sơ đồ: terminal site A chứa transponder, mux và booster; line site (ILA) chỉ chứa khuếch đại đường dây; terminal site B chứa preamp, demux và transponder. Booster nằm ở đầu ra terminal, preamp nằm ở đầu vào terminal đối diện.
+
+## Terminal site và Line/ILA site
+
+Hai loại trạm này khác nhau căn bản về chức năng và độ phức tạp.
+
+**Terminal site** là điểm đầu/cuối của tuyến, nơi tín hiệu client được add/drop. Nó chứa transponder (nơi phát sinh và kết thúc bước sóng), mux/demux, cùng booster (đầu phát) và preamp (đầu thu). Đây là nơi có card lưu lượng, cần nguồn lớn, không gian rack nhiều và thường đặt trong trạm viễn thông chính.
+
+**Line site (ILA site)** là trạm trung gian trên đường đi, chỉ làm một việc: khuếch đại toàn bộ băng để bù suy hao span. Nó **không** tách kênh, **không** có transponder, không xử lý lưu lượng theo từng bước sóng. Một ILA site điển hình chỉ gồm khối EDFA hai chiều (một EDFA cho mỗi hướng) cộng phần tách/ghép OSC. Vì đơn giản, ILA thường đặt ở các hut/container dọc tuyến, tiêu thụ điện thấp, đôi khi chạy nguồn năng lượng mặt trời ở vùng xa.
+
+Ranh giới này quan trọng khi thiết kế: nếu một trạm cần add/drop kênh thì nó buộc phải là terminal (hoặc ROADM ở bài sau), không thể chỉ là ILA.
+
+## Vì sao cần booster, preamp và ILA
+
+Ba loại khuếch đại này giải quyết ba vấn đề khác nhau, dù cùng dùng công nghệ EDFA:
+
+- **Booster (power amplifier)**: đặt sau mux, có gain vừa phải nhưng công suất ra bão hoà cao. Nhiệm vụ là nâng công suất tổng hợp lên đủ để "phóng" tín hiệu qua span đầu tiên. Mux gây suy hao chèn (thường $5$–$7$ dB), nên nếu không có booster, mỗi kênh vào sợi sẽ quá yếu.
+- **Preamp (pre-amplifier)**: đặt trước demux ở đầu thu, tối ưu cho noise figure thấp. Sau khi qua nhiều span, tín hiệu rất yếu và gần mức nhiễu; preamp phải khuếch đại mà thêm càng ít nhiễu càng tốt, vì noise figure của tầng đầu tiên chi phối OSNR tổng.
+- **ILA (in-line amplifier)**: đặt giữa tuyến, cân bằng giữa gain đủ để bù span và noise figure đủ thấp để không "ăn mòn" OSNR. Mỗi ILA vừa khôi phục công suất vừa cộng thêm một lượng nhiễu ASE. Càng nhiều ILA, OSNR cuối tuyến càng thấp — đây là giới hạn cơ bản của tuyến khuếch đại quang.
+
+Tóm lại: EDFA bù được suy hao nhưng **không** bù được nhiễu. Mỗi lần khuếch đại lại thêm ASE. Vì vậy số span và số ILA bị chặn trên bởi ngân sách OSNR, chứ không phải bởi công suất.
+
+## Vai trò của OSC
+
+OSC (Optical Supervisory Channel) là một kênh riêng, độc lập với các bước sóng lưu lượng, dùng để giám sát và điều khiển tuyến. Đặc điểm:
+
+- Chạy trên một bước sóng **ngoài** băng khuếch đại của EDFA — thường 1510 nm hoặc 1625 nm — nên nó **không** đi qua EDFA mà được tách ra trước và ghép lại sau mỗi khối khuếch đại.
+- Tại mỗi trạm (kể cả ILA site vốn không xử lý lưu lượng), OSC được thu về, xử lý bởi phần điều khiển, rồi tái tạo và phát tiếp. Nhờ đó NMS quản lý được cả những trạm ILA "câm" không có transponder.
+- OSC mang thông tin: cảnh báo, đo công suất, điều khiển gain EDFA, dữ liệu APR/ALS an toàn laser, và kênh truyền thông cho phần mềm quản lý.
+
+Điểm mấu chốt cần nhớ: vì OSC nằm ngoài băng và không qua EDFA, nó phải được **tách trước preamp/ILA và ghép sau booster/ILA**. Nếu quy hoạch bước sóng hoặc đấu nối sai, mất OSC đồng nghĩa mất khả năng giám sát trạm ILA dù lưu lượng có thể vẫn chạy.
+
+## Bảng vai trò từng khối
+
+| Khối | Đặt ở đâu | Vai trò chính | Tham số quan tâm |
+|---|---|---|---|
+| Transponder (Tx) | Terminal | Client grey → bước sóng ITU + điều chế + FEC | Bước sóng, kiểu điều chế, công suất phát |
+| Mux | Terminal (đầu phát) | Ghép nhiều bước sóng vào một sợi | Insertion loss, số kênh, spacing |
+| Booster | Terminal (sau mux) | Nâng công suất tổng trước khi vào span | Công suất ra bão hoà, gain |
+| Span sợi | Giữa các trạm | Truyền dẫn | Suy hao (dB/km), loại sợi, CD, PMD |
+| ILA (EDFA) | Line site | Bù suy hao span giữa tuyến | Gain, noise figure |
+| Preamp | Terminal (trước demux) | Nâng tín hiệu yếu ở đầu thu | Noise figure thấp, gain |
+| Demux | Terminal (đầu thu) | Tách sợi tổng thành từng bước sóng | Insertion loss, isolation |
+| Transponder (Rx) | Terminal | Bước sóng ITU → client grey + giải FEC | Độ nhạy thu, OSNR yêu cầu |
+| OSC | Mọi trạm | Giám sát/điều khiển, ngoài băng EDFA | Bước sóng OSC, tách/ghép đúng vị trí |
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+Kiến trúc điểm–điểm không chỉ là lý thuyết sơ đồ — nó quyết định trực tiếp mấy việc trong dự án thật:
+
+**OSNR và số span**. Khi làm link budget, mỗi ILA thêm vào sẽ cộng thêm ASE và kéo OSNR cuối tuyến xuống. Với coherent 100G QPSK, ngưỡng OSNR yêu cầu thường quanh $12$–$15$ dB (giá trị điển hình, phụ thuộc FEC); tuyến phải giữ OSNR đầu thu cao hơn ngưỡng đó cộng margin. Chính giới hạn OSNR — chứ không phải công suất — mới là thứ chặn chiều dài tuyến. Đây là lý do phải tính OSNR ngay từ khâu thiết kế.
+
+**Chọn vị trí trạm theo suy hao span**. Suy hao span (khoảng cách × dB/km cộng suy hao mối hàn, connector) quyết định gain EDFA cần và số ILA. Sợi cũ, nhiều mối hàn, hoặc đi qua ODF nhiều lần sẽ đội suy hao lên — cần đo OTDR thực tế thay vì tin con số $0.22$ dB/km trên giấy.
+
+**Vận hành và an toàn laser**. Vì ILA site không có transponder, toàn bộ giám sát dựa vào OSC. Khi sợi đứt, cơ chế APR/ALS (qua OSC) phải giảm công suất laser để bảo vệ kỹ thuật viên. Mất OSC là mất "mắt và tay" điều khiển ở trạm giữa.
+
+**Đọc RFP và bóc khối lượng**. Khi nhà thầu chào thầu, phân biệt terminal và ILA site cho ra khối lượng thiết bị rất khác nhau: terminal cần transponder + mux/demux + booster + preamp; ILA chỉ cần cặp EDFA + OSC. Đếm sai loại trạm là sai giá và sai công suất nguồn/không gian rack.
+
+## Ví dụ số cụ thể
+
+Tuyến A → B dài 240 km, sợi G.652 suy hao $0.22$ dB/km, chia thành 3 span 80 km. Cấu hình: terminal A (booster) — ILA1 — ILA2 — terminal B (preamp), tức 2 trạm ILA giữa tuyến.
+
+- Suy hao mỗi span: $80 \times 0.22 = 17.6$ dB (chưa kể mối hàn/connector).
+- Cần 4 EDFA cho một hướng: 1 booster + 2 ILA + 1 preamp. Cả tuyến song công cần nhân đôi thành 8 EDFA.
+- Mỗi EDFA gain khoảng $17$–$20$ dB để bù span; noise figure điển hình $5$–$6$ dB.
+- Với 4 tầng khuếch đại nối tiếp, ASE tích luỹ khiến OSNR cuối tuyến rơi vào khoảng $20$–$25$ dB (giá trị điển hình) — vẫn dư margin cho 100G coherent, nhưng nếu kéo lên 8–10 span thì OSNR sẽ tiến sát ngưỡng và phải cân nhắc điều chế thấp hơn hoặc tái tạo tín hiệu.
+
+<Quiz question="Tại một trạm ILA (line site) trên tuyến điểm–điểm, khối nào KHÔNG có mặt?" options={[{text:'Transponder', correct:true, explain:'Đúng. ILA site chỉ khuếch đại toàn băng để bù suy hao span; nó không add/drop kênh nên không có transponder, mux hay demux. Muốn add/drop phải là terminal (hoặc ROADM).'},{text:'EDFA khuếch đại đường dây', explain:'EDFA chính là thành phần cốt lõi của một ILA site.'},{text:'Khối tách/ghép OSC', explain:'ILA site vẫn phải tách và tái tạo OSC để NMS giám sát được trạm này.'}]} />
+
+<Quiz question="Vì sao OSC phải được tách ra trước EDFA và ghép lại sau EDFA, thay vì đi thẳng qua EDFA cùng các bước sóng lưu lượng?" hint="Nghĩ về băng thông khuếch đại của EDFA." options={[{text:'Vì bước sóng OSC (ví dụ 1510 nm hoặc 1625 nm) nằm ngoài băng khuếch đại của EDFA nên không được EDFA khuếch đại; phải tách/ghép riêng', correct:true, explain:'Đúng. EDFA chỉ khuếch đại trong băng C (hoặc L). OSC cố tình đặt ngoài băng để độc lập với đường lưu lượng, nên phải tách trước và ghép sau mỗi khối khuếch đại.'},{text:'Vì OSC có công suất quá cao sẽ làm hỏng EDFA', explain:'Không phải vấn đề công suất; lý do là OSC nằm ngoài băng khuếch đại nên EDFA không xử lý được nó.'},{text:'Vì OSC dùng cùng bước sóng với một kênh lưu lượng nên phải tách để tránh trùng', explain:'OSC dùng bước sóng riêng ngoài grid lưu lượng, không trùng kênh nào.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+- ITU-T G.692 — Optical interfaces for multichannel systems with optical amplifiers (kiến trúc tuyến khuếch đại đa kênh).
+- ITU-T G.694.1 — Spectral grids for WDM applications: DWDM frequency grid.
+- ITU-T G.959.1 — Optical transport network physical layer interfaces.
+- ITU-T G.652 — Characteristics of a single-mode optical fibre and cable (thông số suy hao/sợi).
+
+Các giá trị suy hao, gain, noise figure và OSNR nêu trong bài là giá trị kỹ thuật điển hình để minh hoạ, không phải thông số của một sản phẩm cụ thể.
+
+</Callout>
+
+➡️ Tiếp theo: [1.2.4 — Các khối chức năng trong hệ DWDM](./1-2-4-khoi-chuc-nang)

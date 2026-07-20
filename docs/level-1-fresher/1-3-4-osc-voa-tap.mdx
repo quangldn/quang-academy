@@ -1,10 +1,149 @@
 ---
 sidebar_position: 12
 title: "1.3.4 — OSC, VOA và tap"
+description: "Ba khối phụ trợ giữ cho tuyến DWDM tự giám sát và cân bằng công suất: kênh giám sát quang OSC, bộ suy hao biến đổi VOA và tap monitor coupler."
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 1.3.4 — OSC, VOA và tap
 
-<LessonStub objective={"Kênh giám sát quang, bộ suy hao biến thiên, và cách mạng \"tự nhìn thấy chính nó\"."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ:
+
+- Hiểu OSC là gì, vì sao nó đi tách khỏi dải traffic và tại sao mạng "tự nhìn thấy chính nó".
+- Biết VOA dùng để đặt target power, cân bằng công suất per-channel và chống nghiêng phổ (spectral tilt).
+- Đọc được ý nghĩa của tap/monitor coupler (ví dụ 2/98) và vì sao đo được power mà không cắt dịch vụ.
+
+</Callout>
+
+Ở các bài trước bạn đã gặp những khối "chính" của tuyến DWDM: mux/demux, EDFA, ROADM. Bài này nói về ba khối phụ trợ tuy nhỏ nhưng quyết định việc một tuyến có vận hành được trong đời thực hay không: **OSC**, **VOA** và **tap coupler**. Không có chúng, bạn vẫn có thể truyền được ánh sáng, nhưng bạn sẽ mù — không quản lý được, không cân bằng được, và không đo được.
+
+## OSC — Optical Supervisory Channel
+
+Traffic DWDM chạy trong dải khuếch đại của EDFA (băng C, khoảng $1530$–$1565$ nm). Nhưng bản thân hệ thống cũng cần một "đường dây điện thoại nội bộ" để các site nói chuyện với nhau: cảnh báo, telemetry, phần mềm điều khiển ROADM/EDFA, và cả orderwire (kênh thoại kỹ thuật cho người vận hành). Kênh đó chính là **OSC — Optical Supervisory Channel**.
+
+OSC là **một bước sóng riêng, nằm NGOÀI dải traffic**. Hai lựa chọn phổ biến trong thực tế:
+
+- Khoảng $1510$ nm (nằm dưới băng C).
+- Khoảng $1625$ nm (băng L-edge / vùng OTDR-friendly).
+
+Việc đặt OSC ngoài dải khuếch đại có một hệ quả kỹ thuật rất quan trọng: **OSC không được EDFA khuếch đại cùng traffic**. EDFA chỉ có gain trong băng C. Vì thế OSC phải được **tách ra TRƯỚC khi vào EDFA và ghép lại SAU EDFA** tại mỗi site có khuếch đại. Điều này ngược hẳn với traffic — traffic đi **xuyên qua** (pass-through) chuỗi EDFA suốt tuyến, trong khi OSC bị **rớt xuống (drop) và xử lý điện tại từng site** rồi được **tái tạo (regenerate) và bơm lại**.
+
+### Vì sao "drop tại mỗi site" lại quan trọng
+
+Chính vì OSC bị kết thúc (terminate) và xử lý điện ở từng node, nên mỗi node đều "biết" node liền kề của mình: khoảng cách, suy hao span, trạng thái EDFA, cảnh báo LOS. Nói cách khác, OSC là thứ làm cho **mạng tự nhìn thấy chính nó** (network self-awareness). Khi một span đứt, node hai đầu span đó phát hiện mất OSC gần như tức thời và biết chính xác đoạn nào hỏng — thay vì chỉ thấy "traffic ở đâu đó bị mất".
+
+Một đặc điểm nữa: vì OSC được **regenerate ở mỗi site**, nó **không tích lũy nhiễu** dọc tuyến như traffic quang analog. OSC thường là một tín hiệu tốc độ thấp (điển hình từ vài Mbit/s tới khoảng $100$ Mbit/s, tùy hãng), điều chế đơn giản (thường OOK), để đảm bảo bền vững và dễ thu.
+
+<Callout type="tip">
+
+Quy tắc nhớ nhanh: **traffic pass-through qua EDFA; OSC drop/add quanh EDFA**. Nếu OSC mất mà traffic vẫn còn (hoặc ngược lại), đó là manh mối chẩn đoán rất giá trị: sự cố nằm ở khối OSC filter/transceiver chứ không phải ở đường quang chính.
+
+</Callout>
+
+Sơ đồ đơn giản một site khuếch đại (OSC được tách trước EDFA, ghép lại sau):
+
+<svg viewBox="0 0 640 150" width="100%" role="img" aria-label="So do site khuech dai voi OSC filter tach truoc EDFA va ghep sau EDFA">
+  <rect x="10" y="60" width="70" height="34" fill="none" stroke="#555" />
+  <text x="45" y="82" font-size="11" text-anchor="middle">OSC filt</text>
+  <rect x="150" y="55" width="70" height="44" fill="none" stroke="#555" />
+  <text x="185" y="81" font-size="11" text-anchor="middle">EDFA</text>
+  <rect x="300" y="60" width="70" height="34" fill="none" stroke="#555" />
+  <text x="335" y="82" font-size="11" text-anchor="middle">OSC filt</text>
+  <rect x="120" y="115" width="130" height="26" fill="none" stroke="#999" />
+  <text x="185" y="132" font-size="10" text-anchor="middle">OSC transceiver</text>
+  <line x1="80" y1="77" x2="150" y2="77" stroke="#555" />
+  <line x1="220" y1="77" x2="300" y2="77" stroke="#555" />
+  <line x1="45" y1="94" x2="45" y2="128" stroke="#999" />
+  <line x1="45" y1="128" x2="120" y2="128" stroke="#999" />
+  <line x1="335" y1="94" x2="335" y2="128" stroke="#999" />
+  <line x1="335" y1="128" x2="250" y2="128" stroke="#999" />
+  <text x="45" y="50" font-size="10" text-anchor="middle">drop OSC</text>
+  <text x="335" y="50" font-size="10" text-anchor="middle">add OSC</text>
+  <text x="45" y="115" font-size="9" text-anchor="middle">1510/1625nm</text>
+</svg>
+
+## VOA — Variable Optical Attenuator
+
+Nghe có vẻ nghịch lý: cả hệ thống bỏ công khuếch đại tín hiệu, rồi lại có một khối để... làm suy hao tín hiệu. Nhưng đó chính là cốt lõi của kỹ thuật công suất trong DWDM. **VOA (Variable Optical Attenuator)** là bộ suy hao điều chỉnh được, dùng để **kiểm soát chính xác mức công suất** thay vì để nó tùy ý.
+
+Ba nhiệm vụ chính của VOA:
+
+**1. Đặt target power (per-channel hoặc composite).** EDFA có xu hướng đẩy công suất lên hết mức. Nhưng công suất per-channel quá cao gây phi tuyến (SPM, XPM, FWM); quá thấp thì OSNR kém. Có một "cửa sổ" tối ưu (điển hình vài dBm trên mỗi bước sóng, tùy thiết kế). VOA giúp ghìm mức launch power về đúng target.
+
+**2. Cân bằng công suất per-channel.** Các bước sóng đến từ nhiều nguồn, nhiều tuyến, đi qua nhiều span khác nhau, nên đến mux/ROADM với mức không đều nhau. Nếu để nguyên, kênh mạnh sẽ "ăn" gain của EDFA và ép kênh yếu xuống (do hiệu ứng gain sharing). VOA per-channel (thường tích hợp bên trong ROADM/WSS) kéo mỗi kênh về cùng một mức trước khi vào EDFA.
+
+**3. Chống nghiêng phổ (spectral tilt).** Gain của EDFA không phẳng tuyệt đối theo bước sóng, và sợi quang có suy hao khác nhau ở các bước sóng (Stimulated Raman Scattering còn chuyển năng lượng từ bước sóng ngắn sang dài). Kết quả là phổ bị "nghiêng" — đầu này của băng C mạnh hơn đầu kia. VOA (đặc biệt loại VOA có thể tạo tilt, hoặc kết hợp với gain-flattening filter) giúp bù lại độ nghiêng này.
+
+### Ví dụ số
+
+Giả sử sau demux, bốn kênh đo được như sau, và ta muốn cân bằng về $-2.0$ dBm mỗi kênh trước khi vào tầng EDFA:
+
+| Kênh | Power đo (dBm) | Target (dBm) | VOA cần đặt (dB) |
+|------|----------------|--------------|------------------|
+| λ1 | $+1.0$ | $-2.0$ | $3.0$ |
+| λ2 | $-0.5$ | $-2.0$ | $1.5$ |
+| λ3 | $-2.0$ | $-2.0$ | $0.0$ |
+| λ4 | $+2.5$ | $-2.0$ | $4.5$ |
+
+VOA làm việc theo hướng "kéo xuống": bạn chỉ có thể suy hao, không thể khuếch đại. Vì thế nguyên tắc thực dụng là **chọn kênh yếu nhất làm mốc** rồi suy hao các kênh còn lại xuống ngang nó (ở đây λ3 là mốc $-2.0$ dBm). Nếu một kênh còn thấp hơn cả target, bạn không thể "nâng" nó bằng VOA — phải xử lý ở tầng gain hoặc ở nguồn.
+
+<Callout type="caution">
+
+VOA không tạo ra công suất. Nếu một kênh đến quá yếu (ví dụ do span dài, splice xấu), đừng kỳ vọng VOA sửa được — nó chỉ kéo các kênh khác xuống cho bằng, làm giảm OSNR toàn tuyến. Việc cần làm là tìm nguyên nhân suy hao ở lớp sợi/kết nối.
+
+</Callout>
+
+## Tap / monitor coupler
+
+Bạn không thể quản lý cái mà bạn không đo được. Nhưng nếu muốn đo công suất trên đường quang đang tải dịch vụ, bạn không thể cắt sợi ra để cắm máy đo. Giải pháp là **tap coupler** (monitor coupler / monitor port): một bộ chia quang **rất lệch tỉ lệ**, trích một phần nhỏ ánh sáng ra cổng monitor, phần lớn còn lại đi tiếp tới dịch vụ.
+
+Tỉ lệ điển hình ghi là **2/98** (hoặc 1/99, 5/95):
+
+- **98%** công suất tiếp tục đi trên đường chính (dịch vụ không bị gián đoạn).
+- **2%** được rẽ ra cổng monitor để nối vào photodiode đo power, hoặc vào OSA (Optical Spectrum Analyzer) để xem phổ từng kênh.
+
+Vì chỉ trích $2\%$, phần công suất "mất" trên đường chính chỉ khoảng $10\log_{10}(0.98) \approx -0.09$ dB — gần như không đáng kể với dịch vụ. Trong khi đó cổng monitor nhận $10\log_{10}(0.02) \approx -17$ dB so với đường chính, đủ để photodiode/OSA đo tốt.
+
+Tap là nền tảng của telemetry công suất: mỗi PD (photodiode) sau tap cho một số đọc power, hàng loạt số đọc này chính là dữ liệu mà phần mềm NMS dùng để tính OSNR, phát hiện suy giảm, và kích hoạt các vòng điều khiển tự động (ví dụ điều khiển VOA/gain). OSC là đường **truyền** số liệu đó đi; tap là chỗ **sinh ra** số liệu.
+
+## Bảng vai trò — ba khối trong một câu
+
+| Khối | Chức năng cốt lõi | Vị trí điển hình | Ảnh hưởng tới dịch vụ |
+|------|-------------------|------------------|------------------------|
+| **OSC** | Kênh quản lý/telemetry/orderwire ngoài dải traffic ($\approx 1510$/$1625$ nm); drop và xử lý tại mỗi site | Quanh mỗi EDFA (tách trước, ghép sau) | Không mang traffic; mất OSC = mất quản lý/định vị span, traffic có thể vẫn chạy |
+| **VOA** | Suy hao điều chỉnh được: đặt target power, cân bằng per-channel, chống tilt | Trước EDFA, trong ROADM/WSS, per-channel | Đặt sai = phi tuyến hoặc OSNR kém |
+| **Tap** | Trích phần nhỏ ($\approx 2\%$) để đo power/OSA không cắt dịch vụ | Nhiều điểm dọc tuyến, tại cổng monitor | Suy hao chèn nhỏ ($\approx 0.1$ dB); là nguồn số liệu telemetry |
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+**OSNR và cân bằng công suất.** OSNR cuối tuyến phụ thuộc trực tiếp vào việc mỗi kênh vào EDFA ở đúng mức. Nếu bạn không có VOA per-channel (hoặc đặt sai), kênh mạnh cướp gain, kênh yếu tụt OSNR, và một vài bước sóng sẽ báo lỗi trong khi phần còn lại vẫn tốt. Khi phân tích một tuyến "chập chờn theo bước sóng", việc đầu tiên cần xem là **bảng power per-channel** — dữ liệu này có được là nhờ tap + telemetry.
+
+**Vận hành và định vị sự cố.** OSC là thứ biến một chuỗi thiết bị rời rạc thành một mạng biết tự chẩn đoán. Khi một span đứt lúc 2 giờ sáng, hệ thống báo chính xác "span giữa site A và site B mất OSC" thay vì để kỹ sư đoán mò. Trong vận hành thật, **thời gian định vị (fault localization)** quyết định MTTR — và OSC là công cụ chính cho việc đó. Ngược lại, khi thấy **traffic mất nhưng OSC còn**, bạn khoanh vùng ngay được vào lớp kênh (transponder/mux/ROADM) chứ không phải đứt sợi.
+
+**Đọc RFP / thiết kế.** Khi đọc tài liệu kỹ thuật hoặc viết yêu cầu (RFP), ba chi tiết này hay bị bỏ sót nhưng rất quan trọng: (1) OSC dùng bước sóng nào và có tương thích với thiết bị chen giữa (in-line) không — đặc biệt nếu tuyến dùng cả băng L hoặc có Raman; (2) VOA nằm ở đâu và độ phân giải/dải suy hao bao nhiêu; (3) có sẵn monitor tap/OSA port ở các điểm khuếch đại không. Thiếu tap = mù telemetry; thiếu VOA per-channel = khó mở rộng số kênh về sau mà giữ OSNR.
+
+<Callout type="info">
+
+Một lưu ý khi có Raman hoặc dùng băng L: bước sóng OSC phải được chọn sao cho không trùng/không bị bơm Raman làm nhiễu, và filter OSC phải cách ly tốt khỏi dải traffic. Đây là lý do các hãng đôi khi chọn $1625$ nm thay vì $1510$ nm — cần đọc kỹ tài liệu hệ thống cụ thể.
+
+</Callout>
+
+## Kiểm tra nhanh
+
+<Quiz question="Vì sao OSC phải được tách ra và xử lý điện tại mỗi site khuếch đại, thay vì đi xuyên qua như traffic?" hint="Nghĩ về dải gain của EDFA và mục đích quản lý." options={[{text:'Vì OSC nằm ngoài dải gain của EDFA (khoảng 1510/1625 nm) nên không được khuếch đại cùng traffic, và việc drop tại mỗi site giúp từng node biết trạng thái span liền kề — mạng tự nhìn thấy chính nó.', correct:true, explain:'Đúng: OSC ngoài băng C, phải drop trước EDFA và add sau EDFA; nhờ terminate ở mỗi node mà có self-awareness và định vị span nhanh.'},{text:'Vì OSC mang công suất quá lớn, sẽ làm bão hòa EDFA nếu đi xuyên qua.', explain:'Không đúng: OSC là tín hiệu tốc độ thấp, công suất không phải lý do; lý do là nó nằm ngoài dải gain và cần xử lý điện tại mỗi node.'},{text:'Vì OSC dùng cùng bước sóng với một kênh traffic nên phải tách để tránh xung đột.', explain:'Sai: OSC dùng bước sóng riêng ngoài dải traffic, không trùng kênh nào.'}]} />
+
+<Quiz question="Một tap coupler 2/98 đặt trên đường quang đang tải dịch vụ. Phát biểu nào đúng?" options={[{text:'Khoảng 98% công suất đi tiếp tới dịch vụ, 2% ra cổng monitor để đo; suy hao chèn trên đường chính chỉ khoảng 0,1 dB nên không cắt dịch vụ.', correct:true, explain:'Đúng: 10·log10(0,98) khoảng −0,09 dB trên đường chính; cổng monitor nhận khoảng −17 dB, đủ cho photodiode/OSA.'},{text:'Tap khuếch đại 2% công suất để bù cho phần rẽ ra monitor.', explain:'Sai: coupler là thành phần thụ động, không khuếch đại; nó chỉ chia công suất.'},{text:'Phải cắt dịch vụ để cắm máy đo vào cổng monitor.', explain:'Sai: chính mục đích của tap là đo được mà không cắt dịch vụ — 98% vẫn đi tiếp.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+- ITU-T G.692 (Optical interfaces for multichannel systems with optical amplifiers) — đề cập kênh giám sát quang và các bước sóng OSC ngoài dải khuếch đại.
+- ITU-T G.709 / G.798 — khung OTN và chức năng giám sát/quản lý ở lớp truyền dẫn.
+- ITU-T G.671 — thông số các thành phần quang thụ động (coupler/tap, attenuator).
+- ITU-T G.694.1 — DWDM frequency grid (để hiểu vị trí dải traffic so với OSC).
+
+Các giá trị số (mức power, tốc độ OSC, tỉ lệ tap) là giá trị kỹ thuật điển hình dùng để minh họa; thông số chính xác phải tra tài liệu hệ thống của từng hãng.
+
+</Callout>
+
+➡️ Tiếp theo: [Module 1.4 — Đo công suất quang](./1-4-1-do-cong-suat)

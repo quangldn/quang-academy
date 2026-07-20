@@ -1,10 +1,163 @@
 ---
 sidebar_position: 8
 title: "1.2.4 — Các khối chức năng cốt lõi"
+description: "Vai trò của transponder, muxponder, OADM, amplifier, VOA, tap và OSC trong một tuyến DWDM thực tế."
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 1.2.4 — Các khối chức năng cốt lõi
 
-<LessonStub objective={"Transponder/Muxponder, OADM, Optical Amplifier, OSC, VOA, tap — mỗi khối làm gì."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ:
+
+- Gọi tên và giải thích được vai trò của từng khối chức năng trong một tuyến DWDM (transponder, muxponder, OADM, amplifier, VOA, tap, OSC).
+- Xác định được mỗi khối nằm ở đâu trong tuyến và tại sao nó nằm ở đó.
+- Đọc được một sơ đồ tuyến điểm-điểm và chỉ ra luồng tín hiệu client, luồng line và luồng giám sát.
+
+</Callout>
+
+Một hệ thống DWDM nhìn từ xa chỉ là "sợi quang cắm hai đầu". Nhưng bên trong, tín hiệu đi qua một chuỗi khối chức năng, mỗi khối làm đúng một việc. Hiểu rõ từng khối là điều kiện để đọc được sơ đồ tuyến, dò lỗi khi vận hành, và đọc hiểu một bản RFP. Bài này đi qua các khối cốt lõi theo thứ tự tín hiệu gặp chúng, từ phía client vào sợi rồi ra client đầu xa.
+
+## Transponder — cửa ngõ giữa client và line
+
+Transponder là khối chuyển đổi giữa tín hiệu **client** (thường gọi là "grey", bước sóng không nằm trên lưới DWDM, ví dụ 1310 nm hoặc 850 nm) và tín hiệu **line** (bước sóng "colored", nằm đúng trên lưới ITU-T, ví dụ kênh 193.1 THz).
+
+Về nguyên lý, transponder cổ điển làm một chu trình **O-E-O** (Optical → Electrical → Optical): thu tín hiệu client về miền điện, tái tạo (reshape, retime, regenerate — 3R), rồi phát lại ra một laser DWDM ổn định bước sóng. Nhờ đi qua miền điện, transponder thường thêm:
+
+- **FEC (Forward Error Correction)**: mã sửa lỗi, cho phép hệ thống chịu được BER trước sửa lỗi cao hơn, đổi lấy độ dư băng thông (overhead). FEC hiện đại (soft-decision FEC) mang lại coding gain lớn, nới đáng kể khoảng cách hoặc ngân sách OSNR.
+- **Điều chế coherent** (với transponder tốc độ cao 100G trở lên): dùng điều chế pha/biên độ (QPSK, 16QAM...) kèm DSP ở phía thu để bù tán sắc (CD) và tán sắc mode phân cực (PMD) trong miền số.
+
+Một transponder ánh xạ 1 client sang 1 line (ví dụ 1 cổng 100GbE client thành 1 kênh 100G line).
+
+## Muxponder — gộp nhiều client lên một line rate
+
+Muxponder giống transponder nhưng làm thêm việc **ghép kênh điện (electrical multiplexing)**: nó gộp nhiều tín hiệu client tốc độ thấp lên một tín hiệu line tốc độ cao duy nhất.
+
+Ví dụ điển hình: một muxponder nhận 10 client 10GbE và phát ra 1 kênh line 100G; hoặc nhận nhiều client 100GbE/OTU4 và phát ra 1 line 400G/800G. Lợi ích:
+
+- Dùng hiệu quả một bước sóng (một "slot" trên lưới) cho nhiều dịch vụ, tiết kiệm số kênh trên sợi.
+- Giảm số laser line và số cổng trên bộ mux/demux.
+
+Đánh đổi: muxponder gộp nhiều dịch vụ vào một bước sóng, nên khi bước sóng đó lỗi thì tất cả client trên nó cùng gián đoạn. Đây là điểm cần cân nhắc khi thiết kế bảo vệ.
+
+Bảng so sánh nhanh:
+
+| Khối | Ánh xạ client → line | Có O-E-O | Có ghép kênh |
+|---|---|---|---|
+| Transponder | 1 client → 1 line | Có | Không |
+| Muxponder | N client → 1 line | Có | Có (electrical mux) |
+
+## OADM — add/drop bước sóng tại site trung gian
+
+**OADM (Optical Add/Drop Multiplexer)** cho phép tại một site trung gian **rẽ xuống (drop)** một số bước sóng để phục vụ local, và **chèn lên (add)** một số bước sóng mới vào tuyến, trong khi các bước sóng còn lại **đi thẳng (express/pass-through)** không cần O-E-O.
+
+Điểm mấu chốt: chỉ những kênh cần dùng tại site mới được đưa xuống miền điện; phần còn lại đi qua ở miền quang, giữ được chi phí và độ trễ thấp. OADM cố định (FOADM) drop/add một tập bước sóng định trước bằng filter; phiên bản linh hoạt và điều khiển từ xa là **ROADM (Reconfigurable OADM)** — sẽ học ở module sau. Ở đây chỉ cần nắm vai trò: OADM là điểm phân nhánh bước sóng của tuyến.
+
+## Optical Amplifier — bù suy hao dọc tuyến
+
+Tín hiệu quang suy hao khi truyền trong sợi (điển hình khoảng 0.2 dB/km ở băng C với sợi G.652 chuẩn). Bộ khuếch đại quang (thường là **EDFA** — Erbium-Doped Fiber Amplifier — cho băng C, hoặc Raman) bù phần suy hao đó **trong miền quang**, không cần O-E-O. Theo vị trí, amplifier có ba vai trò:
+
+| Vai trò | Vị trí | Mục đích |
+|---|---|---|
+| **Booster** (BA — Booster Amplifier) | Ngay sau bộ mux, trước khi vào sợi | Nâng công suất tổng để "bắn" tín hiệu vào sợi đường dài |
+| **Preamp** (PA — Pre-Amplifier) | Ngay trước bộ demux ở đầu thu | Nâng tín hiệu yếu lên đủ mức cho demux và receiver, đảm bảo độ nhạy thu; dùng NF thấp để ít làm suy giảm OSNR nhất |
+| **ILA / Line amp** (In-Line Amplifier) | Ở các trạm giữa tuyến | Bù suy hao từng chặng (span) để tín hiệu đi được quãng đường dài |
+
+Điểm quan trọng cần nhớ từ sớm: amplifier khuếch đại cả tín hiệu lẫn nhiễu, và tự nó thêm nhiễu ASE (Amplified Spontaneous Emission). Mỗi lần khuếch đại, **OSNR chỉ giảm đi chứ không tăng**. Vì vậy số lượng và vị trí amplifier trực tiếp quyết định OSNR cuối tuyến — chủ đề trung tâm của thiết kế DWDM.
+
+## VOA — cân bằng công suất giữa các kênh
+
+**VOA (Variable Optical Attenuator)** là bộ suy hao quang điều chỉnh được — về bản chất là "làm yếu tín hiệu đi một lượng đặt trước". Nghe ngược đời (đang muốn tăng công suất lại đi làm yếu?), nhưng VOA giải quyết bài toán **cân bằng**:
+
+- **Cân bằng mức công suất từng kênh** trước khi vào bộ mux, để tất cả các kênh vào amplifier với mức tương đương nhau. Nếu một kênh quá mạnh so với các kênh khác, EDFA sẽ "cướp" gain và làm nghiêng phổ (gain tilt), khiến các kênh yếu bị thiệt OSNR.
+- **Đặt đúng mức công suất tổng vào một EDFA** để nó chạy đúng điểm làm việc, tránh quá tải hoặc phi tuyến trong sợi.
+
+Ví dụ số: giả sử ba kênh vào mux có công suất lần lượt $-2$ dBm, $-5$ dBm, $-8$ dBm. Muốn cả ba bằng $-8$ dBm, ta đặt VOA của kênh 1 là 6 dB, kênh 2 là 3 dB, kênh 3 là 0 dB. Sau VOA, ba kênh đồng đều, EDFA phân bổ gain công bằng.
+
+VOA có thể là module rời trên đường add/drop, hoặc tích hợp sẵn trong ROADM và trong khối amplifier.
+
+## Tap / monitor port — trích tín hiệu để đo
+
+**Tap** (hay monitor port) là bộ chia quang lấy ra một phần rất nhỏ công suất — điển hình khoảng **1–2%** (tương ứng tap coupler tỉ lệ 99:1 hoặc 98:2) — để đưa vào thiết bị đo mà không làm gián đoạn tuyến chính.
+
+Tín hiệu trích ra thường đi tới:
+
+- Một **OPM (Optical Performance Monitor)** hoặc OCM (Optical Channel Monitor) để đo công suất từng kênh, phát hiện kênh mất/nghiêng phổ.
+- Một điểm cắm máy đo (power meter, OSA — Optical Spectrum Analyzer) khi kỹ sư ra hiện trường.
+
+Vì chỉ lấy 1–2%, tap gây suy hao rất nhỏ trên đường chính (một tap 99:1 làm mất khoảng $0.04$–$0.1$ dB), đủ để giám sát liên tục mà không ảnh hưởng ngân sách công suất đáng kể.
+
+## OSC — kênh giám sát
+
+**OSC (Optical Supervisory Channel)** là một kênh quang riêng, tách khỏi các kênh dữ liệu DWDM, dùng để mang **thông tin quản lý và giám sát** giữa các trạm: cảnh báo, đo đạc, điều khiển amplifier, telemetry, kênh liên lạc quản trị.
+
+Đặc điểm quan trọng của OSC:
+
+- Dùng một bước sóng **nằm ngoài băng khuếch đại của EDFA** (ví dụ 1510 nm hoặc quanh 1625 nm), để nó có thể được **tách ra trước amplifier và ghép lại sau amplifier** ở mỗi trạm. Nhờ vậy OSC đi tới từng trạm ILA — kể cả trạm không có thiết bị đầu cuối — và cho phép NMS "nhìn thấy" và điều khiển amplifier ở đó.
+- OSC chạy tốc độ thấp, độc lập với dữ liệu khách hàng; nếu OSC lỗi thì dữ liệu vẫn truyền, nhưng ta mất khả năng giám sát/điều khiển từ xa.
+
+## Bảng tổng hợp: khối → chức năng → vị trí
+
+| Khối | Chức năng chính | Vị trí trong tuyến |
+|---|---|---|
+| Transponder | Chuyển client grey ↔ line colored, O-E-O, thêm FEC/coherent | Site đầu cuối (terminal), phía client |
+| Muxponder | Gộp N client tốc thấp → 1 line rate cao | Site đầu cuối, phía client |
+| OADM / ROADM | Add/drop một số bước sóng, còn lại đi thẳng | Site trung gian có rẽ nhánh |
+| Booster (BA) | Nâng công suất tổng vào sợi | Sau mux, đầu phát |
+| Preamp (PA) | Nâng tín hiệu yếu trước thu | Trước demux, đầu thu |
+| ILA | Bù suy hao từng span | Trạm giữa tuyến |
+| VOA | Suy hao điều chỉnh được, cân bằng công suất/kênh | Đường add/drop, trước mux, trong amplifier/ROADM |
+| Tap / monitor | Trích 1–2% để đo (OPM/OSA) | Bất kỳ điểm cần giám sát |
+| OSC | Kênh giám sát/điều khiển giữa các trạm | Toàn tuyến, tách/ghép ở mỗi trạm |
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+Ba lý do rất cụ thể:
+
+**Thiết kế OSNR.** Mỗi amplifier bạn thêm vào để bù suy hao lại làm giảm OSNR cuối tuyến. Số ILA, khoảng cách giữa các span, và mức công suất đặt qua VOA quyết định trực tiếp OSNR mà receiver nhận được. Khi tính ngân sách tuyến, bạn không chỉ cộng trừ dB công suất mà còn phải theo dõi OSNR tích lũy qua chuỗi EDFA. Đây là lý do "cứ thêm amplifier cho khỏe" là sai — thêm gain có thể vẫn không cứu được OSNR đã tụt quá thấp.
+
+**Vận hành và dò lỗi.** Khi có sự cố, tap/OPM và OSC là hai công cụ đầu tiên bạn dựa vào. OPM cho biết kênh nào mất công suất hoặc phổ bị nghiêng; OSC cho biết amplifier ở trạm giữa còn sống và đang chạy ở điểm nào. Không có OSC, một trạm ILA giữa rừng trở thành hộp đen. Hiểu tap chỉ lấy 1–2% cũng tránh cho bạn khỏi nhầm "công suất ở monitor port thấp 20 dB" là lỗi — đó là mức thiết kế của tap.
+
+**Đọc RFP và thiết kế bảo vệ.** Khi nhà cung cấp báo giá, họ liệt kê số transponder/muxponder, số card amplifier (BA/PA/ILA), có hay không ROADM, có OPM tích hợp không. Biết vai trò từng khối giúp bạn so sánh hai đề xuất công bằng và đặt câu hỏi đúng: muxponder gộp bao nhiêu client vào một bước sóng (ảnh hưởng đến bán kính lỗi khi mất kênh), amplifier đặt ở đâu (ảnh hưởng OSNR), có VOA per-channel để cân bằng không (ảnh hưởng chất lượng khi tuyến đầy kênh).
+
+Ví dụ liên kết các khối trên một tuyến điểm-điểm A → B:
+
+<svg viewBox="0 0 720 140" width="100%" role="img" aria-label="So do tuyen diem-diem qua cac khoi chuc nang">
+  <rect x="10" y="50" width="70" height="40" fill="#eef" stroke="#557"/>
+  <text x="45" y="74" font-size="10" text-anchor="middle">TXP/MXP</text>
+  <rect x="95" y="50" width="45" height="40" fill="#efe" stroke="#575"/>
+  <text x="117" y="74" font-size="10" text-anchor="middle">MUX</text>
+  <rect x="155" y="50" width="45" height="40" fill="#fee" stroke="#755"/>
+  <text x="177" y="74" font-size="10" text-anchor="middle">BA</text>
+  <line x1="200" y1="70" x2="300" y2="70" stroke="#333"/>
+  <text x="250" y="62" font-size="9" text-anchor="middle">span</text>
+  <rect x="300" y="50" width="45" height="40" fill="#fee" stroke="#755"/>
+  <text x="322" y="74" font-size="10" text-anchor="middle">ILA</text>
+  <line x1="345" y1="70" x2="445" y2="70" stroke="#333"/>
+  <text x="395" y="62" font-size="9" text-anchor="middle">span</text>
+  <rect x="445" y="50" width="45" height="40" fill="#fee" stroke="#755"/>
+  <text x="467" y="74" font-size="10" text-anchor="middle">PA</text>
+  <rect x="505" y="50" width="55" height="40" fill="#efe" stroke="#575"/>
+  <text x="532" y="74" font-size="10" text-anchor="middle">DEMUX</text>
+  <rect x="575" y="50" width="70" height="40" fill="#eef" stroke="#557"/>
+  <text x="610" y="74" font-size="10" text-anchor="middle">TXP/MXP</text>
+  <text x="360" y="120" font-size="9" text-anchor="middle">OSC tach/ghep o moi tram; tap/OPM tai cac diem do</text>
+</svg>
+
+## Kiểm tra nhanh
+
+<Quiz question="Điểm khác biệt cốt lõi giữa transponder và muxponder là gì?" hint="Nghĩ về số lượng client trên một bước sóng line." options={[{text:'Muxponder gộp nhiều client tốc độ thấp lên một line rate, còn transponder ánh xạ 1 client sang 1 line', correct:true, explain:'Đúng. Muxponder thêm bước ghép kênh điện; một bước sóng line mang nhiều dịch vụ client.'},{text:'Transponder có FEC còn muxponder thì không', explain:'Không đúng — cả hai đều có thể có FEC. Khác biệt nằm ở việc ghép nhiều client.'},{text:'Muxponder không cần O-E-O còn transponder thì cần', explain:'Ngược lại — muxponder cũng đi qua miền điện để ghép kênh, nên vẫn là O-E-O.'}]} />
+
+<Quiz question="Vì sao OSC dùng bước sóng nằm ngoài băng khuếch đại của EDFA (ví dụ 1510 nm)?" options={[{text:'Để có thể tách OSC ra trước amplifier và ghép lại sau, giúp OSC tới được mọi trạm kể cả trạm ILA', correct:true, explain:'Đúng. Nhờ nằm ngoài băng gain, OSC được xử lý riêng ở mỗi trạm, mang giám sát/điều khiển tới cả trạm không có đầu cuối.'},{text:'Vì EDFA không hoạt động ở băng C nên OSC phải né', explain:'Sai — EDFA khuếch đại chính băng C; OSC né băng gain vì lý do tách/ghép ở mỗi trạm, không phải vì EDFA không chạy băng C.'},{text:'Để OSC có tốc độ dữ liệu cao hơn các kênh DWDM', explain:'Không đúng — OSC là kênh tốc độ thấp, mục đích là giám sát chứ không phải tải dữ liệu tốc độ cao.'}]} />
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+- ITU-T G.694.1 — lưới tần số DWDM (định nghĩa kênh "colored" của line side).
+- ITU-T G.798 — đặc tính các khối chức năng thiết bị OTN.
+- ITU-T G.872 — kiến trúc lớp mạng truyền tải quang (định nghĩa OMS/OTS, khái niệm OSC/OTS overhead).
+- ITU-T G.652 — sợi đơn mode chuẩn (tham chiếu hệ số suy hao điển hình ~0.2 dB/km băng C).
+- Các giá trị số (0.2 dB/km, tap 1–2%, suy hao tap ~0.04–0.1 dB) là giá trị kỹ thuật **điển hình**, dùng để minh hoạ; số thực tế phụ thuộc thiết bị và sợi cụ thể.
+
+</Callout>
+
+➡️ Tiếp theo: [Module 1.3 — Mux/Demux và filter](./1-3-1-mux-demux-filter)

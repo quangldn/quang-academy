@@ -1,10 +1,121 @@
 ---
 sidebar_position: 5
-title: "1.2.1 — WDM & DWDM là gì"
+title: 1.2.1 — WDM & DWDM là gì
+description: Từ 1 sợi–1 bước sóng đến ghép nhiều "màu"; nguyên lý WDM và so sánh CWDM vs DWDM.
 ---
-
-import LessonStub from '@site/src/components/LessonStub';
 
 # 1.2.1 — WDM & DWDM là gì
 
-<LessonStub objective={"Từ 1 sợi–1 bước sóng đến ghép kênh; CWDM vs DWDM; vì sao \"dense\"."} />
+<Callout type="goal">
+
+Sau bài này bạn sẽ hiểu nguyên lý ghép nhiều bước sóng trên một sợi; phân biệt rõ **CWDM** (G.694.2) và **DWDM** (G.694.1) về khoảng cách kênh, loại laser, khả năng khuếch đại và cự ly; và biết khi nào nên chọn công nghệ nào.
+
+</Callout>
+
+## Từ "một sợi, một bước sóng" đến ghép nhiều màu
+
+Một tuyến quang đơn giản nhất: một laser phát một bước sóng (ví dụ 1310 nm hoặc 1550 nm), truyền qua một sợi, tới một photodiode ở đầu kia. Một sợi mang **một** kênh. Muốn tăng dung lượng, cách thô sơ là kéo thêm sợi — nhưng sợi (và cống bể, giấy phép, chi phí thuê tuyến) là tài nguyên đắt và hữu hạn.
+
+Ánh sáng có một tính chất quý: các bước sóng khác nhau **không can nhiễu tuyến tính** với nhau khi cùng đi trong một sợi. Giống như nhiều màu trong một chùm sáng trắng, ta có thể ghép nhiều bước sóng vào cùng một sợi, truyền đi, rồi tách chúng ra ở đầu kia. Đây chính là **WDM — Wavelength Division Multiplexing** (ghép kênh theo bước sóng).
+
+Nguyên lý gồm ba khối:
+
+- **Mux (multiplexer)**: gộp nhiều bước sóng từ nhiều nguồn vào một sợi.
+- **Sợi truyền dẫn**: mang đồng thời tất cả các bước sóng.
+- **Demux (demultiplexer)**: tách sợi trở lại thành từng bước sóng riêng cho từng đầu thu.
+
+Mỗi bước sóng là một "kênh" độc lập, chạy tốc độ bit riêng, giao thức riêng. Nếu một sợi ghép được 40 kênh, mỗi kênh 100 Gbit/s, thì một sợi cõng 4 Tbit/s — mà vẫn chỉ là một sợi.
+
+## "Ghép theo bước sóng" thực chất là ghép theo tần số
+
+Bước sóng $\lambda$ và tần số $f$ liên hệ qua $\lambda = c/f$ với $c \approx 3\times10^8$ m/s. Đặt các kênh cách nhau một khoảng tần số cố định tương đương đặt chúng cách nhau một khoảng bước sóng. Hai khái niệm cần phân biệt:
+
+- **Channel spacing (khoảng cách kênh)**: khoảng cách giữa tâm hai kênh liền kề. Có thể tính bằng nm (bước sóng) hoặc GHz (tần số).
+- **Channel count (số kênh)**: dải phổ khả dụng chia cho channel spacing.
+
+Cùng một dải phổ, channel spacing càng **nhỏ** thì càng nhét được nhiều kênh — nhưng đòi hỏi laser và filter chính xác hơn. Đây chính là ranh giới phân chia CWDM và DWDM.
+
+## CWDM — Coarse WDM (ITU-T G.694.2)
+
+CWDM đặt các kênh **thưa**, cách nhau **20 nm**, trên dải từ **1271 nm đến 1611 nm**. Tổng cộng có **18 kênh danh định** (1271, 1291, 1311, ... 1611 nm).
+
+Vì khoảng cách 20 nm rất rộng, bước sóng laser được phép "trôi" theo nhiệt độ khá nhiều mà vẫn không lấn sang kênh bên cạnh. Nhờ đó CWDM dùng **laser DFB không làm lạnh (uncooled)** — không cần bộ ổn nhiệt TEC. Điều này làm laser CWDM **rẻ, ít tốn điện, đơn giản**.
+
+Cái giá phải trả:
+
+- **Không khuếch đại được toàn dải.** EDFA chỉ khuếch đại trong C-band (~1530–1565 nm). Nhiều kênh CWDM nằm ngoài vùng này (1271, 1291... 1611 nm) nên không có bộ khuếch đại quang phổ dụng nào phủ hết. Vì vậy CWDM chủ yếu chạy **không có amplifier**, dựa vào power budget của chính transceiver.
+- **Một số kênh rơi vào vùng suy hao cao.** Các kênh quanh 1391 nm gặp đỉnh hấp thụ do ion OH$^-$ (water peak) trên sợi G.652 loại cũ; sợi low-water-peak (G.652.C/D) mới dùng được đủ 18 kênh.
+
+Hệ quả: CWDM hợp với **cự ly ngắn — access và metro**, điển hình vài chục km, dung lượng vừa phải.
+
+## DWDM — Dense WDM (ITU-T G.694.1)
+
+DWDM đặt các kênh **dày** — chữ "dense" nghĩa là mật độ kênh cao. Channel spacing điển hình là **100 GHz ($\approx$ 0.8 nm)** hoặc **50 GHz ($\approx$ 0.4 nm)**, và có cả 25 GHz, 12.5 GHz cho hệ hiện đại. So với 20 nm của CWDM, khoảng cách này nhỏ hơn **hàng chục lần**.
+
+Đặt kênh sát nhau như vậy đòi hỏi bước sóng laser phải **cực ổn định**. DWDM dùng **laser ổn định nhiệt (cooled)**, có TEC và mạch khoá bước sóng, giữ tần số bám sát lưới ITU (neo tại 193.1 THz — xem bài kế). Laser này đắt và phức tạp hơn CWDM.
+
+Đổi lại DWDM có hai lợi thế lớn:
+
+- **Khuếch đại được bằng EDFA.** DWDM tập trung kênh trong **C-band** (và mở rộng sang **L-band**), đúng vùng EDFA khuếch đại tốt. Một EDFA khuếch đại đồng thời cả chục hoặc cả trăm kênh trong một lần — nền tảng cho truyền dẫn **long-haul** hàng trăm tới hàng nghìn km.
+- **Số kênh rất lớn.** C-band 50 GHz cho khoảng **88–96 kênh**; thêm L-band và giảm spacing thì lên tới **hàng trăm kênh** trên một sợi.
+
+## Vì sao gọi là "dense"
+
+"Dense" (dày) là so sánh trực tiếp với "coarse" (thô) của CWDM. Cùng một cửa sổ phổ, DWDM nhồi nhiều kênh hơn nhờ khoảng cách kênh nhỏ. Con số dễ nhớ: CWDM cách nhau **20 nm**, DWDM cách nhau **$\approx$ 0.4–0.8 nm** — chênh nhau khoảng 25–50 lần. Mật độ cao chính là lý do DWDM cần laser chính xác và lưới tần số chuẩn hoá, còn CWDM thì không.
+
+## Bảng so sánh CWDM vs DWDM
+
+| Tiêu chí | CWDM (G.694.2) | DWDM (G.694.1) |
+|---|---|---|
+| Channel spacing | 20 nm | 100 GHz ($\approx$0.8 nm) / 50 GHz ($\approx$0.4 nm), tới 12.5 GHz |
+| Dải bước sóng | 1271–1611 nm | Chủ yếu C-band (1530–1565 nm), mở rộng L-band |
+| Số kênh điển hình | Tối đa 18 (thường dùng 8–16) | Hàng chục tới hàng trăm (88–96 ở 50 GHz C-band) |
+| Loại laser | DFB uncooled (không làm lạnh) | Cooled, ổn định nhiệt, khoá bước sóng |
+| Khuếch đại quang | Không (ngoài dải EDFA) | Có — EDFA / Raman |
+| Cự ly điển hình | Short / metro, vài chục km | Metro tới long-haul, trăm–nghìn km |
+| Chi phí/kênh | Thấp | Cao hơn (bù lại dung lượng lớn) |
+| Vận hành | Đơn giản, ít tốn điện | Phức tạp hơn (ổn nhiệt, quản lý phổ) |
+
+Lưu ý các con số cự ly và số kênh là **giá trị điển hình**, tuỳ thiết bị và thiết kế cụ thể.
+
+## Khi nào chọn cái nào
+
+Chọn **CWDM** khi: cần dung lượng vừa phải, cự ly ngắn (access/metro), ngân sách hạn chế, muốn thiết bị đơn giản không cần amplifier. Ví dụ: gom vài tuyến 10G/25G giữa hai tòa nhà cách nhau 10–30 km.
+
+Chọn **DWDM** khi: cần dung lượng lớn (hàng chục kênh trở lên), cự ly xa cần khuếch đại EDFA, cần dự phòng nâng cấp lên coherent 100G/400G/800G, hoặc cần chèn/rẽ kênh linh hoạt bằng ROADM. Ví dụ: backbone liên tỉnh, kết nối data center dài, tuyến submarine.
+
+Một cách nghĩ thực dụng: **CWDM tối ưu chi phí trên cự ly ngắn; DWDM tối ưu dung lượng và cự ly, chấp nhận chi phí và độ phức tạp cao hơn.** Nhiều mạng thực tế dùng cả hai — CWDM ở nhánh access, DWDM ở lõi.
+
+## Vì sao điều này quan trọng khi triển khai thật
+
+- **OSNR và khuếch đại**: Vì CWDM không khuếch đại được toàn dải, toàn bộ ngân sách quang phụ thuộc power budget của transceiver — vượt quá là link chết, không có EDFA cứu. DWDM ngược lại phải quản lý OSNR tích luỹ qua từng tầng EDFA; đây là ràng buộc cốt lõi khi thiết kế long-haul (sẽ học ở phần OSNR).
+- **Sợi**: Kênh CWDM quanh 1391 nm chỉ dùng được trên sợi low-water-peak (G.652.C/D). Kiểm tra loại sợi trước khi cam kết 18 kênh. DWDM trong C-band tránh được vấn đề water peak nhưng nhạy với tán sắc và phi tuyến ở cự ly dài.
+- **Vận hành**: DWDM cần theo dõi ổn định bước sóng, công suất per-channel, và quản lý phổ; CWDM gần như "cắm là chạy". Chi phí nhân lực vận hành khác nhau rõ rệt.
+- **Đọc RFP**: Khi RFP ghi "96 kênh 50 GHz, C-band, có EDFA" thì đó chắc chắn là DWDM; ghi "18 kênh 20 nm, không amplifier" là CWDM. Nắm bảng so sánh trên, bạn đọc spec và phản biện được ngay từ vòng thiết kế.
+
+<Quiz
+  question="Vì sao CWDM dùng được laser không làm lạnh (uncooled) còn DWDM thì phải dùng laser ổn định nhiệt?"
+  hint="Liên hệ giữa channel spacing và độ trôi bước sóng theo nhiệt độ."
+  options={[
+    {text: 'Channel spacing của CWDM tới 20 nm nên bước sóng laser trôi theo nhiệt vẫn không lấn kênh bên cạnh; DWDM chỉ cách 0.4–0.8 nm nên phải giữ bước sóng cực ổn định', correct: true, explain: 'Đúng — khoảng cách kênh rộng cho phép dung sai lớn, nên CWDM bỏ được TEC; DWDM đặt kênh dày nên cần cooled và wavelength locking.'},
+    {text: 'Vì laser CWDM phát công suất thấp hơn nên không nóng', explain: 'Không liên quan công suất; vấn đề là dung sai bước sóng so với channel spacing.'},
+    {text: 'Vì CWDM chạy trong C-band nơi EDFA làm lạnh sợi', explain: 'Sai cả hai ý: EDFA không làm lạnh sợi, và CWDM chủ yếu nằm ngoài C-band.'},
+  ]}
+/>
+
+<Quiz
+  question="Đặc điểm nào giải thích vì sao DWDM (chứ không phải CWDM) là lựa chọn cho long-haul dung lượng lớn?"
+  options={[
+    {text: 'DWDM tập trung kênh trong C/L-band nên khuếch đại được bằng EDFA cho nhiều kênh cùng lúc, và channel spacing nhỏ cho hàng chục–trăm kênh', correct: true, explain: 'Đúng — khả năng khuếch đại EDFA toàn dải và mật độ kênh cao là hai yếu tố quyết định cho long-haul.'},
+    {text: 'DWDM dùng sợi rẻ hơn nên kéo xa được', explain: 'Cả hai chạy trên cùng loại sợi; khác biệt nằm ở band và khả năng khuếch đại.'},
+    {text: 'CWDM có 18 kênh nên luôn nhiều dung lượng hơn DWDM', explain: 'Ngược lại — DWDM có hàng chục tới hàng trăm kênh, vượt xa 18 kênh của CWDM.'},
+  ]}
+/>
+
+<Callout type="note" title="Nguồn & chuẩn tham khảo">
+
+Khoảng cách 20 nm, dải 1271–1611 nm và 18 kênh danh định theo **ITU-T G.694.2 — Spectral grids for WDM applications: CWDM wavelength grid**. Lưới tần số DWDM neo 193.1 THz với các bước 100/50/25/12.5 GHz theo **ITU-T G.694.1 — DWDM frequency grid**. Vùng khuếch đại EDFA (C-band ~1530–1565 nm) và các giá trị cự ly, số kênh là giá trị kỹ thuật điển hình, tuỳ thiết kế và thiết bị thực tế.
+
+</Callout>
+
+➡️ Tiếp theo: [1.2.2 — Lưới tần số DWDM (ITU-T G.694.1)](./1-2-2-itu-grid)
