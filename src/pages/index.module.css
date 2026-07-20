@@ -173,29 +173,22 @@
 .levelArrow { margin-top: 1rem; font-size: 0.85rem; font-weight: 600; color: var(--ifm-color-primary); }
 
 /* ===== Pillars ===== */
-.pillars { padding: 2.5rem 0 4.5rem; }
-.pillarGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
-  gap: 1.4rem;
+.pillarStrip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem 0.8rem;
+  margin: 0.4rem 0 3.5rem;
 }
-.pillarCard {
-  padding: 1.5rem 1.5rem;
-  border-radius: 14px;
-  border: 1px solid var(--ifm-color-emphasis-200);
-  background: var(--ifm-color-emphasis-100);
-  backdrop-filter: blur(6px);
-}
-.pillarIcon {
+.pillarChip {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 42px; height: 42px;
-  border-radius: 11px;
-  background: rgba(34, 211, 238, 0.12);
-  color: var(--ifm-color-primary);
-  font-size: 1.3rem;
-  margin-bottom: 0.9rem;
+  gap: 0.45rem;
+  padding: 0.32rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  color: var(--ifm-color-content-secondary);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  background: transparent;
 }
-.pillarCard h3 { margin: 0 0 0.5rem; font-size: 1.1rem; color: var(--ifm-heading-color); }
-.pillarCard p { margin: 0; font-size: 0.92rem; line-height: 1.65; color: var(--ifm-color-content-secondary); }
+.pillarIcon { color: var(--ifm-color-primary); font-size: 0.9rem; }

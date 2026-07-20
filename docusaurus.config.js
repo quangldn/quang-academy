@@ -135,8 +135,15 @@ const config = {
               {label: 'ITU-T G.709 (OTN)', href: 'https://www.itu.int/rec/T-REC-G.709/'},
             ],
           },
+          {
+            title: 'Liên hệ',
+            items: [
+              {label: 'quangldn.work@gmail.com', href: 'mailto:quangldn.work@gmail.com'},
+              {label: 'GitHub repo', href: 'https://github.com/quangldn/quang-academy'},
+            ],
+          },
         ],
-        copyright: `DWDM Academy — nội dung học tập trung lập về hãng. Xây dựng ${new Date().getFullYear()}.`,
+        copyright: `DWDM Academy · Biên soạn bởi Quang (quangldn.work@gmail.com) · ${new Date().getFullYear()}`,
       },
       prism: {
         theme: prismThemes.github,

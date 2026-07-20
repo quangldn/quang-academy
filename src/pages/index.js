@@ -73,26 +73,23 @@ function Levels() {
 }
 
 const PILLARS = [
-  {i: '◈', t: 'Chính xác, có nguồn', d: 'Mỗi công thức truy về chuẩn ITU-T; mỗi con số sản phẩm ghi rõ nguồn public của hãng.'},
-  {i: '⇄', t: 'Tương tác thật', d: 'Bộ công cụ kéo–thả: dB converter, ITU Grid, Link Budget/OSNR, Constellation. Trực giác từ thao tác.'},
-  {i: '⚙', t: 'Gắn triển khai', d: 'Mỗi khái niệm trả lời "để làm gì khi đi thật" — OSNR, sợi, khuếch đại, vận hành. Không spec-sheet engineering.'},
+  {i: '◈', t: 'Chính xác, có nguồn'},
+  {i: '⇄', t: 'Tương tác thật'},
+  {i: '⚙', t: 'Gắn triển khai thật'},
 ];
 
 function Pillars() {
   return (
-    <section className={styles.pillars}>
-      <div className="container">
-        <div className={styles.pillarGrid}>
-          {PILLARS.map((p) => (
-            <div key={p.t} className={styles.pillarCard}>
-              <span className={styles.pillarIcon}>{p.i}</span>
-              <h3>{p.t}</h3>
-              <p>{p.d}</p>
-            </div>
-          ))}
-        </div>
+    <div className="container">
+      <div className={styles.pillarStrip}>
+        {PILLARS.map((p) => (
+          <span key={p.t} className={styles.pillarChip}>
+            <span className={styles.pillarIcon}>{p.i}</span>
+            {p.t}
+          </span>
+        ))}
       </div>
-    </section>
+    </div>
   );
 }
 
