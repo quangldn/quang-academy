@@ -1,0 +1,78 @@
+{
+  "categories": {
+    "foundation": { "label": "Nền tảng", "color": "#a855f7" },
+    "mux": { "label": "Ghép kênh", "color": "#8b5cf6" },
+    "component": { "label": "Thành phần", "color": "#3b82f6" },
+    "impairment": { "label": "Suy giảm", "color": "#f0883e" },
+    "quality": { "label": "Chất lượng", "color": "#22d3ee" },
+    "coherent": { "label": "Coherent", "color": "#34d399" },
+    "network": { "label": "Mạng & lớp cao", "color": "#f472b6" }
+  },
+  "nodes": [
+    { "id": "light", "label": "Ánh sáng & phổ", "cat": "foundation", "url": "/hoc/level-1-fresher/1-1-1-anh-sang" },
+    { "id": "fiber", "label": "Sợi quang", "cat": "foundation", "url": "/hoc/level-1-fresher/1-1-2-soi-quang" },
+    { "id": "db", "label": "dB / dBm", "cat": "foundation", "url": "/hoc/level-1-fresher/1-1-4-db-dbm" },
+
+    { "id": "wdm", "label": "WDM / DWDM", "cat": "mux", "url": "/hoc/level-1-fresher/1-2-1-wdm-la-gi" },
+    { "id": "cwdm", "label": "CWDM", "cat": "mux", "url": "/hoc/level-1-fresher/1-2-1-wdm-la-gi" },
+    { "id": "itugrid", "label": "ITU-T Grid", "cat": "mux", "url": "/hoc/level-1-fresher/1-2-2-itu-grid" },
+    { "id": "flexgrid", "label": "Flexible grid", "cat": "mux", "url": "/hoc/level-1-fresher/1-2-2-itu-grid" },
+
+    { "id": "transponder", "label": "Transponder", "cat": "component", "url": "/hoc/level-1-fresher/1-2-4-khoi-chuc-nang" },
+    { "id": "oadm", "label": "OADM", "cat": "component", "url": "/hoc/level-1-fresher/1-2-4-khoi-chuc-nang" },
+    { "id": "muxdemux", "label": "Mux / Demux", "cat": "component", "url": "/hoc/level-1-fresher/1-3-1-mux-demux-filter" },
+    { "id": "edfa", "label": "EDFA", "cat": "component", "url": "/hoc/level-1-fresher/1-3-2-edfa" },
+    { "id": "raman", "label": "Raman", "cat": "component", "url": "/hoc/level-1-fresher/1-3-3-raman" },
+    { "id": "osc", "label": "OSC / VOA / tap", "cat": "component", "url": "/hoc/level-1-fresher/1-3-4-osc-voa-tap" },
+    { "id": "roadm", "label": "ROADM / WSS", "cat": "component", "url": null },
+
+    { "id": "attenuation", "label": "Suy hao", "cat": "impairment", "url": "/hoc/level-1-fresher/1-1-3-ba-ke-thu" },
+    { "id": "cd", "label": "Tán sắc CD", "cat": "impairment", "url": "/hoc/level-1-fresher/1-1-3-ba-ke-thu" },
+    { "id": "pmd", "label": "PMD", "cat": "impairment", "url": "/hoc/level-1-fresher/1-1-3-ba-ke-thu" },
+    { "id": "nonlinear", "label": "Phi tuyến", "cat": "impairment", "url": "/hoc/level-1-fresher/1-1-3-ba-ke-thu" },
+    { "id": "spm", "label": "SPM / XPM / FWM", "cat": "impairment", "url": null },
+    { "id": "ase", "label": "ASE (nhiễu)", "cat": "impairment", "url": "/hoc/level-1-fresher/1-3-2-edfa" },
+
+    { "id": "osa", "label": "Đo & đọc phổ (OSA)", "cat": "quality", "url": "/hoc/level-1-fresher/1-4-1-do-cong-suat" },
+    { "id": "linkbudget", "label": "Link budget", "cat": "quality", "url": "/hoc/level-1-fresher/1-4-4-link-budget" },
+    { "id": "osnr", "label": "OSNR", "cat": "quality", "url": "/hoc/level-1-fresher/1-4-2-osnr-khai-niem" },
+    { "id": "ber", "label": "BER", "cat": "quality", "url": "/hoc/level-1-fresher/1-4-3-ber-qfactor" },
+    { "id": "qfactor", "label": "Q-factor", "cat": "quality", "url": "/hoc/level-1-fresher/1-4-3-ber-qfactor" },
+    { "id": "fec", "label": "FEC", "cat": "quality", "url": "/hoc/level-1-fresher/1-4-3-ber-qfactor" },
+    { "id": "margin", "label": "Margin", "cat": "quality", "url": "/hoc/level-1-fresher/1-4-4-link-budget" },
+    { "id": "gsnr", "label": "GSNR", "cat": "quality", "url": null },
+
+    { "id": "coherent", "label": "Coherent", "cat": "coherent", "url": "/hoc/level-3-senior/3-1-coherent" },
+    { "id": "qam", "label": "Điều chế QAM", "cat": "coherent", "url": "/hoc/level-3-senior/3-1-coherent" },
+    { "id": "dsp", "label": "DSP", "cat": "coherent", "url": "/hoc/level-3-senior/3-1-coherent" },
+    { "id": "baud", "label": "Baud & spectral eff.", "cat": "coherent", "url": "/hoc/level-3-senior/3-1-coherent" },
+    { "id": "pcs", "label": "PCS", "cat": "coherent", "url": null },
+
+    { "id": "otn", "label": "OTN (G.709)", "cat": "network", "url": null },
+    { "id": "ipodwdm", "label": "IPoDWDM", "cat": "network", "url": null },
+    { "id": "zr", "label": "400ZR / 800ZR", "cat": "network", "url": null },
+    { "id": "protection", "label": "Bảo vệ / Restoration", "cat": "network", "url": null },
+    { "id": "sdn", "label": "SDN & Telemetry", "cat": "network", "url": null }
+  ],
+  "edges": [
+    ["light", "fiber"], ["light", "wdm"], ["light", "itugrid"],
+    ["fiber", "attenuation"], ["fiber", "cd"], ["fiber", "pmd"], ["fiber", "nonlinear"],
+    ["db", "linkbudget"], ["db", "osa"],
+    ["wdm", "cwdm"], ["wdm", "itugrid"], ["wdm", "edfa"], ["wdm", "muxdemux"], ["wdm", "transponder"],
+    ["itugrid", "flexgrid"], ["flexgrid", "baud"], ["flexgrid", "roadm"],
+    ["transponder", "coherent"], ["transponder", "otn"], ["muxdemux", "oadm"], ["oadm", "roadm"],
+    ["edfa", "ase"], ["edfa", "raman"], ["edfa", "osnr"], ["edfa", "osc"], ["edfa", "attenuation"],
+    ["ase", "osnr"], ["raman", "osnr"],
+    ["attenuation", "linkbudget"],
+    ["nonlinear", "spm"], ["nonlinear", "gsnr"], ["nonlinear", "coherent"],
+    ["cd", "dsp"], ["pmd", "dsp"],
+    ["linkbudget", "osnr"], ["linkbudget", "margin"], ["osa", "osnr"],
+    ["osnr", "ber"], ["osnr", "margin"], ["osnr", "gsnr"], ["osnr", "coherent"],
+    ["ber", "qfactor"], ["ber", "fec"], ["fec", "coherent"],
+    ["coherent", "qam"], ["coherent", "dsp"], ["coherent", "gsnr"], ["qam", "baud"], ["qam", "pcs"],
+    ["gsnr", "margin"],
+    ["roadm", "protection"], ["roadm", "sdn"], ["roadm", "osc"],
+    ["ipodwdm", "zr"], ["ipodwdm", "transponder"], ["zr", "coherent"], ["otn", "fec"],
+    ["protection", "sdn"]
+  ]
+}

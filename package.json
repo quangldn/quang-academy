@@ -4,7 +4,10 @@
   "private": true,
   "scripts": {
     "docusaurus": "docusaurus",
+    "gen:graph": "node scripts/gen-graph.mjs",
+    "prestart": "node scripts/gen-graph.mjs",
     "start": "docusaurus start",
+    "prebuild": "node scripts/gen-graph.mjs",
     "build": "docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
@@ -19,6 +22,7 @@
     "@docusaurus/preset-classic": "3.10.2",
     "@mdx-js/react": "^3.0.0",
     "clsx": "^2.0.0",
+    "force-graph": "^1.51.4",
     "katex": "^0.18.1",
     "prism-react-renderer": "^2.3.0",
     "react": "^19.0.0",

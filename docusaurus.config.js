@@ -100,6 +100,7 @@ const config = {
             label: 'Lộ trình học',
           },
           {to: '/cong-cu', label: 'Công cụ', position: 'left'},
+          {to: '/ban-do', label: 'Bản đồ', position: 'left'},
           {to: '/hoc/reference/glossary', label: 'Thuật ngữ', position: 'left'},
           {
             href: 'https://github.com/quangldn/quang-academy',

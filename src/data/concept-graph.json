@@ -1,0 +1,636 @@
+{
+  "categories": {
+    "foundation": {
+      "label": "Nền tảng",
+      "color": "#a855f7"
+    },
+    "mux": {
+      "label": "Ghép kênh",
+      "color": "#8b5cf6"
+    },
+    "component": {
+      "label": "Thành phần",
+      "color": "#3b82f6"
+    },
+    "impairment": {
+      "label": "Suy giảm",
+      "color": "#f0883e"
+    },
+    "quality": {
+      "label": "Chất lượng",
+      "color": "#22d3ee"
+    },
+    "coherent": {
+      "label": "Coherent",
+      "color": "#34d399"
+    },
+    "network": {
+      "label": "Mạng & lớp cao",
+      "color": "#f472b6"
+    }
+  },
+  "nodes": [
+    {
+      "id": "light",
+      "label": "Ánh sáng & phổ",
+      "cat": "foundation",
+      "url": "/hoc/level-1-fresher/1-1-1-anh-sang",
+      "hasLesson": true,
+      "val": 3
+    },
+    {
+      "id": "fiber",
+      "label": "Sợi quang",
+      "cat": "foundation",
+      "url": "/hoc/level-1-fresher/1-1-2-soi-quang",
+      "hasLesson": true,
+      "val": 5
+    },
+    {
+      "id": "db",
+      "label": "dB / dBm",
+      "cat": "foundation",
+      "url": "/hoc/level-1-fresher/1-1-4-db-dbm",
+      "hasLesson": true,
+      "val": 2
+    },
+    {
+      "id": "wdm",
+      "label": "WDM / DWDM",
+      "cat": "mux",
+      "url": "/hoc/level-1-fresher/1-2-1-wdm-la-gi",
+      "hasLesson": true,
+      "val": 6
+    },
+    {
+      "id": "cwdm",
+      "label": "CWDM",
+      "cat": "mux",
+      "url": "/hoc/level-1-fresher/1-2-1-wdm-la-gi",
+      "hasLesson": true,
+      "val": 1
+    },
+    {
+      "id": "itugrid",
+      "label": "ITU-T Grid",
+      "cat": "mux",
+      "url": "/hoc/level-1-fresher/1-2-2-itu-grid",
+      "hasLesson": true,
+      "val": 3
+    },
+    {
+      "id": "flexgrid",
+      "label": "Flexible grid",
+      "cat": "mux",
+      "url": "/hoc/level-1-fresher/1-2-2-itu-grid",
+      "hasLesson": true,
+      "val": 3
+    },
+    {
+      "id": "transponder",
+      "label": "Transponder",
+      "cat": "component",
+      "url": "/hoc/level-1-fresher/1-2-4-khoi-chuc-nang",
+      "hasLesson": true,
+      "val": 4
+    },
+    {
+      "id": "oadm",
+      "label": "OADM",
+      "cat": "component",
+      "url": "/hoc/level-1-fresher/1-2-4-khoi-chuc-nang",
+      "hasLesson": true,
+      "val": 2
+    },
+    {
+      "id": "muxdemux",
+      "label": "Mux / Demux",
+      "cat": "component",
+      "url": "/hoc/level-1-fresher/1-3-1-mux-demux-filter",
+      "hasLesson": true,
+      "val": 2
+    },
+    {
+      "id": "edfa",
+      "label": "EDFA",
+      "cat": "component",
+      "url": "/hoc/level-1-fresher/1-3-2-edfa",
+      "hasLesson": true,
+      "val": 6
+    },
+    {
+      "id": "raman",
+      "label": "Raman",
+      "cat": "component",
+      "url": "/hoc/level-1-fresher/1-3-3-raman",
+      "hasLesson": true,
+      "val": 2
+    },
+    {
+      "id": "osc",
+      "label": "OSC / VOA / tap",
+      "cat": "component",
+      "url": "/hoc/level-1-fresher/1-3-4-osc-voa-tap",
+      "hasLesson": true,
+      "val": 2
+    },
+    {
+      "id": "roadm",
+      "label": "ROADM / WSS",
+      "cat": "component",
+      "url": null,
+      "hasLesson": false,
+      "val": 5
+    },
+    {
+      "id": "attenuation",
+      "label": "Suy hao",
+      "cat": "impairment",
+      "url": "/hoc/level-1-fresher/1-1-3-ba-ke-thu",
+      "hasLesson": true,
+      "val": 3
+    },
+    {
+      "id": "cd",
+      "label": "Tán sắc CD",
+      "cat": "impairment",
+      "url": "/hoc/level-1-fresher/1-1-3-ba-ke-thu",
+      "hasLesson": true,
+      "val": 2
+    },
+    {
+      "id": "pmd",
+      "label": "PMD",
+      "cat": "impairment",
+      "url": "/hoc/level-1-fresher/1-1-3-ba-ke-thu",
+      "hasLesson": true,
+      "val": 2
+    },
+    {
+      "id": "nonlinear",
+      "label": "Phi tuyến",
+      "cat": "impairment",
+      "url": "/hoc/level-1-fresher/1-1-3-ba-ke-thu",
+      "hasLesson": true,
+      "val": 4
+    },
+    {
+      "id": "spm",
+      "label": "SPM / XPM / FWM",
+      "cat": "impairment",
+      "url": null,
+      "hasLesson": false,
+      "val": 1
+    },
+    {
+      "id": "ase",
+      "label": "ASE (nhiễu)",
+      "cat": "impairment",
+      "url": "/hoc/level-1-fresher/1-3-2-edfa",
+      "hasLesson": true,
+      "val": 2
+    },
+    {
+      "id": "osa",
+      "label": "Đo & đọc phổ (OSA)",
+      "cat": "quality",
+      "url": "/hoc/level-1-fresher/1-4-1-do-cong-suat",
+      "hasLesson": true,
+      "val": 2
+    },
+    {
+      "id": "linkbudget",
+      "label": "Link budget",
+      "cat": "quality",
+      "url": "/hoc/level-1-fresher/1-4-4-link-budget",
+      "hasLesson": true,
+      "val": 4
+    },
+    {
+      "id": "osnr",
+      "label": "OSNR",
+      "cat": "quality",
+      "url": "/hoc/level-1-fresher/1-4-2-osnr-khai-niem",
+      "hasLesson": true,
+      "val": 9
+    },
+    {
+      "id": "ber",
+      "label": "BER",
+      "cat": "quality",
+      "url": "/hoc/level-1-fresher/1-4-3-ber-qfactor",
+      "hasLesson": true,
+      "val": 3
+    },
+    {
+      "id": "qfactor",
+      "label": "Q-factor",
+      "cat": "quality",
+      "url": "/hoc/level-1-fresher/1-4-3-ber-qfactor",
+      "hasLesson": true,
+      "val": 1
+    },
+    {
+      "id": "fec",
+      "label": "FEC",
+      "cat": "quality",
+      "url": "/hoc/level-1-fresher/1-4-3-ber-qfactor",
+      "hasLesson": true,
+      "val": 3
+    },
+    {
+      "id": "margin",
+      "label": "Margin",
+      "cat": "quality",
+      "url": "/hoc/level-1-fresher/1-4-4-link-budget",
+      "hasLesson": true,
+      "val": 3
+    },
+    {
+      "id": "gsnr",
+      "label": "GSNR",
+      "cat": "quality",
+      "url": null,
+      "hasLesson": false,
+      "val": 4
+    },
+    {
+      "id": "coherent",
+      "label": "Coherent",
+      "cat": "coherent",
+      "url": "/hoc/level-3-senior/3-1-coherent",
+      "hasLesson": true,
+      "val": 8
+    },
+    {
+      "id": "qam",
+      "label": "Điều chế QAM",
+      "cat": "coherent",
+      "url": "/hoc/level-3-senior/3-1-coherent",
+      "hasLesson": true,
+      "val": 3
+    },
+    {
+      "id": "dsp",
+      "label": "DSP",
+      "cat": "coherent",
+      "url": "/hoc/level-3-senior/3-1-coherent",
+      "hasLesson": true,
+      "val": 3
+    },
+    {
+      "id": "baud",
+      "label": "Baud & spectral eff.",
+      "cat": "coherent",
+      "url": "/hoc/level-3-senior/3-1-coherent",
+      "hasLesson": true,
+      "val": 2
+    },
+    {
+      "id": "pcs",
+      "label": "PCS",
+      "cat": "coherent",
+      "url": null,
+      "hasLesson": false,
+      "val": 1
+    },
+    {
+      "id": "otn",
+      "label": "OTN (G.709)",
+      "cat": "network",
+      "url": null,
+      "hasLesson": false,
+      "val": 2
+    },
+    {
+      "id": "ipodwdm",
+      "label": "IPoDWDM",
+      "cat": "network",
+      "url": null,
+      "hasLesson": false,
+      "val": 2
+    },
+    {
+      "id": "zr",
+      "label": "400ZR / 800ZR",
+      "cat": "network",
+      "url": null,
+      "hasLesson": false,
+      "val": 2
+    },
+    {
+      "id": "protection",
+      "label": "Bảo vệ / Restoration",
+      "cat": "network",
+      "url": null,
+      "hasLesson": false,
+      "val": 2
+    },
+    {
+      "id": "sdn",
+      "label": "SDN & Telemetry",
+      "cat": "network",
+      "url": null,
+      "hasLesson": false,
+      "val": 2
+    }
+  ],
+  "links": [
+    {
+      "source": "light",
+      "target": "fiber",
+      "co": false
+    },
+    {
+      "source": "light",
+      "target": "wdm",
+      "co": false
+    },
+    {
+      "source": "light",
+      "target": "itugrid",
+      "co": false
+    },
+    {
+      "source": "fiber",
+      "target": "attenuation",
+      "co": false
+    },
+    {
+      "source": "fiber",
+      "target": "cd",
+      "co": false
+    },
+    {
+      "source": "fiber",
+      "target": "pmd",
+      "co": false
+    },
+    {
+      "source": "fiber",
+      "target": "nonlinear",
+      "co": false
+    },
+    {
+      "source": "db",
+      "target": "linkbudget",
+      "co": false
+    },
+    {
+      "source": "db",
+      "target": "osa",
+      "co": false
+    },
+    {
+      "source": "wdm",
+      "target": "cwdm",
+      "co": false
+    },
+    {
+      "source": "wdm",
+      "target": "itugrid",
+      "co": false
+    },
+    {
+      "source": "wdm",
+      "target": "edfa",
+      "co": false
+    },
+    {
+      "source": "wdm",
+      "target": "muxdemux",
+      "co": false
+    },
+    {
+      "source": "wdm",
+      "target": "transponder",
+      "co": false
+    },
+    {
+      "source": "itugrid",
+      "target": "flexgrid",
+      "co": false
+    },
+    {
+      "source": "flexgrid",
+      "target": "baud",
+      "co": false
+    },
+    {
+      "source": "flexgrid",
+      "target": "roadm",
+      "co": false
+    },
+    {
+      "source": "transponder",
+      "target": "coherent",
+      "co": false
+    },
+    {
+      "source": "transponder",
+      "target": "otn",
+      "co": false
+    },
+    {
+      "source": "muxdemux",
+      "target": "oadm",
+      "co": false
+    },
+    {
+      "source": "oadm",
+      "target": "roadm",
+      "co": false
+    },
+    {
+      "source": "edfa",
+      "target": "ase",
+      "co": false
+    },
+    {
+      "source": "edfa",
+      "target": "raman",
+      "co": false
+    },
+    {
+      "source": "edfa",
+      "target": "osnr",
+      "co": false
+    },
+    {
+      "source": "edfa",
+      "target": "osc",
+      "co": false
+    },
+    {
+      "source": "edfa",
+      "target": "attenuation",
+      "co": false
+    },
+    {
+      "source": "ase",
+      "target": "osnr",
+      "co": false
+    },
+    {
+      "source": "raman",
+      "target": "osnr",
+      "co": false
+    },
+    {
+      "source": "attenuation",
+      "target": "linkbudget",
+      "co": false
+    },
+    {
+      "source": "nonlinear",
+      "target": "spm",
+      "co": false
+    },
+    {
+      "source": "nonlinear",
+      "target": "gsnr",
+      "co": false
+    },
+    {
+      "source": "nonlinear",
+      "target": "coherent",
+      "co": false
+    },
+    {
+      "source": "cd",
+      "target": "dsp",
+      "co": false
+    },
+    {
+      "source": "pmd",
+      "target": "dsp",
+      "co": false
+    },
+    {
+      "source": "linkbudget",
+      "target": "osnr",
+      "co": false
+    },
+    {
+      "source": "linkbudget",
+      "target": "margin",
+      "co": false
+    },
+    {
+      "source": "osa",
+      "target": "osnr",
+      "co": false
+    },
+    {
+      "source": "osnr",
+      "target": "ber",
+      "co": false
+    },
+    {
+      "source": "osnr",
+      "target": "margin",
+      "co": false
+    },
+    {
+      "source": "osnr",
+      "target": "gsnr",
+      "co": false
+    },
+    {
+      "source": "osnr",
+      "target": "coherent",
+      "co": false
+    },
+    {
+      "source": "ber",
+      "target": "qfactor",
+      "co": false
+    },
+    {
+      "source": "ber",
+      "target": "fec",
+      "co": false
+    },
+    {
+      "source": "fec",
+      "target": "coherent",
+      "co": false
+    },
+    {
+      "source": "coherent",
+      "target": "qam",
+      "co": false
+    },
+    {
+      "source": "coherent",
+      "target": "dsp",
+      "co": false
+    },
+    {
+      "source": "coherent",
+      "target": "gsnr",
+      "co": false
+    },
+    {
+      "source": "qam",
+      "target": "baud",
+      "co": false
+    },
+    {
+      "source": "qam",
+      "target": "pcs",
+      "co": false
+    },
+    {
+      "source": "gsnr",
+      "target": "margin",
+      "co": false
+    },
+    {
+      "source": "roadm",
+      "target": "protection",
+      "co": false
+    },
+    {
+      "source": "roadm",
+      "target": "sdn",
+      "co": false
+    },
+    {
+      "source": "roadm",
+      "target": "osc",
+      "co": false
+    },
+    {
+      "source": "ipodwdm",
+      "target": "zr",
+      "co": false
+    },
+    {
+      "source": "ipodwdm",
+      "target": "transponder",
+      "co": false
+    },
+    {
+      "source": "zr",
+      "target": "coherent",
+      "co": false
+    },
+    {
+      "source": "otn",
+      "target": "fec",
+      "co": false
+    },
+    {
+      "source": "protection",
+      "target": "sdn",
+      "co": false
+    }
+  ],
+  "meta": {
+    "generated": true,
+    "taggedLessons": 0,
+    "nodeCount": 38,
+    "edgeCount": 58
+  }
+}
